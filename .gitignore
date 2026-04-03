@@ -1,0 +1,9 @@
+.venv
+__pycache__/
+history.json
+dummy_data.xlsx
+generate_dummy_data.py
+build/
+dist/
+*.spec
+.DS_Store
