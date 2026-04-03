@@ -125,21 +125,148 @@ st.set_page_config(
 )
 
 # ============================================================
-# TARGETED CSS ONLY
+# PREMIUM PETRONAS CSS — White Theme + Teal Accents
 # ============================================================
 st.markdown("""
 <style>
     /* ========== GOOGLE FONTS ========== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
+    /* ========== GLOBAL ========== */
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
 
-    /* ========== HIDE STREAMLIT BRANDING ========== */
+    .main .block-container {
+        padding-top: 2rem !important;
+        max-width: 1400px !important;
+    }
+
+    /* ========== SIDEBAR ========== */
+    [data-testid="stSidebar"] {
+        border-right: 2px solid #00A19C !important;
+    }
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #00A19C !important;
+        font-weight: 700 !important;
+    }
+
+    /* ========== BUTTONS — Petronas green gradient ========== */
+    .stButton > button,
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        font-family: 'Inter', sans-serif !important;
+        padding: 0.6rem 1.4rem !important;
+        font-size: 0.9rem !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 14px rgba(0, 161, 156, 0.2) !important;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #00BFB8 0%, #00A19C 100%) !important;
+        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
+        transform: translateY(-1px) !important;
+        color: white !important;
+    }
+
+    /* ========== METRIC CARDS ========== */
+    [data-testid="stMetric"] {
+        background: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        border-left: 4px solid #00A19C !important;
+        border-radius: 12px !important;
+        padding: 1.1rem 1.2rem !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.12) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #00A19C !important;
+        font-weight: 800 !important;
+        font-size: 1.8rem !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #4A5568 !important;
+        font-weight: 500 !important;
+        font-size: 0.82rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+    }
+
+    /* ========== TABS ========== */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px !important;
+        background: transparent !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: #FFFFFF !important;
+        color: #4A5568 !important;
+        border-radius: 10px !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 0.5rem 1.2rem !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        transition: all 0.25s ease !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
+        color: white !important;
+        border-color: #00A19C !important;
+        box-shadow: 0 4px 12px rgba(0, 161, 156, 0.25) !important;
+    }
+
+    .stTabs [data-baseweb="tab-highlight"],
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
+    }
+
+    /* ========== FILE UPLOADER ========== */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed rgba(0, 161, 156, 0.35) !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        border-color: #00A19C !important;
+        box-shadow: 0 0 12px rgba(0, 161, 156, 0.1) !important;
+    }
+
+    /* ========== EMAIL PREVIEW IFRAME ========== */
+    iframe {
+        border-radius: 10px !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* ========== SCROLLBAR ========== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F7F9FC; }
+    ::-webkit-scrollbar-thumb { background: #00A19C; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00BFB8; }
+
+    /* ========== HIDE STREAMLIT BRANDING & DEPLOY ========== */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: visible;}
+    .stDeployButton {display: none !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -437,25 +564,37 @@ if uploaded_file and sr_sheet and inc_sheet:
 else:
     # ========== EMPTY STATE ==========
     st.markdown("")
-    st.markdown("")
 
     st.markdown("""
     <div style="
         text-align: center; 
-        padding: 80px 40px; 
-        background: linear-gradient(135deg, #FFFFFF 0%, #F0FAFA 100%); 
-        border: 1px dashed rgba(0, 161, 156, 0.3); 
-        border-radius: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        padding: 70px 40px; 
+        background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%); 
+        border: 1px solid #E2E8F0; 
+        border-top: 4px solid #00A19C;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
     ">
-        <h2 style="color: #1A202C !important; font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 10px 0 !important;">
+        <div style="
+            width: 64px; height: 64px; 
+            background: linear-gradient(135deg, #00A19C, #008C87); 
+            border-radius: 16px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 20px;
+            box-shadow: 0 6px 16px rgba(0, 161, 156, 0.25);
+        ">
+            <span style="font-size: 1.8rem;">📊</span>
+        </div>
+        <h2 style="color: #1A202C !important; font-size: 1.6rem !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">
             Ready to Generate Your Weekly Report
         </h2>
-        <p style="color: #718096 !important; font-size: 1rem; max-width: 500px; margin: 0 auto 25px auto; line-height: 1.6;">
+        <p style="color: #718096 !important; font-size: 1rem; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.7;">
             Upload your MyGenie Excel export using the sidebar to automatically generate the formatted HTML email report.
         </p>
         <div style="display: inline-flex; gap: 8px; align-items: center; 
-                    background: rgba(0,161,156,0.08); padding: 10px 20px; border-radius: 10px; 
+                    background: rgba(0,161,156,0.08); padding: 12px 24px; border-radius: 12px; 
                     border: 1px solid rgba(0,161,156,0.2);">
             <span style="font-size: 1.1rem;">👈</span>
             <span style="color: #00A19C; font-weight: 600; font-size: 0.9rem;">Use the sidebar to get started</span>
@@ -463,7 +602,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("")
     st.markdown("")
 
     # Feature highlight cards
@@ -473,19 +611,20 @@ else:
         <div style="
             background: #FFFFFF; 
             border: 1px solid #E2E8F0; 
+            border-top: 3px solid #00A19C;
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            height: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            height: 210px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2.2rem; margin: 0 0 12px 0;">⚡</p>
+            <p style="font-size: 2rem; margin: 0 0 12px 0;">⚡</p>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Instant Processing</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Upload your Excel and get a fully formatted email in seconds. No manual copy-paste required.
+                Upload your Excel and get a fully formatted email in seconds. No manual copy-paste.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -495,19 +634,20 @@ else:
         <div style="
             background: #FFFFFF; 
             border: 1px solid #E2E8F0; 
+            border-top: 3px solid #00A19C;
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            height: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            height: 210px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2.2rem; margin: 0 0 12px 0;">📈</p>
+            <p style="font-size: 2rem; margin: 0 0 12px 0;">📈</p>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">4-Week Trends</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Automatically tracks and displays a 4-week historical snapshot of your SR & Incident ageing data.
+                Tracks and displays a 4-week historical snapshot of your SR & Incident ageing data.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -517,19 +657,20 @@ else:
         <div style="
             background: #FFFFFF; 
             border: 1px solid #E2E8F0; 
+            border-top: 3px solid #00A19C;
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            height: 200px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            height: 210px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2.2rem; margin: 0 0 12px 0;">🔒</p>
+            <p style="font-size: 2rem; margin: 0 0 12px 0;">🔒</p>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Fully Offline</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Runs entirely on your local machine. No data ever leaves your computer. Secure by design.
+                Runs entirely on your machine. No data ever leaves your computer. Secure by design.
             </p>
         </div>
         """, unsafe_allow_html=True)
