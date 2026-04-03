@@ -284,9 +284,9 @@ st.markdown("""
     margin-bottom: 2rem;
     box-shadow: 0 10px 25px rgba(0, 161, 156, 0.2);
 ">
-    <img src="https://www.petronas.com/themes/custom/petronas/images/petronas-logo-dark.svg" 
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
          alt="PETRONAS" 
-         style="height: 70px; filter: brightness(0) invert(1);" />
+         style="height: 80px; filter: brightness(100) invert(0); mix-blend-mode: screen;" />
     <div>
         <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
                     color: #FFFFFF !important;
@@ -309,7 +309,7 @@ with st.sidebar:
     st.markdown("""
     <div style="text-align:center; padding: 12px 0 16px 0;">
         <img src="https://www.petronas.com/themes/custom/petronas/images/petronas-logo-dark.svg" 
-             style="height: 38px;" />
+             style="height: 46px;" />
         <div style="height: 2px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 14px auto 0; width: 70%;"></div>
     </div>
     """, unsafe_allow_html=True)
