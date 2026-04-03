@@ -281,7 +281,7 @@ def _image_to_data_uri(path, mime_type):
     encoded = _b64.b64encode(data).decode()
     return f"data:{mime_type};base64,{encoded}"
 
-_logo_header_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL_WHITE.svg", "image/svg+xml")
+_logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
@@ -289,15 +289,15 @@ st.markdown(f"""
     display: flex; 
     align-items: center; 
     gap: 24px; 
-    padding: 30px; 
+    padding: 24px 30px; 
     background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); 
     border-radius: 16px; 
     margin-bottom: 2rem;
     box-shadow: 0 10px 25px rgba(0, 161, 156, 0.2);
 ">
-    <img src="{_logo_header_uri}" 
+    <img src="{_logo_banner_uri}" 
          alt="PETRONAS" 
-         style="height: 85px;" />
+         style="height: 80px; border-radius: 12px;" />
     <div>
         <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
                     color: #FFFFFF !important;
