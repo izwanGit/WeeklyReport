@@ -125,7 +125,7 @@ st.set_page_config(
 )
 
 # ============================================================
-# MEGA PREMIUM PETRONAS CSS
+# PREMIUM WHITE PETRONAS CSS
 # ============================================================
 st.markdown("""
 <style>
@@ -135,22 +135,27 @@ st.markdown("""
     /* ========== ROOT VARIABLES ========== */
     :root {
         --petronas-green: #00A19C;
-        --petronas-dark: #007A77;
+        --petronas-dark: #008C87;
         --petronas-light: #E6F7F6;
-        --petronas-glow: rgba(0, 161, 156, 0.15);
-        --bg-dark: #0A0F1C;
-        --bg-card: #111827;
-        --bg-card-hover: #1A2332;
-        --text-primary: #F1F5F9;
-        --text-secondary: #94A3B8;
-        --text-muted: #64748B;
-        --border-color: rgba(0, 161, 156, 0.2);
-        --shadow-glow: 0 0 20px rgba(0, 161, 156, 0.15);
+        --petronas-ultra-light: #F0FAFA;
+        --bg-white: #FFFFFF;
+        --bg-page: #F7F9FC;
+        --bg-card: #FFFFFF;
+        --bg-card-alt: #F8FAFB;
+        --text-primary: #1A202C;
+        --text-secondary: #4A5568;
+        --text-muted: #A0AEC0;
+        --border-color: #E2E8F0;
+        --border-accent: rgba(0, 161, 156, 0.3);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(0, 0, 0, 0.04);
+        --shadow-teal: 0 4px 14px rgba(0, 161, 156, 0.15);
     }
 
-    /* ========== GLOBAL RESET ========== */
+    /* ========== GLOBAL ========== */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: var(--bg-dark) !important;
+        background-color: var(--bg-page) !important;
         color: var(--text-primary) !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
@@ -162,14 +167,16 @@ st.markdown("""
 
     /* ========== HEADER / TOP BAR ========== */
     header[data-testid="stHeader"] {
-        background: linear-gradient(135deg, #0A0F1C 0%, #111827 100%) !important;
+        background: #FFFFFF !important;
         border-bottom: 1px solid var(--border-color) !important;
+        box-shadow: var(--shadow-sm) !important;
     }
 
-    /* ========== SIDEBAR - PETRONAS DARK GLASS ========== */
+    /* ========== SIDEBAR ========== */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0D1321 0%, #111827 40%, #0A0F1C 100%) !important;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F7F9FC 100%) !important;
         border-right: 1px solid var(--border-color) !important;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.03) !important;
     }
 
     [data-testid="stSidebar"] * {
@@ -185,7 +192,6 @@ st.markdown("""
         border-color: var(--border-color) !important;
     }
 
-    /* Sidebar header styling */
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
@@ -222,12 +228,12 @@ st.markdown("""
         font-size: 0.9rem !important;
         letter-spacing: 0.02em !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 4px 14px rgba(0, 161, 156, 0.3) !important;
+        box-shadow: var(--shadow-teal) !important;
     }
 
     .stButton > button:hover {
         background: linear-gradient(135deg, #00BFB8 0%, var(--petronas-green) 100%) !important;
-        box-shadow: 0 6px 24px rgba(0, 161, 156, 0.45) !important;
+        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
         transform: translateY(-2px) !important;
         color: white !important;
     }
@@ -245,13 +251,13 @@ st.markdown("""
         font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
         padding: 0.65rem 1.5rem !important;
-        box-shadow: 0 4px 14px rgba(0, 161, 156, 0.3) !important;
+        box-shadow: var(--shadow-teal) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
     .stDownloadButton > button:hover {
         background: linear-gradient(135deg, #00BFB8 0%, var(--petronas-green) 100%) !important;
-        box-shadow: 0 6px 24px rgba(0, 161, 156, 0.45) !important;
+        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
         transform: translateY(-2px) !important;
         color: white !important;
     }
@@ -259,7 +265,7 @@ st.markdown("""
     /* ========== FILE UPLOADER ========== */
     [data-testid="stFileUploader"] {
         background: var(--bg-card) !important;
-        border: 2px dashed var(--border-color) !important;
+        border: 2px dashed var(--border-accent) !important;
         border-radius: 12px !important;
         padding: 1rem !important;
         transition: all 0.3s ease !important;
@@ -267,11 +273,7 @@ st.markdown("""
 
     [data-testid="stFileUploader"]:hover {
         border-color: var(--petronas-green) !important;
-        box-shadow: var(--shadow-glow) !important;
-    }
-
-    [data-testid="stFileUploader"] * {
-        color: var(--text-secondary) !important;
+        box-shadow: 0 0 15px rgba(0, 161, 156, 0.1) !important;
     }
 
     [data-testid="stFileUploader"] button {
@@ -307,13 +309,13 @@ st.markdown("""
         border: 1px solid var(--border-color) !important;
         border-radius: 14px !important;
         padding: 1.2rem !important;
-        box-shadow: var(--shadow-glow) !important;
+        box-shadow: var(--shadow-md) !important;
         transition: all 0.3s ease !important;
     }
 
     [data-testid="stMetric"]:hover {
         border-color: var(--petronas-green) !important;
-        box-shadow: 0 0 30px rgba(0, 161, 156, 0.25) !important;
+        box-shadow: var(--shadow-lg) !important;
         transform: translateY(-2px) !important;
     }
 
@@ -354,7 +356,7 @@ st.markdown("""
         background: linear-gradient(135deg, var(--petronas-green) 0%, var(--petronas-dark) 100%) !important;
         color: white !important;
         border-color: var(--petronas-green) !important;
-        box-shadow: 0 4px 14px rgba(0, 161, 156, 0.3) !important;
+        box-shadow: var(--shadow-teal) !important;
     }
 
     .stTabs [data-baseweb="tab-highlight"] {
@@ -382,13 +384,9 @@ st.markdown("""
         border-radius: 0 0 10px 10px !important;
     }
 
-    /* ========== ALERTS / INFO / SUCCESS / WARNING / ERROR ========== */
+    /* ========== ALERTS ========== */
     [data-testid="stAlert"] {
         border-radius: 12px !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    .stAlert [data-testid="stMarkdownContainer"] {
         font-family: 'Inter', sans-serif !important;
     }
 
@@ -407,13 +405,13 @@ st.markdown("""
     iframe {
         border-radius: 12px !important;
         border: 1px solid var(--border-color) !important;
-        box-shadow: var(--shadow-glow) !important;
+        box-shadow: var(--shadow-md) !important;
     }
 
-    /* ========== TEXT AREA (Raw HTML) ========== */
+    /* ========== TEXT AREA / CODE ========== */
     .stTextArea textarea {
-        background-color: #0D1117 !important;
-        color: #C9D1D9 !important;
+        background-color: #F8F9FA !important;
+        color: var(--text-primary) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: 10px !important;
         font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace !important;
@@ -427,7 +425,7 @@ st.markdown("""
     }
 
     ::-webkit-scrollbar-track {
-        background: var(--bg-dark);
+        background: var(--bg-page);
     }
 
     ::-webkit-scrollbar-thumb {
@@ -446,13 +444,6 @@ st.markdown("""
         border-radius: 10px !important;
     }
 
-    /* ========== CUSTOM PETRONAS GLOW ANIMATION ========== */
-    @keyframes petronasGlow {
-        0% { box-shadow: 0 0 5px rgba(0, 161, 156, 0.2); }
-        50% { box-shadow: 0 0 20px rgba(0, 161, 156, 0.4); }
-        100% { box-shadow: 0 0 5px rgba(0, 161, 156, 0.2); }
-    }
-
     /* ========== HIDE STREAMLIT BRANDING ========== */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -468,24 +459,24 @@ st.markdown("""
     display: flex; 
     align-items: center; 
     gap: 24px; 
-    padding: 20px 28px; 
-    background: linear-gradient(135deg, #111827 0%, #1A2332 100%); 
-    border: 1px solid rgba(0, 161, 156, 0.2); 
-    border-radius: 16px; 
+    padding: 22px 30px; 
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0FAFA 100%); 
+    border: 1px solid #E2E8F0; 
+    border-left: 5px solid #00A19C;
+    border-radius: 14px; 
     margin-bottom: 1.5rem;
-    box-shadow: 0 0 30px rgba(0, 161, 156, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 ">
     <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
          alt="PETRONAS" 
-         style="height: 55px; filter: brightness(1.1);" />
+         style="height: 55px;" />
     <div>
         <h1 style="margin: 0 !important; padding: 0 !important; font-size: 1.75rem !important; 
-                    background: linear-gradient(135deg, #FFFFFF 0%, #00A19C 100%); 
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                    color: #1A202C !important;
                     font-weight: 800 !important; letter-spacing: -0.03em !important;">
             Weekly SR & Incident Report Generator
         </h1>
-        <p style="margin: 4px 0 0 0 !important; color: #94A3B8 !important; font-size: 0.95rem; font-weight: 400;">
+        <p style="margin: 4px 0 0 0 !important; color: #718096 !important; font-size: 0.95rem; font-weight: 400;">
             Automate your MyGenie Excel exports into production-ready HTML email reports.
         </p>
     </div>
@@ -501,7 +492,7 @@ with st.sidebar:
     st.markdown("""
     <div style="text-align:center; margin-bottom: 20px; padding: 15px 0;">
         <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
-             style="height: 40px; margin-bottom: 10px; filter: brightness(1.1);" />
+             style="height: 40px; margin-bottom: 10px;" />
         <div style="height: 3px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 10px auto; width: 60%;"></div>
     </div>
     """, unsafe_allow_html=True)
@@ -538,7 +529,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style="text-align:center; padding: 10px 0;">
-        <p style="font-size: 0.7rem; color: #64748B !important; margin: 0;">
+        <p style="font-size: 0.7rem; color: #A0AEC0 !important; margin: 0;">
             PETRONAS Weekly Report Tool v1.0<br/>
             © 2026 PETRONAS. Internal Use Only.
         </p>
@@ -668,12 +659,12 @@ if uploaded_file and sr_sheet and inc_sheet:
             with tab_preview:
                 st.markdown("""
                 <div style="
-                    background: #111827; 
-                    border: 1px solid rgba(0,161,156,0.2); 
-                    border-radius: 16px; 
+                    background: #FFFFFF; 
+                    border: 1px solid #E2E8F0; 
+                    border-radius: 14px; 
                     padding: 8px; 
                     margin-top: 10px;
-                    box-shadow: 0 0 30px rgba(0,161,156,0.08);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
                 ">
                 """, unsafe_allow_html=True)
                 st.components.v1.html(html_output, height=900, scrolling=True)
@@ -692,16 +683,16 @@ if uploaded_file and sr_sheet and inc_sheet:
                 with exp1:
                     st.markdown("""
                     <div style="
-                        background: #111827; 
-                        border: 1px solid rgba(0,161,156,0.2); 
+                        background: #FFFFFF; 
+                        border: 1px solid #E2E8F0; 
                         border-radius: 14px; 
                         padding: 24px; 
                         text-align: center;
-                        box-shadow: 0 0 20px rgba(0,161,156,0.08);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
                         <p style="font-size: 2rem; margin: 0;">💾</p>
-                        <p style="color: #F1F5F9 !important; font-weight: 700; margin: 8px 0 4px 0;">Download HTML</p>
-                        <p style="color: #64748B !important; font-size: 0.8rem; margin-bottom: 16px;">Save as .html file</p>
+                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Download HTML</p>
+                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Save as .html file</p>
                     </div>
                     """, unsafe_allow_html=True)
                     st.download_button(
@@ -715,16 +706,16 @@ if uploaded_file and sr_sheet and inc_sheet:
                 with exp2:
                     st.markdown("""
                     <div style="
-                        background: #111827; 
-                        border: 1px solid rgba(0,161,156,0.2); 
+                        background: #FFFFFF; 
+                        border: 1px solid #E2E8F0; 
                         border-radius: 14px; 
                         padding: 24px; 
                         text-align: center;
-                        box-shadow: 0 0 20px rgba(0,161,156,0.08);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
                         <p style="font-size: 2rem; margin: 0;">📋</p>
-                        <p style="color: #F1F5F9 !important; font-weight: 700; margin: 8px 0 4px 0;">Copy to Clipboard</p>
-                        <p style="color: #64748B !important; font-size: 0.8rem; margin-bottom: 16px;">Copy HTML source code</p>
+                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Copy to Clipboard</p>
+                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Copy HTML source code</p>
                     </div>
                     """, unsafe_allow_html=True)
                     if st.button("Copy HTML Source", use_container_width=True):
@@ -734,16 +725,16 @@ if uploaded_file and sr_sheet and inc_sheet:
                 with exp3:
                     st.markdown("""
                     <div style="
-                        background: #111827; 
-                        border: 1px solid rgba(0,161,156,0.2); 
+                        background: #FFFFFF; 
+                        border: 1px solid #E2E8F0; 
                         border-radius: 14px; 
                         padding: 24px; 
                         text-align: center;
-                        box-shadow: 0 0 20px rgba(0,161,156,0.08);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
                         <p style="font-size: 2rem; margin: 0;">✉️</p>
-                        <p style="color: #F1F5F9 !important; font-weight: 700; margin: 8px 0 4px 0;">Outlook Draft</p>
-                        <p style="color: #64748B !important; font-size: 0.8rem; margin-bottom: 16px;">Push directly to Outlook</p>
+                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Outlook Draft</p>
+                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Push directly to Outlook</p>
                     </div>
                     """, unsafe_allow_html=True)
                     if sys.platform == 'win32':
@@ -770,21 +761,21 @@ else:
     <div style="
         text-align: center; 
         padding: 80px 40px; 
-        background: linear-gradient(135deg, #111827 0%, #1A2332 100%); 
+        background: linear-gradient(135deg, #FFFFFF 0%, #F0FAFA 100%); 
         border: 1px dashed rgba(0, 161, 156, 0.3); 
         border-radius: 20px;
-        box-shadow: 0 0 40px rgba(0, 161, 156, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     ">
         <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
-             style="height: 50px; margin-bottom: 25px; opacity: 0.7; filter: brightness(1.1);" />
-        <h2 style="color: #F1F5F9 !important; font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 10px 0 !important;">
+             style="height: 50px; margin-bottom: 25px; opacity: 0.7;" />
+        <h2 style="color: #1A202C !important; font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 10px 0 !important;">
             Ready to Generate Your Weekly Report
         </h2>
-        <p style="color: #64748B !important; font-size: 1rem; max-width: 500px; margin: 0 auto 25px auto; line-height: 1.6;">
+        <p style="color: #718096 !important; font-size: 1rem; max-width: 500px; margin: 0 auto 25px auto; line-height: 1.6;">
             Upload your MyGenie Excel export using the sidebar to automatically generate the formatted HTML email report.
         </p>
         <div style="display: inline-flex; gap: 8px; align-items: center; 
-                    background: rgba(0,161,156,0.1); padding: 10px 20px; border-radius: 10px; 
+                    background: rgba(0,161,156,0.08); padding: 10px 20px; border-radius: 10px; 
                     border: 1px solid rgba(0,161,156,0.2);">
             <span style="font-size: 1.1rem;">👈</span>
             <span style="color: #00A19C; font-weight: 600; font-size: 0.9rem;">Use the sidebar to get started</span>
@@ -800,20 +791,20 @@ else:
     with f1:
         st.markdown("""
         <div style="
-            background: #111827; 
-            border: 1px solid rgba(0,161,156,0.15); 
+            background: #FFFFFF; 
+            border: 1px solid #E2E8F0; 
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             height: 200px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
             <p style="font-size: 2.2rem; margin: 0 0 12px 0;">⚡</p>
-            <p style="color: #F1F5F9 !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Instant Processing</p>
-            <p style="color: #64748B !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
+            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Instant Processing</p>
+            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Upload your Excel and get a fully formatted email in seconds. No manual copy-paste required.
             </p>
         </div>
@@ -822,20 +813,20 @@ else:
     with f2:
         st.markdown("""
         <div style="
-            background: #111827; 
-            border: 1px solid rgba(0,161,156,0.15); 
+            background: #FFFFFF; 
+            border: 1px solid #E2E8F0; 
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             height: 200px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
             <p style="font-size: 2.2rem; margin: 0 0 12px 0;">📈</p>
-            <p style="color: #F1F5F9 !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">4-Week Trends</p>
-            <p style="color: #64748B !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
+            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">4-Week Trends</p>
+            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Automatically tracks and displays a 4-week historical snapshot of your SR & Incident ageing data.
             </p>
         </div>
@@ -844,20 +835,20 @@ else:
     with f3:
         st.markdown("""
         <div style="
-            background: #111827; 
-            border: 1px solid rgba(0,161,156,0.15); 
+            background: #FFFFFF; 
+            border: 1px solid #E2E8F0; 
             border-radius: 14px; 
             padding: 28px; 
             text-align: center;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             height: 200px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         ">
             <p style="font-size: 2.2rem; margin: 0 0 12px 0;">🔒</p>
-            <p style="color: #F1F5F9 !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Fully Offline</p>
-            <p style="color: #64748B !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
+            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Fully Offline</p>
+            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Runs entirely on your local machine. No data ever leaves your computer. Secure by design.
             </p>
         </div>
