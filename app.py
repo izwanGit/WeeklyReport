@@ -448,8 +448,6 @@ else:
         border-radius: 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     ">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
-             style="height: 50px; margin-bottom: 25px; opacity: 0.7;" />
         <h2 style="color: #1A202C !important; font-size: 1.5rem !important; font-weight: 700 !important; margin: 0 0 10px 0 !important;">
             Ready to Generate Your Weekly Report
         </h2>
