@@ -297,7 +297,7 @@ st.markdown(f"""
 ">
     <img src="{_logo_banner_uri}" 
          alt="PETRONAS" 
-         style="height: 85px; border-radius: 14px; border: 2.5px solid rgba(255, 255, 255, 0.9); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" />
+         style="height: 85px; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
     <div>
         <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
                     color: #FFFFFF !important;
