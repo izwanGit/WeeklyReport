@@ -5,209 +5,180 @@
 <title>Weekly SR & Incident Report</title>
 </head>
 
-<body style="font-family:'Segoe UI', Calibri, Arial, sans-serif; font-size:14px; color:#242424; margin:0; padding:15px; background-color:#F5F7FA;">
+<body style="font-family:Calibri, Arial, sans-serif; font-size:14px; color:#242424;">
 
-<div style="max-width: 850px; margin: 0 auto; background-color:#FFFFFF; border: 1px solid #E4E8EB; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
-    
-    <!-- HEADER -->
-    <div style="background-color: #FFFFFF; padding: 25px 30px; border-bottom: 4px solid #00A19C; display: flex; align-items: center justify-content: space-between;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" alt="PETRONAS" style="height: 45px; display: block;" />
-    </div>
+<p>Dear team,</p>
 
-    <!-- BODY CONTENT -->
-    <div style="padding: 30px;">
-        <p style="margin-top:0;">Dear team,</p>
+<p>
+Append herewith the SRs and Incidents aging status for your attention.<br>
+We appreciate your immediate action to follow-up and close the ticket immediately.
+Please be informed that for those who required <b>a ticket cancellation due to ageing</b>,
+please inform the user and <b>continue to create a new ticket on behalf</b>.
+Please also take note on the SLA with warning status and ensure to close the tickets
+<b><u>&lt;30 days aging</u></b> to avoid further increase to the aging &gt;30 days.
+</p>
 
-        <p style="line-height: 1.6; color:#4A5568;">
-        Append herewith the SRs and Incidents aging status for your attention.<br>
-        We appreciate your immediate action to follow-up and close the ticket immediately.
-        Please be informed that for those who required <b style="color:#2D3748;">a ticket cancellation due to ageing</b>,
-        please inform the user and <b style="color:#2D3748;">continue to create a new ticket on behalf</b>.
-        Please also take note on the SLA with warning status and ensure to close the tickets
-        <b style="color:#E53E3E;"><u style="text-decoration-color: #E53E3E;">&lt;30 days aging</u></b> to avoid further increase to the aging &gt;30 days.
-        </p>
+<p><b>Service Request:</b></p>
 
-        <!-- TITLE SEPARATOR -->
-        <h3 style="background-color:#F7FAFC; border-left: 5px solid #00A19C; padding: 10px 15px; color:#2D3748; margin-top:35px; border-radius: 0 4px 4px 0;">
-            Service Request (SR) Overview
-        </h3>
+<p><u>SR Ageing Percentage</u></p>
 
-        <p><b style="color:#00A19C; font-size:15px; text-transform:uppercase; letter-spacing:0.5px; border-bottom: 2px solid #00A19C; padding-bottom: 2px;">SR Ageing Percentage</b></p>
-        
-        <div style="background-color: #E6F6F5; padding: 15px; border-radius: 6px; border: 1px solid #BFE7E5; margin-bottom: 20px;">
-            <p style="margin: 5px 0;"><b>Open tickets as of {{ report_date }} :</b> <span style="color:#00A19C; font-size:16px;"><b>{{ sr_total }} WO tickets</b></span></p>
-            <p style="margin: 5px 0;"><b>Ageing SR more than 1 day is :</b> <span style="color:#00A19C; font-size:16px;"><b>{{ sr_ageing_more_than_1_day_pct }}%</b></span> as of {{ report_date }}</p>
-            <p style="margin: 5px 0;"><b>Ageing SR more than 30 days is :</b> <span style="color:#E53E3E; font-size:16px;"><b>{{ sr_ageing_more_than_30_days_pct }}%</b></span> as of {{ report_date }}</p>
-        </div>
+<p><b>Open tickets as of {{ report_date }} : {{ sr_total }} WO tickets</b><br>
+<b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><br>
+<b>Ageing Service Request more than 30 days is {{ sr_ageing_more_than_30_days_pct }}% as of {{ report_date }}</b>
+</p>
 
-        <!-- SUMMARY TABLE -->
-        <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; margin-bottom:30px; border: 1px solid #E2E8F0;">
-            <thead>
-                <tr>
-                    <th style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: left; padding: 12px; font-weight: 600;">Date</th>
-                    {% for date in trend_dates %}
-                    <th style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: center; padding: 12px; font-weight: 600;">{{ date }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing &gt; 30 days</td>
-                    {% for count in sr_trend_gt_30 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 15 – 30 days</td>
-                    {% for count in sr_trend_15_30 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 1 – 14 days</td>
-                    {% for count in sr_trend_1_14 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-            </tbody>
-        </table>
+<!-- SUMMARY TABLE -->
+<table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
+<tr>
+<th>Date</th>
+{% for date in trend_dates %}
+<th>{{ date }}</th>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing &gt; 30 days</b></td>
+{% for count in sr_trend_gt_30 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 15 – 30 days</b></td>
+{% for count in sr_trend_15_30 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 1 – 14 days</b></td>
+{% for count in sr_trend_1_14 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+</table>
 
-        <!-- >30 DAYS DETAILS -->
-        {% if sr_ageing_gt_30_tickets %}
-        <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; margin-bottom:30px; border: 1px solid #E2E8F0;">
-            <thead>
-                <tr>
-                    <th colspan="7" style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: left; padding: 12px; font-weight: 600;">⚠️ Ageing &gt; 30 days (Action Required)</th>
-                </tr>
-                <tr>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">SR Ageing</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Work Order No.</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Summary</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">User/TSG</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">WO Status</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">WO Status Reason</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Assignee</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ticket in sr_ageing_gt_30_tickets %}
-                <tr style="background-color:#FFFFFF; color:#2D3748; font-size:13px;">
-                    <td style="border: 1px solid #E2E8F0; padding:8px;"><b style="color:#E53E3E;">{{ ticket['SR Ageing'] }}</b></td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px; white-space:nowrap;"><b>{{ ticket['Work Order No.'] }}</b></td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['Summary'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['User/TSG'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['WO Status'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['WO Status Reason'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['Assignee'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+<br>
 
-        <!-- 15–30 DAYS DETAILS -->
-        {% if sr_ageing_15_30_tickets %}
-        <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; margin-bottom:30px; border: 1px solid #E2E8F0;">
-            <thead>
-                <tr>
-                    <th colspan="7" style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: left; padding: 12px; font-weight: 600;">⏳ Ageing 15 – 30 Days (Warning)</th>
-                </tr>
-                <tr>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">SR Ageing</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Work Order No.</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Summary</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">User/TSG</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">WO Status</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">WO Status Reason</th>
-                    <th style="border: 1px solid #E2E8F0; background-color:#E6F6F5; color:#00A19C; text-align: left; font-size:13px;">Assignee</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ticket in sr_ageing_15_30_tickets %}
-                <tr style="background-color:#FFFFFF; color:#2D3748; font-size:13px;">
-                    <td style="border: 1px solid #E2E8F0; padding:8px;"><b style="color:#DD6B20;">{{ ticket['SR Ageing'] }}</b></td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px; white-space:nowrap;"><b>{{ ticket['Work Order No.'] }}</b></td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['Summary'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['User/TSG'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['WO Status'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['WO Status Reason'] }}</td>
-                    <td style="border: 1px solid #E2E8F0; padding:8px;">{{ ticket['Assignee'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+<!-- >30 DAYS DETAILS -->
+{% if sr_ageing_gt_30_tickets %}
+<table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
+<tr>
+<th colspan="7">Ageing &gt; 30 days</th>
+</tr>
+<tr>
+<th>SR Ageing</th>
+<th>Work Order No.</th>
+<th>Summary</th>
+<th>User/TSG</th>
+<th>WO Status</th>
+<th>WO Status Reason</th>
+<th>Assignee</th>
+</tr>
+{% for ticket in sr_ageing_gt_30_tickets %}
+<tr style="background-color:#FFFFFF; color:#000000;">
+<td>{{ ticket['SR Ageing'] }}</td>
+<td>{{ ticket['Work Order No.'] }}</td>
+<td>{{ ticket['Summary'] }}</td>
+<td>{{ ticket['User/TSG'] }}</td>
+<td>{{ ticket['WO Status'] }}</td>
+<td>{{ ticket['WO Status Reason'] }}</td>
+<td>{{ ticket['Assignee'] }}</td>
+</tr>
+{% endfor %}
+</table>
 
-        
-        <h3 style="background-color:#F7FAFC; border-left: 5px solid #00A19C; padding: 10px 15px; color:#2D3748; margin-top:40px; border-radius: 0 4px 4px 0;">
-            Incident Overview
-        </h3>
+<br>
+{% endif %}
 
-        <p><b style="color:#00A19C; font-size:15px; text-transform:uppercase; letter-spacing:0.5px; border-bottom: 2px solid #00A19C; padding-bottom: 2px;">Incident Ageing Percentage</b></p>
+<!-- 15–30 DAYS DETAILS -->
+{% if sr_ageing_15_30_tickets %}
+<table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
+<tr>
+<th colspan="7">Ageing 15 – 30 Days</th>
+</tr>
+<tr>
+<th>SR Ageing</th>
+<th>Work Order No.</th>
+<th>Summary</th>
+<th>User/TSG</th>
+<th>WO Status</th>
+<th>WO Status Reason</th>
+<th>Assignee</th>
+</tr>
+{% for ticket in sr_ageing_15_30_tickets %}
+<tr style="background-color:#FFFFFF; color:#000000;">
+<td>{{ ticket['SR Ageing'] }}</td>
+<td>{{ ticket['Work Order No.'] }}</td>
+<td>{{ ticket['Summary'] }}</td>
+<td>{{ ticket['User/TSG'] }}</td>
+<td>{{ ticket['WO Status'] }}</td>
+<td>{{ ticket['WO Status Reason'] }}</td>
+<td>{{ ticket['Assignee'] }}</td>
+</tr>
+{% endfor %}
+</table>
 
-        <div style="background-color: #E6F6F5; padding: 15px; border-radius: 6px; border: 1px solid #BFE7E5; margin-bottom: 20px;">
-            <p style="margin: 5px 0;"><b>Open INC as of {{ report_date }} :</b> <span style="color:#00A19C; font-size:16px;"><b>{{ inc_total }} ticket</b></span></p>
-            <p style="margin: 5px 0;"><b>Ageing Incident more than 1 day is :</b> <span style="color:#00A19C; font-size:16px;"><b>{{ inc_ageing_more_than_1_day_pct }}%</b></span> as of {{ report_date }}</p>
-        </div>
+<br>
+{% endif %}
 
-        <!-- INCIDENT TABLE -->
-        <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; margin-bottom:30px; border: 1px solid #E2E8F0;">
-            <thead>
-                <tr>
-                    <th style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: left; padding: 12px; font-weight: 600;">Date</th>
-                    {% for date in trend_dates %}
-                    <th style="border: 1px solid #008f8a; background-color:#00A19C; color:#FFFFFF; text-align: center; padding: 12px; font-weight: 600;">{{ date }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing &gt; 90 days</td>
-                    {% for count in inc_trend_gt_90 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 61 – 90 days</td>
-                    {% for count in inc_trend_61_90 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 31 – 60 days</td>
-                    {% for count in inc_trend_31_60 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 15 – 30 days</td>
-                    {% for count in inc_trend_15_30 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 8 – 14 days</td>
-                    {% for count in inc_trend_8_14 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    <td style="border: 1px solid #E2E8F0; background-color:#F7FAFC; color:#2D3748; font-weight:bold; padding: 10px;">Ageing 3 – 7 days</td>
-                    {% for count in inc_trend_3_7 %}
-                    <td style="border: 1px solid #E2E8F0; background-color:#FFFFFF; color:#2D3748; text-align:center; padding: 10px;">{{ count }}</td>
-                    {% endfor %}
-                </tr>
-            </tbody>
-        </table>
+<p><b>Incident:</b></p>
 
-        <!-- FOOTER -->
-        <div style="border-top: 1px solid #E2E8F0; margin-top: 40px; padding-top: 20px;">
-            <p style="color:#718096; font-size:13px; font-style:italic;">
-                Do let your leads know for any challenges/concern and your cooperation is greatly appreciated.
-            </p>
-        </div>
+<p><u>Incident Ageing Percentage</u></p>
 
-    </div>
-</div>
+<p>
+<b>Open INC as of {{ report_date }} : {{ inc_total }} ticket</b><br>
+<b>Ageing Incident more than 1 day is {{ inc_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b>
+</p>
+
+<!-- INCIDENT TABLE -->
+<table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
+<tr>
+<th>Date</th>
+{% for date in trend_dates %}
+<th>{{ date }}</th>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing &gt; 90 days</b></td>
+{% for count in inc_trend_gt_90 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 61 – 90 days</b></td>
+{% for count in inc_trend_61_90 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 31 – 60 days</b></td>
+{% for count in inc_trend_31_60 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 15 – 30 days</b></td>
+{% for count in inc_trend_15_30 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 8 – 14 days</b></td>
+{% for count in inc_trend_8_14 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+<tr>
+<td><b>Ageing 3 – 7 days</b></td>
+{% for count in inc_trend_3_7 %}
+<td style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
+{% endfor %}
+</tr>
+</table>
+
+<br>
+
+<p style="color:#222A35;">
+Do let your leads know for any challenges/concern and your cooperation is greatly appreciate
+</p>
+
 </body>
 </html>

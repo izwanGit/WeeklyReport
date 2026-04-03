@@ -128,26 +128,65 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
 # ----------------------------------------------------
 # Main Streamlit App
 # ----------------------------------------------------
-st.set_page_config(page_title="Weekly Report Auto-Generator", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Weekly Report Automator", page_icon="📈", layout="wide")
 
-# Petronas styling via markdown
+# Petronas Styling injection
 st.markdown("""
 <style>
-    .reportview-container .main .block-container{
-        max-width: 1000px;
+    /* Global fixes */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
-    h1, h2, h3 {
+    
+    /* Header container */
+    .css-10trblm {
         color: #00A19C;
     }
+    h1, h2, h3 {
+        color: #242424;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 700;
+    }
+    
+    /* Buttons */
     .stButton>button {
         background-color: #00A19C;
         color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+    }
+    .stButton>button:hover {
+        background-color: #008f8a;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        color: white;
+    }
+    
+    /* File uploader hover borders */
+    .stFileUploader {
+        border-radius: 8px;
+    }
+    
+    /* Sidebar styling tweaks */
+    [data-testid="stSidebar"] {
+        background-color: #F8F9FA;
+        border-right: 1px solid #EAEAEA;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Weekly SR & Incident Report Generator")
-st.markdown("Automate HTML Email generation from MyGenie Excel exports.")
+# Add Petronas Logo Header
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png", width=160)
+with col2:
+    st.title("Weekly SR & Incident Report Generator")
+    st.markdown("<p style='font-size: 1.1rem; color: #555;'>Automate your MyGenie Excel exports into ready-to-send HTML emails.</p>", unsafe_allow_html=True)
+
+st.markdown("---")
 
 # Step 1: Inputs
 with st.sidebar:
