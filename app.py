@@ -125,323 +125,15 @@ st.set_page_config(
 )
 
 # ============================================================
-# PREMIUM WHITE PETRONAS CSS
+# TARGETED CSS ONLY
 # ============================================================
 st.markdown("""
 <style>
     /* ========== GOOGLE FONTS ========== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-    /* ========== ROOT VARIABLES ========== */
-    :root {
-        --petronas-green: #00A19C;
-        --petronas-dark: #008C87;
-        --petronas-light: #E6F7F6;
-        --petronas-ultra-light: #F0FAFA;
-        --bg-white: #FFFFFF;
-        --bg-page: #F7F9FC;
-        --bg-card: #FFFFFF;
-        --bg-card-alt: #F8FAFB;
-        --text-primary: #1A202C;
-        --text-secondary: #4A5568;
-        --text-muted: #A0AEC0;
-        --border-color: #E2E8F0;
-        --border-accent: rgba(0, 161, 156, 0.3);
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
-        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(0, 0, 0, 0.04);
-        --shadow-teal: 0 4px 14px rgba(0, 161, 156, 0.15);
-    }
-
-    /* ========== GLOBAL ========== */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: var(--bg-page) !important;
-        color: var(--text-primary) !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    }
-
-    .main .block-container {
-        padding: 2rem 3rem !important;
-        max-width: 1400px !important;
-    }
-
-    /* ========== HEADER / TOP BAR ========== */
-    header[data-testid="stHeader"] {
-        background: #FFFFFF !important;
-        border-bottom: 1px solid var(--border-color) !important;
-        box-shadow: var(--shadow-sm) !important;
-    }
-
-    /* ========== SIDEBAR ========== */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #FFFFFF 0%, #F7F9FC 100%) !important;
-        border-right: 1px solid var(--border-color) !important;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.03) !important;
-    }
-
-    [data-testid="stSidebar"] * {
-        color: var(--text-primary) !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    [data-testid="stSidebar"] .stMarkdown p {
-        color: var(--text-secondary) !important;
-    }
-
-    [data-testid="stSidebar"] hr {
-        border-color: var(--border-color) !important;
-    }
-
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
-        color: var(--petronas-green) !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
-    }
-
-    /* ========== HEADINGS ========== */
-    h1 {
-        color: var(--text-primary) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.03em !important;
-        font-size: 2rem !important;
-    }
-
-    h2, h3 {
-        color: var(--text-primary) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
-    }
-
-    /* ========== BUTTONS ========== */
-    .stButton > button {
-        background: linear-gradient(135deg, var(--petronas-green) 0%, var(--petronas-dark) 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        font-family: 'Inter', sans-serif !important;
-        padding: 0.65rem 1.5rem !important;
-        font-size: 0.9rem !important;
-        letter-spacing: 0.02em !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: var(--shadow-teal) !important;
-    }
-
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #00BFB8 0%, var(--petronas-green) 100%) !important;
-        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
-        transform: translateY(-2px) !important;
-        color: white !important;
-    }
-
-    .stButton > button:active {
-        transform: translateY(0px) !important;
-    }
-
-    /* ========== DOWNLOAD BUTTON ========== */
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, var(--petronas-green) 0%, var(--petronas-dark) 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        font-family: 'Inter', sans-serif !important;
-        padding: 0.65rem 1.5rem !important;
-        box-shadow: var(--shadow-teal) !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-
-    .stDownloadButton > button:hover {
-        background: linear-gradient(135deg, #00BFB8 0%, var(--petronas-green) 100%) !important;
-        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
-        transform: translateY(-2px) !important;
-        color: white !important;
-    }
-
-    /* ========== FILE UPLOADER ========== */
-    [data-testid="stFileUploader"] {
-        background: var(--bg-card) !important;
-        border: 2px dashed var(--border-accent) !important;
-        border-radius: 12px !important;
-        padding: 1rem !important;
-        transition: all 0.3s ease !important;
-    }
-
-    [data-testid="stFileUploader"]:hover {
-        border-color: var(--petronas-green) !important;
-        box-shadow: 0 0 15px rgba(0, 161, 156, 0.1) !important;
-    }
-
-    [data-testid="stFileUploader"] button {
-        background: var(--petronas-green) !important;
-        color: white !important;
-        border-radius: 8px !important;
-    }
-
-    /* ========== SELECT BOX / INPUT FIELDS ========== */
-    [data-testid="stSelectbox"] > div > div,
-    .stDateInput > div > div > input,
-    .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea {
-        background-color: var(--bg-card) !important;
-        color: var(--text-primary) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    [data-testid="stSelectbox"] label,
-    .stDateInput label,
-    .stTextInput label,
-    .stTextArea label {
-        color: var(--text-secondary) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 500 !important;
-    }
-
-    /* ========== METRICS ========== */
-    [data-testid="stMetric"] {
-        background: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 14px !important;
-        padding: 1.2rem !important;
-        box-shadow: var(--shadow-md) !important;
-        transition: all 0.3s ease !important;
-    }
-
-    [data-testid="stMetric"]:hover {
-        border-color: var(--petronas-green) !important;
-        box-shadow: var(--shadow-lg) !important;
-        transform: translateY(-2px) !important;
-    }
-
-    [data-testid="stMetricLabel"] {
-        color: var(--text-secondary) !important;
-        font-weight: 500 !important;
-        font-size: 0.85rem !important;
-    }
-
-    [data-testid="stMetricValue"] {
-        color: var(--petronas-green) !important;
-        font-weight: 800 !important;
-        font-size: 2rem !important;
-    }
-
-    [data-testid="stMetricDelta"] {
-        font-weight: 600 !important;
-    }
-
-    /* ========== TABS ========== */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: transparent !important;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: var(--bg-card) !important;
-        color: var(--text-secondary) !important;
-        border-radius: 10px !important;
-        border: 1px solid var(--border-color) !important;
-        padding: 0.5rem 1.25rem !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, var(--petronas-green) 0%, var(--petronas-dark) 100%) !important;
-        color: white !important;
-        border-color: var(--petronas-green) !important;
-        box-shadow: var(--shadow-teal) !important;
-    }
-
-    .stTabs [data-baseweb="tab-highlight"] {
-        display: none !important;
-    }
-
-    .stTabs [data-baseweb="tab-border"] {
-        display: none !important;
-    }
-
-    /* ========== EXPANDER ========== */
-    .streamlit-expanderHeader {
-        background: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        color: var(--text-primary) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important;
-    }
-
-    .streamlit-expanderContent {
-        background: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-top: none !important;
-        border-radius: 0 0 10px 10px !important;
-    }
-
-    /* ========== ALERTS ========== */
-    [data-testid="stAlert"] {
-        border-radius: 12px !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* ========== HORIZONTAL RULE ========== */
-    hr {
-        border-color: var(--border-color) !important;
-    }
-
-    /* ========== MARKDOWN ========== */
-    .stMarkdown p, .stMarkdown li {
-        color: var(--text-secondary) !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* ========== IFRAME (Email preview) ========== */
-    iframe {
-        border-radius: 12px !important;
-        border: 1px solid var(--border-color) !important;
-        box-shadow: var(--shadow-md) !important;
-    }
-
-    /* ========== TEXT AREA / CODE ========== */
-    .stTextArea textarea {
-        background-color: #F8F9FA !important;
-        color: var(--text-primary) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
-        font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace !important;
-        font-size: 0.8rem !important;
-    }
-
-    /* ========== SCROLLBAR ========== */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: var(--bg-page);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--petronas-green);
-        border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: #00BFB8;
-    }
-
-    /* ========== TOOLTIP / POPOVER ========== */
-    [data-baseweb="popover"] {
-        background: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
     }
 
     /* ========== HIDE STREAMLIT BRANDING ========== */
@@ -459,24 +151,22 @@ st.markdown("""
     display: flex; 
     align-items: center; 
     gap: 24px; 
-    padding: 22px 30px; 
-    background: linear-gradient(135deg, #FFFFFF 0%, #F0FAFA 100%); 
-    border: 1px solid #E2E8F0; 
-    border-left: 5px solid #00A19C;
-    border-radius: 14px; 
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    padding: 30px; 
+    background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); 
+    border-radius: 16px; 
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px rgba(0, 161, 156, 0.2);
 ">
     <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
          alt="PETRONAS" 
-         style="height: 55px;" />
+         style="height: 60px; filter: brightness(0) invert(1);" />
     <div>
-        <h1 style="margin: 0 !important; padding: 0 !important; font-size: 1.75rem !important; 
-                    color: #1A202C !important;
-                    font-weight: 800 !important; letter-spacing: -0.03em !important;">
+        <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
+                    color: #FFFFFF !important;
+                    font-weight: 800 !important; letter-spacing: -0.02em !important;">
             Weekly SR & Incident Report Generator
         </h1>
-        <p style="margin: 4px 0 0 0 !important; color: #718096 !important; font-size: 0.95rem; font-weight: 400;">
+        <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important; font-size: 1.05rem; font-weight: 500;">
             Automate your MyGenie Excel exports into production-ready HTML email reports.
         </p>
     </div>
@@ -489,14 +179,6 @@ st.markdown("""
 # ============================================================
 with st.sidebar:
     # Sidebar logo + branding
-    st.markdown("""
-    <div style="text-align:center; margin-bottom: 20px; padding: 15px 0;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png" 
-             style="height: 40px; margin-bottom: 10px;" />
-        <div style="height: 3px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 10px auto; width: 60%;"></div>
-    </div>
-    """, unsafe_allow_html=True)
-
     st.markdown("### 📋 Report Configuration")
     st.markdown("")
 
