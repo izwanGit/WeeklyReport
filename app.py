@@ -275,14 +275,14 @@ st.markdown("""
 # ============================================================
 import base64 as _b64
 
-def _svg_to_data_uri(path):
-    with open(os.path.join(BASE_DIR, path), 'r') as f:
-        svg = f.read()
-    encoded = _b64.b64encode(svg.encode()).decode()
-    return f"data:image/svg+xml;base64,{encoded}"
+def _image_to_data_uri(path, mime_type):
+    with open(os.path.join(BASE_DIR, path), 'rb') as f:
+        data = f.read()
+    encoded = _b64.b64encode(data).decode()
+    return f"data:{mime_type};base64,{encoded}"
 
-_logo_white_uri = _svg_to_data_uri("petronas_logo_white.svg")
-_logo_dark_uri = _svg_to_data_uri("petronas_logo.svg")
+_logo_square_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
+_logo_horizontal_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
 <div style="
@@ -295,9 +295,9 @@ st.markdown(f"""
     margin-bottom: 2rem;
     box-shadow: 0 10px 25px rgba(0, 161, 156, 0.2);
 ">
-    <img src="{_logo_white_uri}" 
+    <img src="{_logo_square_uri}" 
          alt="PETRONAS" 
-         style="height: 75px;" />
+         style="height: 85px; filter: brightness(0) invert(1);" />
     <div>
         <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
                     color: #FFFFFF !important;
@@ -319,9 +319,9 @@ with st.sidebar:
     # Sidebar branding
     st.markdown(f"""
     <div style="text-align:center; padding: 12px 0 16px 0;">
-        <img src="{_logo_dark_uri}" 
-             style="height: 46px;" />
-        <div style="height: 2px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 14px auto 0; width: 70%;"></div>
+        <img src="{_logo_horizontal_uri}" 
+             style="height: 55px;" />
+        <div style="height: 2px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 18px auto 0; width: 80%;"></div>
     </div>
     """, unsafe_allow_html=True)
 
