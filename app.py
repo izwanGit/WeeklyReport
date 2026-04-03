@@ -325,17 +325,17 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 📋 Report Configuration")
+    st.markdown("### Report Configuration")
     st.markdown("")
 
-    report_date = st.date_input("📅 Report Date", datetime.date.today())
+    report_date = st.date_input("Report Date", datetime.date.today())
     report_date_str = report_date.strftime("%d %B %Y")
 
     st.markdown("")
     st.markdown("---")
     st.markdown("")
 
-    st.markdown("### 📂 Upload Data")
+    st.markdown("### Upload Data")
     uploaded_file = st.file_uploader("Upload MyGenie Excel (.xlsx)", type=['xlsx', 'xls'])
 
     sr_sheet = None
@@ -346,11 +346,11 @@ with st.sidebar:
             xl = pd.ExcelFile(uploaded_file)
             sheet_names = xl.sheet_names
             st.markdown("")
-            st.markdown("##### 📑 Sheet Mapping")
+            st.markdown("##### Sheet Mapping")
             sr_sheet = st.selectbox("SR Tickets Sheet", sheet_names, index=0)
             inc_sheet = st.selectbox("INC Tickets Sheet", sheet_names, index=min(1, len(sheet_names)-1))
         except Exception as e:
-            st.error(f"❌ Error reading Excel: {e}")
+            st.error(f"Error reading Excel: {e}")
             uploaded_file = None
 
     # Sidebar footer
@@ -439,7 +439,7 @@ if uploaded_file and sr_sheet and inc_sheet:
         inc_trend_3_7   = [h["inc_count_3_7"] for h in history]
 
         # ========== KPI METRICS CARDS ==========
-        st.markdown("### 📊 Key Metrics Overview")
+        st.markdown("### Key Metrics Overview")
         st.markdown(f"<p style='color:#64748B; margin-top:-10px;'>Report date: <b style='color:#00A19C;'>{report_date_str}</b></p>", unsafe_allow_html=True)
 
         m1, m2, m3, m4, m5 = st.columns(5)
@@ -482,7 +482,7 @@ if uploaded_file and sr_sheet and inc_sheet:
             )
 
             # ========== TABBED INTERFACE ==========
-            tab_preview, tab_source, tab_export = st.tabs(["📧 Email Preview", "💻 HTML Source", "🚀 Export & Actions"])
+            tab_preview, tab_source, tab_export = st.tabs(["Email Preview", "HTML Source", "Export Options"])
 
             with tab_preview:
                 st.markdown("""
@@ -503,7 +503,7 @@ if uploaded_file and sr_sheet and inc_sheet:
                 st.code(html_output, language="html")
 
             with tab_export:
-                st.markdown("### 🚀 Export Options")
+                st.markdown("### Export Actions")
                 st.markdown("")
 
                 exp1, exp2, exp3 = st.columns(3)
@@ -518,7 +518,7 @@ if uploaded_file and sr_sheet and inc_sheet:
                         text-align: center;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
-                        <p style="font-size: 2rem; margin: 0;">💾</p>
+                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg></div>
                         <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Download HTML</p>
                         <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Save as .html file</p>
                     </div>
@@ -541,14 +541,14 @@ if uploaded_file and sr_sheet and inc_sheet:
                         text-align: center;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
-                        <p style="font-size: 2rem; margin: 0;">📋</p>
+                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg></div>
                         <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Copy to Clipboard</p>
                         <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Copy HTML source code</p>
                     </div>
                     """, unsafe_allow_html=True)
                     if st.button("Copy HTML Source", use_container_width=True):
                         st.code(html_output[:200] + "...", language="html")
-                        st.info("💡 Use the HTML Source tab to copy the full source.")
+                        st.info("Use the HTML Source tab to copy the full source.")
 
                 with exp3:
                     st.markdown("""
@@ -560,7 +560,7 @@ if uploaded_file and sr_sheet and inc_sheet:
                         text-align: center;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                     ">
-                        <p style="font-size: 2rem; margin: 0;">✉️</p>
+                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg></div>
                         <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Outlook Draft</p>
                         <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Push directly to Outlook</p>
                     </div>
@@ -569,16 +569,16 @@ if uploaded_file and sr_sheet and inc_sheet:
                         if st.button("Push to Outlook Draft", use_container_width=True):
                             success = push_to_outlook(html_output, f"Weekly SR & Incident Report - {report_date_str}")
                             if success:
-                                st.success("✅ Draft created in Outlook!")
+                                st.success("Draft created in Outlook.")
                     else:
                         st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
-                        st.caption("⚠️ Only available on Windows with Outlook installed.")
+                        st.caption("Only available on Windows with pywin32 installed.")
 
         except Exception as e:
-            st.error(f"❌ Error rendering template: {e}")
+            st.error(f"Error rendering template: {e}")
 
     except Exception as e:
-        st.error(f"❌ An unexpected error occurred: {e}")
+        st.error(f"An unexpected error occurred: {e}")
 
 else:
     # ========== EMPTY STATE ==========
@@ -604,7 +604,7 @@ else:
             margin-bottom: 20px;
             box-shadow: 0 6px 16px rgba(0, 161, 156, 0.25);
         ">
-            <span style="font-size: 1.8rem;">📊</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#FFFFFF" style="width: 32px; height: 32px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>
         </div>
         <h2 style="color: #1A202C !important; font-size: 1.6rem !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">
             Ready to Generate Your Weekly Report
@@ -615,7 +615,7 @@ else:
         <div style="display: inline-flex; gap: 8px; align-items: center; 
                     background: rgba(0,161,156,0.08); padding: 12px 24px; border-radius: 12px; 
                     border: 1px solid rgba(0,161,156,0.2);">
-            <span style="font-size: 1.1rem;">👈</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#00A19C" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
             <span style="color: #00A19C; font-weight: 600; font-size: 0.9rem;">Use the sidebar to get started</span>
         </div>
     </div>
@@ -640,7 +640,7 @@ else:
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2rem; margin: 0 0 12px 0;">⚡</p>
+            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg></div>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Instant Processing</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Upload your Excel and get a fully formatted email in seconds. No manual copy-paste.
@@ -663,7 +663,7 @@ else:
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2rem; margin: 0 0 12px 0;">📈</p>
+            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg></div>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">4-Week Trends</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Tracks and displays a 4-week historical snapshot of your SR & Incident ageing data.
@@ -686,7 +686,7 @@ else:
             flex-direction: column;
             justify-content: center;
         ">
-            <p style="font-size: 2rem; margin: 0 0 12px 0;">🔒</p>
+            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg></div>
             <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Fully Offline</p>
             <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
                 Runs entirely on your machine. No data ever leaves your computer. Secure by design.
