@@ -162,33 +162,82 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    /* ── Global ── */
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif !important;
+        background: #F7F8FA !important;
     }
-    .main .block-container { padding-top: 2rem !important; max-width: 1400px !important; }
-    [data-testid="stSidebar"] { border-right: 2px solid #00A19C !important; }
+    .main .block-container { padding-top: 1.5rem !important; max-width: 1400px !important; }
+
+    /* ── Sidebar ── */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #FAFBFC 0%, #F0F4F5 100%) !important;
+        border-right: 1px solid #E2E8F0 !important;
+    }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #00A19C !important; font-weight: 700 !important;
+        color: #00706C !important; font-weight: 700 !important; letter-spacing: 0.3px;
     }
+
+    /* ── Buttons ── */
     .stButton > button, .stDownloadButton > button {
-        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
-        color: white !important; border: none !important; border-radius: 10px !important;
-        font-weight: 600 !important; transition: all 0.3s ease !important;
+        background: linear-gradient(135deg, #00A19C 0%, #007A76 100%) !important;
+        color: white !important; border: none !important; border-radius: 8px !important;
+        font-weight: 600 !important; transition: all 0.25s ease !important;
+        box-shadow: 0 2px 6px rgba(0,161,156,0.25) !important;
+        padding: 0.5rem 1.2rem !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
         background: linear-gradient(135deg, #00BFB8 0%, #00A19C 100%) !important;
         transform: translateY(-1px) !important; color: white !important;
+        box-shadow: 0 4px 12px rgba(0,161,156,0.35) !important;
     }
+
+    /* ── Metric Cards ── */
     [data-testid="stMetric"] {
-        background: #FFFFFF !important; border: 1px solid #E2E8F0 !important;
-        border-left: 4px solid #00A19C !important; border-radius: 12px !important;
-        padding: 1.1rem 1.2rem !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        background: #FFFFFF !important;
+        border: 1px solid #E8ECF0 !important;
+        border-left: 4px solid #00A19C !important;
+        border-radius: 10px !important;
+        padding: 1rem 1.2rem !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+        transition: box-shadow 0.2s ease !important;
     }
-    [data-testid="stMetricValue"] { color: #00A19C !important; font-weight: 800 !important; font-size: 1.8rem !important; }
-    [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
-    .stTabs [data-baseweb="tab"] { font-weight: 500 !important; }
-    .stTabs [aria-selected="true"] { color: #00A19C !important; font-weight: 700 !important; border-bottom-color: #00A19C !important; }
-    [data-testid="stFileUploader"] { border: 2px dashed rgba(0, 161, 156, 0.35) !important; border-radius: 12px !important; }
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+    }
+    [data-testid="stMetricValue"] { color: #00706C !important; font-weight: 800 !important; font-size: 1.7rem !important; }
+    [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; font-size: 0.82rem !important; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Tabs ── */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0 !important;
+        border-bottom: 2px solid #E2E8F0 !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-weight: 500 !important; font-size: 0.9rem !important;
+        color: #718096 !important; padding: 0.6rem 1.2rem !important;
+        border-bottom: 2px solid transparent !important;
+        margin-bottom: -2px !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #00A19C !important;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #00706C !important; font-weight: 700 !important;
+        border-bottom: 2px solid #00A19C !important;
+        background: transparent !important;
+    }
+
+    /* ── File Uploader ── */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed rgba(0, 161, 156, 0.3) !important;
+        border-radius: 10px !important;
+        background: rgba(0, 161, 156, 0.02) !important;
+    }
+
+    /* ── Hide defaults ── */
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stDeployButton {display: none !important;}
 </style>
@@ -207,11 +256,55 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 24px; padding: 24px 30px; background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); border-radius: 16px; margin-bottom: 2rem;">
-    <img src="{_logo_banner_uri}" style="height: 85px;" />
-    <div>
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: 2.2rem !important; white-space: nowrap; letter-spacing: -0.5px;">Weekly SR & Incident Report Generator</h1>
-        <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important; font-size: 1rem !important;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+<div style="
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 28px 36px;
+    background: linear-gradient(135deg, #004D4A 0%, #00706C 40%, #00A19C 100%);
+    border-radius: 14px;
+    margin-bottom: 1.8rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 70, 67, 0.25);
+">
+    <!-- Geometric accent -->
+    <div style="
+        position: absolute; right: -40px; top: -40px;
+        width: 200px; height: 200px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    "></div>
+    <div style="
+        position: absolute; right: 80px; bottom: -60px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+    "></div>
+
+    <img src="{_logo_banner_uri}" style="
+        height: 72px;
+        filter: brightness(0) invert(1);
+        opacity: 0.95;
+        flex-shrink: 0;
+    " />
+    <div style="position: relative; z-index: 1;">
+        <h1 style="
+            margin: 0 !important;
+            color: #FFFFFF !important;
+            font-weight: 800 !important;
+            font-size: 1.55rem !important;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            line-height: 1.3;
+        ">Weekly SR &amp; Incident Report Generator</h1>
+        <p style="
+            margin: 8px 0 0 0 !important;
+            color: rgba(255,255,255,0.7) !important;
+            font-size: 0.88rem !important;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        ">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
