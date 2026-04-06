@@ -188,7 +188,11 @@ st.markdown("""
     [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
     .stTabs [data-baseweb="tab"] { font-weight: 500 !important; }
     .stTabs [aria-selected="true"] { color: #03BFB5 !important; font-weight: 700 !important; border-bottom-color: #03BFB5 !important; }
-    [data-testid="stFileUploader"] { border: 2px dashed rgba(3, 191, 181, 0.35) !important; border-radius: 12px !important; }
+    [data-testid="stFileUploader"] { 
+        border: 2px dashed rgba(3, 191, 181, 0.4) !important; 
+        border-radius: 12px !important; 
+        padding: 16px 20px !important; 
+    }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stDeployButton {display: none !important;}
 </style>
