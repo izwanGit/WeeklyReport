@@ -31,6 +31,14 @@ TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 # ----------------------------------------------------
 # Helper Functions
 # ----------------------------------------------------
+def find_col(df, target):
+    """Find actual column name in df matching target (case-insensitive, stripped)."""
+    t = target.strip().lower()
+    for c in df.columns:
+        if str(c).strip().lower() == t:
+            return c
+    return None
+
 def clean_status(val):
     if pd.isna(val):
         return ""
@@ -38,32 +46,31 @@ def clean_status(val):
 
 def is_active_status(status_str):
     s = clean_status(status_str)
-    # Typical active statuses: Pending, In Progress, Warning
-    # Exclude: Closed, Resolved, Cancelled
     if not s:
         return False
-    inactive = {"closed", "resolved", "cancelled"}
+    inactive = {"closed", "resolved", "cancelled", "canceled"}
     return s not in inactive
 
-def find_sheet_by_columns(excel_file, required_columns):
+def find_sheet_by_columns(xl, required_columns):
     """
-    Scans an Excel file to find a sheet containing ALL of the required columns.
-    Returns the sheet name if found, else None.
-    Skips 'Untitled' sheets entirely.
+    Scans a pd.ExcelFile to find a sheet containing ALL required columns.
+    Uses case-insensitive matching. Skips 'Untitled' sheets.
+    Returns (sheet_name, DataFrame) or (None, None).
     """
-    xl = pd.ExcelFile(excel_file)
+    required_lower = {c.strip().lower() for c in required_columns}
     for sheet_name in xl.sheet_names:
         if "untitled" in sheet_name.lower():
             continue
         try:
-            # Read just 5 rows to quickly check columns
-            df = pd.read_excel(excel_file, sheet_name=sheet_name, nrows=5)
-            # Use sets to check subset
-            if required_columns.issubset(set(df.columns)):
-                return sheet_name
+            df = pd.read_excel(xl, sheet_name=sheet_name)
+            if df.empty or len(df.columns) < len(required_columns):
+                continue
+            sheet_cols_lower = {str(c).strip().lower() for c in df.columns}
+            if required_lower.issubset(sheet_cols_lower):
+                return sheet_name, df
         except Exception:
             continue
-    return None
+    return None, None
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -187,94 +194,108 @@ with st.sidebar:
 
 if sr_wo_file and inc_file:
     try:
+        # Read each file into ExcelFile ONCE to avoid file-pointer exhaustion
+        sr_wo_file.seek(0)
+        xl_sr_wo = pd.ExcelFile(sr_wo_file)
+        inc_file.seek(0)
+        xl_inc = pd.ExcelFile(inc_file)
+
         sr_required = {"Service Request Ageing Days", "Service Request ID", "Service Request Status"}
         wo_required = {"Service Request Ageing Days", "Work Order ID", "Work Order Summary", "Work Order Status"}
         inc_required = {"Incident Ageing Days", "Incident ID", "Status"}
 
-        sr_sheet_name = find_sheet_by_columns(sr_wo_file, sr_required)
-        wo_sheet_name = find_sheet_by_columns(sr_wo_file, wo_required)
-        inc_sheet_name = find_sheet_by_columns(inc_file, inc_required)
+        sr_sheet_name, df_sr_raw = find_sheet_by_columns(xl_sr_wo, sr_required)
+        wo_sheet_name, df_wo_raw = find_sheet_by_columns(xl_sr_wo, wo_required)
+        inc_sheet_name, df_inc_raw = find_sheet_by_columns(xl_inc, inc_required)
 
-        st.info(f"Detected: SR Sheet: `{sr_sheet_name}`, WO Sheet: `{wo_sheet_name}`, INC Sheet: `{inc_sheet_name}`")
+        st.info(f"Detected — SR: `{sr_sheet_name}`, WO: `{wo_sheet_name}`, INC: `{inc_sheet_name}`")
 
-        # Fallback handling
-        if not sr_sheet_name:
-            st.error(f"Could not automatically locate the Service Request sheet in the first file. It must contain the columns: {sr_required}.")
+        if sr_sheet_name is None:
+            st.error(f"Could not locate the Service Request sheet. Required columns: {sr_required}")
             st.stop()
-        if not wo_sheet_name:
-            st.error(f"Could not automatically locate the Work Order Detail sheet in the first file. It must contain the columns: {wo_required}.")
+        if wo_sheet_name is None:
+            st.error(f"Could not locate the Work Order sheet. Required columns: {wo_required}")
             st.stop()
-        if not inc_sheet_name:
-            st.error(f"Could not automatically locate the Incident sheet in the second file. It must contain the columns: {inc_required}.")
+        if inc_sheet_name is None:
+            st.error(f"Could not locate the Incident sheet. Required columns: {inc_required}")
             st.stop()
-
-        # Load authoritative data sheets
-        df_sr_raw = pd.read_excel(sr_wo_file, sheet_name=sr_sheet_name)
-        df_wo_raw = pd.read_excel(sr_wo_file, sheet_name=wo_sheet_name)
-        df_inc_raw = pd.read_excel(inc_file, sheet_name=inc_sheet_name)
 
         # --- SR Metric Calculations (from SR sheet) ---
-        df_sr = df_sr_raw.dropna(subset=['Service Request Ageing Days'])
-        # Optional: convert Ageing to numeric explicitly if not already
-        df_sr['Service Request Ageing Days'] = pd.to_numeric(df_sr['Service Request Ageing Days'], errors='coerce')
-        # Filter for ACTIVE SR statuses
-        df_sr = df_sr[df_sr['Service Request Status'].apply(is_active_status)]
+        df_sr = df_sr_raw.copy()
+        sr_ageing_col = find_col(df_sr, "Service Request Ageing Days")
+        sr_status_col = find_col(df_sr, "Service Request Status")
+        df_sr[sr_ageing_col] = pd.to_numeric(df_sr[sr_ageing_col], errors='coerce')
+        df_sr = df_sr.dropna(subset=[sr_ageing_col])
+        df_sr = df_sr[df_sr[sr_status_col].apply(is_active_status)]
 
         sr_total = len(df_sr)
-        sr_gt_30_count = len(df_sr[df_sr['Service Request Ageing Days'] > 30])
-        sr_15_30_count = len(df_sr[(df_sr['Service Request Ageing Days'] >= 15) & (df_sr['Service Request Ageing Days'] <= 30)])
-        sr_1_14_count = len(df_sr[(df_sr['Service Request Ageing Days'] >= 1) & (df_sr['Service Request Ageing Days'] <= 14)])
-        sr_gt_1_count = len(df_sr[df_sr['Service Request Ageing Days'] > 1])
-        sr_gt_1_pct = round((sr_gt_1_count / sr_total * 100) if sr_total > 0 else 0, 2)
+        sr_gt_30_count = int((df_sr[sr_ageing_col] > 30).sum())
+        sr_15_30_count = int(((df_sr[sr_ageing_col] >= 15) & (df_sr[sr_ageing_col] <= 30)).sum())
+        sr_1_14_count  = int(((df_sr[sr_ageing_col] >= 1) & (df_sr[sr_ageing_col] <= 14)).sum())
+        sr_gt_1_count  = int((df_sr[sr_ageing_col] > 1).sum())
+        sr_gt_1_pct  = round((sr_gt_1_count / sr_total * 100) if sr_total > 0 else 0, 2)
         sr_gt_30_pct = round((sr_gt_30_count / sr_total * 100) if sr_total > 0 else 0, 2)
 
         # --- SR Details (from WO sheet) ---
-        df_wo = df_wo_raw.dropna(subset=['Service Request Ageing Days'])
-        df_wo['Service Request Ageing Days'] = pd.to_numeric(df_wo['Service Request Ageing Days'], errors='coerce')
-        # Filter for ACTIVE WO statuses as well for details
-        df_wo = df_wo[df_wo['Work Order Status'].apply(is_active_status)]
+        df_wo = df_wo_raw.copy()
+        wo_ageing_col     = find_col(df_wo, "Service Request Ageing Days")
+        wo_status_col     = find_col(df_wo, "Work Order Status")
+        wo_id_col         = find_col(df_wo, "Work Order ID")
+        wo_summary_col    = find_col(df_wo, "Work Order Summary")
+        wo_customer_col   = find_col(df_wo, "Customer Full Name (Service Request)") or find_col(df_wo, "Customer Full Name")
+        wo_reason_col     = find_col(df_wo, "Work Order Status Reason")
+        wo_assignee_col   = find_col(df_wo, "Work Order Assignee")
 
-        # Determine subset columns for the template
-        # Template keys: 'SR Ageing', 'Work Order No.', 'Summary', 'User/TSG', 'WO Status', 'WO Status Reason', 'Assignee'
-        def extract_wo_records(wo_df):
+        df_wo[wo_ageing_col] = pd.to_numeric(df_wo[wo_ageing_col], errors='coerce')
+        df_wo = df_wo.dropna(subset=[wo_ageing_col])
+        if wo_status_col:
+            df_wo = df_wo[df_wo[wo_status_col].apply(is_active_status)]
+
+        def _safe(row, col):
+            if col is None: return ""
+            v = row.get(col, "")
+            return "" if pd.isna(v) else str(v)
+
+        def extract_wo_records(subset):
             records = []
-            for _, row in wo_df.iterrows():
-                # Provide fallbacks using 'get' on the row to avoid complete crash if col missing
+            for _, row in subset.iterrows():
                 records.append({
-                    'SR Ageing': row.get('Service Request Ageing Days', ''),
-                    'Work Order No.': row.get('Work Order ID', ''),
-                    'Summary': row.get('Work Order Summary', ''),
-                    'User/TSG': row.get('Customer Full Name (Service Request)', row.get('Customer Full Name', '')),
-                    'WO Status': row.get('Work Order Status', ''),
-                    'WO Status Reason': row.get('Work Order Status Reason', ''),
-                    'Assignee': row.get('Work Order Assignee', '')
+                    'SR Ageing': int(row[wo_ageing_col]),
+                    'Work Order No.': _safe(row, wo_id_col),
+                    'Summary': _safe(row, wo_summary_col),
+                    'User/TSG': _safe(row, wo_customer_col),
+                    'WO Status': _safe(row, wo_status_col),
+                    'WO Status Reason': _safe(row, wo_reason_col),
+                    'Assignee': _safe(row, wo_assignee_col),
                 })
             return records
 
-        df_wo_gt_30 = df_wo[df_wo['Service Request Ageing Days'] > 30]
-        df_wo_15_30 = df_wo[(df_wo['Service Request Ageing Days'] >= 15) & (df_wo['Service Request Ageing Days'] <= 30)]
-
-        sr_ageing_gt_30_tickets = extract_wo_records(df_wo_gt_30)
-        sr_ageing_15_30_tickets = extract_wo_records(df_wo_15_30)
+        df_wo_gt_30  = df_wo[df_wo[wo_ageing_col] > 30]
+        df_wo_15_30  = df_wo[(df_wo[wo_ageing_col] >= 15) & (df_wo[wo_ageing_col] <= 30)]
+        sr_ageing_gt_30_tickets  = extract_wo_records(df_wo_gt_30)
+        sr_ageing_15_30_tickets  = extract_wo_records(df_wo_15_30)
 
         # --- INC Metric Calculations (from INC sheet) ---
-        df_inc = df_inc_raw.dropna(subset=['Incident Ageing Days'])
-        df_inc['Incident Ageing Days'] = pd.to_numeric(df_inc['Incident Ageing Days'], errors='coerce')
-        
-        # Filter for active INC: rely on 'Status' primarily. If 'Active Incident' column exists, check it too.
-        df_inc = df_inc[df_inc['Status'].apply(is_active_status)]
-        if 'Active Incident' in df_inc.columns:
-            # Typically Yes/No
-            df_inc = df_inc[df_inc['Active Incident'].astype(str).str.lower() != 'no']
+        df_inc = df_inc_raw.copy()
+        inc_ageing_col = find_col(df_inc, "Incident Ageing Days")
+        inc_status_col = find_col(df_inc, "Status")
+        inc_active_col = find_col(df_inc, "Active Incident")
+
+        df_inc[inc_ageing_col] = pd.to_numeric(df_inc[inc_ageing_col], errors='coerce')
+        df_inc = df_inc.dropna(subset=[inc_ageing_col])
+        if inc_active_col:
+            df_inc = df_inc[df_inc[inc_active_col].astype(str).str.strip().str.lower() == "yes"]
+        if inc_status_col:
+            df_inc = df_inc[df_inc[inc_status_col].apply(is_active_status)]
 
         inc_total = len(df_inc)
-        inc_gt_90_count = len(df_inc[df_inc['Incident Ageing Days'] > 90])
-        inc_61_90_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 61) & (df_inc['Incident Ageing Days'] <= 90)])
-        inc_31_60_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 31) & (df_inc['Incident Ageing Days'] <= 60)])
-        inc_15_30_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 15) & (df_inc['Incident Ageing Days'] <= 30)])
-        inc_8_14_count  = len(df_inc[(df_inc['Incident Ageing Days'] >= 8) & (df_inc['Incident Ageing Days'] <= 14)])
-        inc_3_7_count   = len(df_inc[(df_inc['Incident Ageing Days'] >= 3) & (df_inc['Incident Ageing Days'] <= 7)])
-        inc_gt_1_count = len(df_inc[df_inc['Incident Ageing Days'] > 1])
+        inc_gt_90_count = int((df_inc[inc_ageing_col] > 90).sum())
+        inc_61_90_count = int(((df_inc[inc_ageing_col] >= 61) & (df_inc[inc_ageing_col] <= 90)).sum())
+        inc_31_60_count = int(((df_inc[inc_ageing_col] >= 31) & (df_inc[inc_ageing_col] <= 60)).sum())
+        inc_15_30_count = int(((df_inc[inc_ageing_col] >= 15) & (df_inc[inc_ageing_col] <= 30)).sum())
+        inc_8_14_count  = int(((df_inc[inc_ageing_col] >= 8)  & (df_inc[inc_ageing_col] <= 14)).sum())
+        inc_3_7_count   = int(((df_inc[inc_ageing_col] >= 3)  & (df_inc[inc_ageing_col] <= 7)).sum())
+        inc_gt_1_count  = int((df_inc[inc_ageing_col] > 1).sum())
         inc_gt_1_pct = round((inc_gt_1_count / inc_total * 100) if inc_total > 0 else 0, 2)
 
 
