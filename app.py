@@ -205,14 +205,13 @@ def _image_to_data_uri(path, mime_type):
 
 _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
-_pattern_uri = _image_to_data_uri("pattern_bg.png", "image/png")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 28px; padding: 36px 40px; background-color: #00A19C; background-image: url('{_pattern_uri}'); background-size: cover; background-position: center; border-radius: 16px; margin-bottom: 2.5rem; box-shadow: 0 10px 25px rgba(0, 161, 156, 0.25); border: 1px solid rgba(255,255,255,0.1);">
-    <img src="{_logo_banner_uri}" style="height: 90px; filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.2));" />
-    <div style="flex-grow: 1;">
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 900 !important; font-size: 2.3rem !important; white-space: nowrap; letter-spacing: -0.5px; text-shadow: 0px 3px 8px rgba(0, 0, 0, 0.35); line-height: 1.1;">WEEKLY SR & INCIDENT REPORT GENERATOR</h1>
-        <p style="margin: 8px 0 0 0 !important; color: #F0FDF4 !important; font-size: 1.05rem !important; font-weight: 500; text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25); letter-spacing: 0.2px;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+<div style="display: flex; align-items: center; gap: 24px; padding: 24px 30px; background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(0, 161, 156, 0.25);">
+    <img src="{_logo_banner_uri}" style="height: 85px; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+    <div>
+        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: 1.8rem !important; letter-spacing: -0.5px;">Weekly SR & Incident Report Generator</h1>
+        <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important; font-size: 1rem !important;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
