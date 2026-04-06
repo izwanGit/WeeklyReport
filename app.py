@@ -257,15 +257,13 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 
 st.markdown(f"""
 <div style="position: relative; display: flex; align-items: center; gap: 28px; padding: 28px 36px; background: linear-gradient(135deg, #004D4A 0%, #00706C 40%, #00A19C 100%); border-radius: 14px; margin-bottom: 1.8rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 70, 67, 0.25);">
-    <!-- Geometric accent -->
-    <div style="position: absolute; right: -40px; top: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.04);"></div>
-    <div style="position: absolute; right: 80px; bottom: -60px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.03);"></div>
-
-    <img src="{_logo_banner_uri}" style="height: 72px; filter: brightness(0) invert(1); opacity: 0.95; flex-shrink: 0;" />
-    <div style="position: relative; z-index: 1;">
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; font-size: 1.55rem !important; letter-spacing: 2.5px; text-transform: uppercase; line-height: 1.3;">Weekly SR &amp; Incident Report Generator</h1>
-        <p style="margin: 8px 0 0 0 !important; color: rgba(255,255,255,0.7) !important; font-size: 0.88rem !important; font-weight: 400; letter-spacing: 0.3px;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
-    </div>
+<div style="position: absolute; right: -40px; top: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.04);"></div>
+<div style="position: absolute; right: 80px; bottom: -60px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.03);"></div>
+<img src="{_logo_banner_uri}" style="height: 72px; filter: brightness(0) invert(1); opacity: 0.95; flex-shrink: 0;" />
+<div style="position: relative; z-index: 1;">
+<h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; font-size: 1.55rem !important; letter-spacing: 2.5px; text-transform: uppercase; line-height: 1.3;">Weekly SR &amp; Incident Report Generator</h1>
+<p style="margin: 8px 0 0 0 !important; color: rgba(255,255,255,0.7) !important; font-size: 0.88rem !important; font-weight: 400; letter-spacing: 0.3px;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
