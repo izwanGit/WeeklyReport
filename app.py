@@ -450,9 +450,45 @@ if sr_wo_file and inc_file:
                 )
 
             with exp2:
-                if st.button("Generate Snippet", use_container_width=True):
-                    st.info("Please use the HTML Source tab to copy the raw text, or Download .html and open it in double click.")
-            
+                copy_btn_html = f"""
+                <html>
+                <head>
+                <style>
+                body {{ margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }}
+                button {{
+                    background: linear-gradient(135deg, #00A19C 0%, #008C87 100%);
+                    color: white; border: none; border-radius: 10px; font-weight: 600;
+                    padding: 0.6rem 1.4rem; font-size: 0.9rem; cursor: pointer;
+                    width: 100%; transition: all 0.3s ease;
+                }}
+                button:hover {{ filter: brightness(1.1); transform: translateY(-1px); }}
+                #msg {{ color: #00A19C; font-size: 0.8rem; font-weight: 600; margin-top: 5px; display: none; }}
+                </style>
+                </head>
+                <body>
+                    <button onclick="copyRichText()">Copy Formatted</button>
+                    <div id="msg">Copied to clipboard!</div>
+                    <div id="source" style="display:none;">{base64.b64encode(html_output.encode('utf-8')).decode('utf-8')}</div>
+                    <script>
+                    function copyRichText() {{
+                        try {{
+                            const b64Data = document.getElementById("source").innerText;
+                            const html = decodeURIComponent(escape(window.atob(b64Data)));
+                            const blobHtml = new Blob([html], {{ type: "text/html" }});
+                            const data = [new ClipboardItem({{ ["text/html"]: blobHtml }})];
+                            navigator.clipboard.write(data).then(() => {{
+                                document.getElementById("msg").style.display = "block";
+                                setTimeout(() => document.getElementById("msg").style.display = "none", 3000);
+                            }}).catch(err => console.error("Clipboard Error:", err));
+                        }} catch (e) {{
+                            console.error(e);
+                        }}
+                    }}
+                    </script>
+                </body>
+                </html>
+                """
+                st.components.v1.html(copy_btn_html, height=80)
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
