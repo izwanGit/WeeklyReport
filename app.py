@@ -7,6 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 import sys
 import tempfile
 import base64
+import traceback
 
 # Conditional import for win32com
 try:
@@ -31,6 +32,8 @@ TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 # ----------------------------------------------------
 # Helper Functions
 # ----------------------------------------------------
+MIN_NUMERIC_ROWS = 5  # Sheet must have ≥5 valid numeric ageing rows to qualify
+
 def find_col(df, target):
     """Find actual column name in df matching target (case-insensitive, stripped)."""
     t = target.strip().lower()
@@ -51,23 +54,62 @@ def is_active_status(status_str):
     inactive = {"closed", "resolved", "cancelled", "canceled"}
     return s not in inactive
 
-def find_sheet_by_columns(xl, required_columns):
+def _has_required_columns(df, required_columns):
+    """Check if df contains ALL required columns (case-insensitive)."""
+    sheet_cols = {str(c).strip().lower() for c in df.columns}
+    return all(rc.strip().lower() in sheet_cols for rc in required_columns)
+
+def _count_numeric_rows(df, ageing_col_name):
+    """Count how many rows have a valid numeric value in the ageing column."""
+    col = find_col(df, ageing_col_name)
+    if col is None:
+        return 0
+    numeric = pd.to_numeric(df[col], errors='coerce')
+    return int(numeric.notna().sum())
+
+def detect_valid_sheet(xl, required_columns, ageing_col_name):
     """
-    Scans a pd.ExcelFile to find a sheet containing ALL required columns.
-    Uses case-insensitive matching. Skips 'Untitled' sheets.
-    Returns (sheet_name, DataFrame) or (None, None).
+    Scan ALL sheets in a pd.ExcelFile. For each sheet:
+      1. Load it as a DataFrame
+      2. Check it contains ALL required_columns (case-insensitive)
+      3. Check that the ageing column has ≥ MIN_NUMERIC_ROWS valid numeric values
+    Returns (sheet_name, DataFrame) for the FIRST qualifying sheet, or (None, None).
+    Dashboard/image sheets are excluded automatically because they won't have
+    enough numeric rows — no name-based filtering needed.
     """
-    required_lower = {c.strip().lower() for c in required_columns}
     for sheet_name in xl.sheet_names:
-        if "untitled" in sheet_name.lower():
+        try:
+            df = pd.read_excel(xl, sheet_name=sheet_name)
+            if df.empty:
+                continue
+            if not _has_required_columns(df, required_columns):
+                continue
+            if _count_numeric_rows(df, ageing_col_name) < MIN_NUMERIC_ROWS:
+                continue
+            return sheet_name, df
+        except Exception:
+            continue
+    return None, None
+
+def detect_wo_sheet(xl, sr_sheet_name):
+    """
+    Detect the Work Order detail sheet. It is distinguished from the SR sheet
+    by containing 'Work Order ID' AND 'Service Request Ageing Days' columns,
+    and it must NOT be the same sheet already identified as the SR sheet.
+    """
+    wo_required = {"Service Request Ageing Days", "Work Order ID", "Work Order Status"}
+    for sheet_name in xl.sheet_names:
+        if sheet_name == sr_sheet_name:
             continue
         try:
             df = pd.read_excel(xl, sheet_name=sheet_name)
-            if df.empty or len(df.columns) < len(required_columns):
+            if df.empty:
                 continue
-            sheet_cols_lower = {str(c).strip().lower() for c in df.columns}
-            if required_lower.issubset(sheet_cols_lower):
-                return sheet_name, df
+            if not _has_required_columns(df, wo_required):
+                continue
+            if _count_numeric_rows(df, "Service Request Ageing Days") < MIN_NUMERIC_ROWS:
+                continue
+            return sheet_name, df
         except Exception:
             continue
     return None, None
@@ -200,27 +242,32 @@ if sr_wo_file and inc_file:
         inc_file.seek(0)
         xl_inc = pd.ExcelFile(inc_file)
 
+        # --- Detect sheets by column content + numeric validation ---
         sr_required = {"Service Request Ageing Days", "Service Request ID", "Service Request Status"}
-        wo_required = {"Service Request Ageing Days", "Work Order ID", "Work Order Summary", "Work Order Status"}
         inc_required = {"Incident Ageing Days", "Incident ID", "Status"}
 
-        sr_sheet_name, df_sr_raw = find_sheet_by_columns(xl_sr_wo, sr_required)
-        wo_sheet_name, df_wo_raw = find_sheet_by_columns(xl_sr_wo, wo_required)
-        inc_sheet_name, df_inc_raw = find_sheet_by_columns(xl_inc, inc_required)
+        sr_sheet_name, df_sr_raw = detect_valid_sheet(xl_sr_wo, sr_required, "Service Request Ageing Days")
+        wo_sheet_name, df_wo_raw = detect_wo_sheet(xl_sr_wo, sr_sheet_name) if sr_sheet_name else (None, None)
+        inc_sheet_name, df_inc_raw = detect_valid_sheet(xl_inc, inc_required, "Incident Ageing Days")
 
-        st.info(f"Detected — SR: `{sr_sheet_name}`, WO: `{wo_sheet_name}`, INC: `{inc_sheet_name}`")
+        # Log all sheets scanned for transparency
+        st.info(
+            f"SR & WO file sheets: `{xl_sr_wo.sheet_names}`  \n"
+            f"Incident file sheets: `{xl_inc.sheet_names}`  \n"
+            f"**Detected →** SR: `{sr_sheet_name}`, WO: `{wo_sheet_name}`, INC: `{inc_sheet_name}`"
+        )
 
         if sr_sheet_name is None:
-            st.error(f"Could not locate the Service Request sheet. Required columns: {sr_required}")
+            st.error(f"Could not locate a valid Service Request sheet (need columns {sr_required} with ≥{MIN_NUMERIC_ROWS} numeric ageing rows).")
             st.stop()
         if wo_sheet_name is None:
-            st.error(f"Could not locate the Work Order sheet. Required columns: {wo_required}")
-            st.stop()
+            st.warning("Work Order detail sheet not found — detail tables will be empty.")
+            df_wo_raw = pd.DataFrame()  # empty fallback
         if inc_sheet_name is None:
-            st.error(f"Could not locate the Incident sheet. Required columns: {inc_required}")
+            st.error(f"Could not locate a valid Incident sheet (need columns {inc_required} with ≥{MIN_NUMERIC_ROWS} numeric ageing rows).")
             st.stop()
 
-        # --- SR Metric Calculations (from SR sheet) ---
+        # --- SR Metric Calculations (from SR raw data sheet ONLY) ---
         df_sr = df_sr_raw.copy()
         sr_ageing_col = find_col(df_sr, "Service Request Ageing Days")
         sr_status_col = find_col(df_sr, "Service Request Status")
@@ -237,8 +284,8 @@ if sr_wo_file and inc_file:
         sr_gt_30_pct = round((sr_gt_30_count / sr_total * 100) if sr_total > 0 else 0, 2)
 
         # --- SR Details (from WO sheet) ---
-        df_wo = df_wo_raw.copy()
-        wo_ageing_col     = find_col(df_wo, "Service Request Ageing Days")
+        df_wo = df_wo_raw.copy() if not df_wo_raw.empty else pd.DataFrame()
+        wo_ageing_col     = find_col(df_wo, "Service Request Ageing Days") if not df_wo.empty else None
         wo_status_col     = find_col(df_wo, "Work Order Status")
         wo_id_col         = find_col(df_wo, "Work Order ID")
         wo_summary_col    = find_col(df_wo, "Work Order Summary")
@@ -246,36 +293,40 @@ if sr_wo_file and inc_file:
         wo_reason_col     = find_col(df_wo, "Work Order Status Reason")
         wo_assignee_col   = find_col(df_wo, "Work Order Assignee")
 
-        df_wo[wo_ageing_col] = pd.to_numeric(df_wo[wo_ageing_col], errors='coerce')
-        df_wo = df_wo.dropna(subset=[wo_ageing_col])
-        if wo_status_col:
-            df_wo = df_wo[df_wo[wo_status_col].apply(is_active_status)]
+        sr_ageing_gt_30_tickets = []
+        sr_ageing_15_30_tickets = []
 
-        def _safe(row, col):
-            if col is None: return ""
-            v = row.get(col, "")
-            return "" if pd.isna(v) else str(v)
+        if wo_ageing_col is not None and not df_wo.empty:
+            df_wo[wo_ageing_col] = pd.to_numeric(df_wo[wo_ageing_col], errors='coerce')
+            df_wo = df_wo.dropna(subset=[wo_ageing_col])
+            if wo_status_col:
+                df_wo = df_wo[df_wo[wo_status_col].apply(is_active_status)]
 
-        def extract_wo_records(subset):
-            records = []
-            for _, row in subset.iterrows():
-                records.append({
-                    'SR Ageing': int(row[wo_ageing_col]),
-                    'Work Order No.': _safe(row, wo_id_col),
-                    'Summary': _safe(row, wo_summary_col),
-                    'User/TSG': _safe(row, wo_customer_col),
-                    'WO Status': _safe(row, wo_status_col),
-                    'WO Status Reason': _safe(row, wo_reason_col),
-                    'Assignee': _safe(row, wo_assignee_col),
-                })
-            return records
+            def _safe(row, col):
+                if col is None: return ""
+                v = row.get(col, "")
+                return "" if pd.isna(v) else str(v)
 
-        df_wo_gt_30  = df_wo[df_wo[wo_ageing_col] > 30]
-        df_wo_15_30  = df_wo[(df_wo[wo_ageing_col] >= 15) & (df_wo[wo_ageing_col] <= 30)]
-        sr_ageing_gt_30_tickets  = extract_wo_records(df_wo_gt_30)
-        sr_ageing_15_30_tickets  = extract_wo_records(df_wo_15_30)
+            def extract_wo_records(subset):
+                records = []
+                for _, row in subset.iterrows():
+                    records.append({
+                        'SR Ageing': int(row[wo_ageing_col]),
+                        'Work Order No.': _safe(row, wo_id_col),
+                        'Summary': _safe(row, wo_summary_col),
+                        'User/TSG': _safe(row, wo_customer_col),
+                        'WO Status': _safe(row, wo_status_col),
+                        'WO Status Reason': _safe(row, wo_reason_col),
+                        'Assignee': _safe(row, wo_assignee_col),
+                    })
+                return records
 
-        # --- INC Metric Calculations (from INC sheet) ---
+            df_wo_gt_30  = df_wo[df_wo[wo_ageing_col] > 30]
+            df_wo_15_30  = df_wo[(df_wo[wo_ageing_col] >= 15) & (df_wo[wo_ageing_col] <= 30)]
+            sr_ageing_gt_30_tickets  = extract_wo_records(df_wo_gt_30)
+            sr_ageing_15_30_tickets  = extract_wo_records(df_wo_15_30)
+
+        # --- INC Metric Calculations (from INC raw data sheet ONLY) ---
         df_inc = df_inc_raw.copy()
         inc_ageing_col = find_col(df_inc, "Incident Ageing Days")
         inc_status_col = find_col(df_inc, "Status")
@@ -413,6 +464,7 @@ if sr_wo_file and inc_file:
 
     except Exception as e:
         st.error(f"Error processing the files: {e}")
+        st.code(traceback.format_exc(), language="text")
 
 else:
     st.markdown("""
