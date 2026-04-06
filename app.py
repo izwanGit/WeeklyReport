@@ -210,7 +210,7 @@ st.markdown(f"""
 <div style="display: flex; align-items: center; gap: 24px; padding: 24px 30px; background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); border-radius: 16px; margin-bottom: 2rem;">
     <img src="{_logo_banner_uri}" style="height: 85px;" />
     <div>
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important;">Weekly SR & Incident Report Generator</h1>
+        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase;">Weekly SR & Incident Report Generator</h1>
         <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
