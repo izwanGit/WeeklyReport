@@ -369,37 +369,36 @@ if sr_wo_file and inc_file:
 
         # Check if record for this exact date already exists
         existing_idx = next((i for i, h in enumerate(history) if h.get("date") == short_date), None)
+        
+        # Create an in-memory copy for rendering the preview without auto-saving
+        render_history = list(history)
         if existing_idx is not None:
-            history[existing_idx] = new_record  # Overwrite with updated numbers
+            render_history[existing_idx] = new_record
         else:
-            history.append(new_record)
+            render_history.append(new_record)
 
-        # Sort the entire history chronologically from oldest to newest
         def parse_date(date_str):
             try:
                 return datetime.datetime.strptime(date_str, "%d-%b-%Y")
             except ValueError:
-                return datetime.datetime.min # Fallback if someone manually edited the json
+                return datetime.datetime.min
 
-        history.sort(key=lambda x: parse_date(x.get("date", "")))
+        render_history.sort(key=lambda x: parse_date(x.get("date", "")))
 
-        # Enforce max 4 records cap AFTER sorting
-        if len(history) > 4:
-            history = history[-4:]
+        if len(render_history) > 4:
+            render_history = render_history[-4:]
 
-        save_history(history)
-
-        # Prepare arrays for template
-        trend_dates = [h["date"] for h in history]
-        sr_trend_gt_30 = [h["sr_count_gt_30"] for h in history]
-        sr_trend_15_30 = [h["sr_count_15_30"] for h in history]
-        sr_trend_1_14 = [h["sr_count_1_14"] for h in history]
-        inc_trend_gt_90 = [h["inc_count_gt_90"] for h in history]
-        inc_trend_61_90 = [h["inc_count_61_90"] for h in history]
-        inc_trend_31_60 = [h["inc_count_31_60"] for h in history]
-        inc_trend_15_30 = [h["inc_count_15_30"] for h in history]
-        inc_trend_8_14  = [h["inc_count_8_14"] for h in history]
-        inc_trend_3_7   = [h["inc_count_3_7"] for h in history]
+        # Prepare arrays for template using the in-memory render_history
+        trend_dates = [h.get("date", "") for h in render_history]
+        sr_trend_gt_30 = [h.get("sr_count_gt_30", 0) for h in render_history]
+        sr_trend_15_30 = [h.get("sr_count_15_30", 0) for h in render_history]
+        sr_trend_1_14 = [h.get("sr_count_1_14", 0) for h in render_history]
+        inc_trend_gt_90 = [h.get("inc_count_gt_90", 0) for h in render_history]
+        inc_trend_61_90 = [h.get("inc_count_61_90", 0) for h in render_history]
+        inc_trend_31_60 = [h.get("inc_count_31_60", 0) for h in render_history]
+        inc_trend_15_30 = [h.get("inc_count_15_30", 0) for h in render_history]
+        inc_trend_8_14  = [h.get("inc_count_8_14", 0) for h in render_history]
+        inc_trend_3_7   = [h.get("inc_count_3_7", 0) for h in render_history]
 
         # ========== KPI METRICS CARDS ==========
         st.markdown("### Key Metrics Overview")
@@ -416,6 +415,32 @@ if sr_wo_file and inc_file:
             st.metric("Total INC Tickets (Active)", inc_total)
         with m5:
             st.metric("INC > 1 day %", f"{inc_gt_1_pct}%")
+
+        # --- Explicit Save Controls ---
+        st.markdown(" ")
+        st.markdown(f"<p style='color:#64748B; font-size:12px; margin-bottom: 5px; font-weight:600;'>SNAPSHOT MANAGEMENT</p>", unsafe_allow_html=True)
+        if existing_idx is not None:
+            c1, c2 = st.columns([1, 4])
+            with c1:
+                if st.button("Update Saved Snapshot"):
+                    history[existing_idx] = new_record
+                    history.sort(key=lambda x: parse_date(x.get("date", "")))
+                    if len(history) > 4: history = history[-4:]
+                    save_history(history)
+                    st.rerun()
+            with c2:
+                st.info(f"✓ The selected date ({short_date}) is already in your History. The table below includes it dynamically.", icon="✅")
+        else:
+            c1, c2 = st.columns([1, 4])
+            with c1:
+                if st.button("Save Snapshot to History", type="primary"):
+                    history.append(new_record)
+                    history.sort(key=lambda x: parse_date(x.get("date", "")))
+                    if len(history) > 4: history = history[-4:]
+                    save_history(history)
+                    st.rerun()
+            with c2:
+                st.warning(f"This summary is **NOT YET SAVED**. It's temporarily previewed below. Click Save to log {short_date} into history.", icon="⚠️")
 
         st.markdown("")
 
@@ -443,7 +468,7 @@ if sr_wo_file and inc_file:
             inc_trend_3_7=inc_trend_3_7
         )
 
-        tab_preview, tab_source, tab_export = st.tabs(["Email Preview", "HTML Source", "Export Options"])
+        tab_preview, tab_source, tab_export, tab_history = st.tabs(["Email Preview", "HTML Source", "Export Options", "Manage History"])
 
         with tab_preview:
             st.markdown("""<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 8px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);">""", unsafe_allow_html=True)
@@ -514,6 +539,29 @@ if sr_wo_file and inc_file:
                             st.success("Draft created in Outlook.")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
+
+        with tab_history:
+            st.markdown("### Saved Historical Records")
+            saved_data = load_history()
+            if not saved_data:
+                st.info("No records found in history.json yet. Process and save a snapshot to see it here.")
+            else:
+                for idx, h in enumerate(saved_data):
+                    st.markdown(f"<div style='padding:10px; border:1px solid #E2E8F0; border-radius:8px; margin-bottom:8px;'>", unsafe_allow_html=True)
+                    col1, col2 = st.columns([5, 1])
+                    with col1:
+                        st.markdown(f"**{h.get('date')}** &nbsp;|&nbsp; <span style='color:#718096;'>SR &gt;30d: **{h.get('sr_count_gt_30',0)}**</span> &nbsp;|&nbsp; <span style='color:#718096;'>INC &gt;90d: **{h.get('inc_count_gt_90',0)}**</span>", unsafe_allow_html=True)
+                    with col2:
+                        if st.button("Delete", key=f"del_{idx}"):
+                            saved_data.pop(idx)
+                            save_history(saved_data)
+                            st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
+                
+                st.markdown("---")
+                if st.button("Clear Absolute All History"):
+                    save_history([])
+                    st.rerun()
 
     except Exception as e:
         st.error(f"Error processing the files: {e}")
