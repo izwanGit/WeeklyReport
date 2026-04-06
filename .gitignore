@@ -7,3 +7,5 @@ build/
 dist/
 *.spec
 .DS_Store
+dummy_sr_wo.xlsx
+dummy_incident.xlsx

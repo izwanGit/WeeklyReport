@@ -28,57 +28,42 @@ else:
 HISTORY_FILE = "history.json"
 TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 
-# Expected Columns
-COL_AGEING = "SR Ageing"
-COL_WO_NO = "Work Order No."
-COL_SUMMARY = "Summary"
-COL_USER_TSG = "User/TSG"
-COL_STATUS = "WO Status"
-COL_STATUS_REASON = "WO Status Reason"
-COL_ASSIGNEE = "Assignee"
-
 # ----------------------------------------------------
 # Helper Functions
 # ----------------------------------------------------
-def get_column_by_prefix(df, prefix):
-    """Safely find a column that starts with or contains the prefix, ignoring case"""
-    for col in df.columns:
-        if prefix.lower() in str(col).lower():
-            return col
-    return None
+def clean_status(val):
+    if pd.isna(val):
+        return ""
+    return str(val).strip().lower()
 
-def process_tickets(df):
-    """Normalize and clean the dataframe columns based on expectations"""
-    ageing_col = get_column_by_prefix(df, "ageing")
-    if ageing_col is None:
-        st.warning("Could not find 'Ageing' column in the uploaded sheet.")
-        return None, None
-    
-    df[ageing_col] = pd.to_numeric(df[ageing_col], errors='coerce').fillna(0)
-    norm_df = df.copy()
-    
-    def map_col(prefix, default_name):
-        col = get_column_by_prefix(df, prefix)
-        if col:
-            norm_df[default_name] = df[col]
-        else:
-            norm_df[default_name] = ""
-            
-    map_col("work order", COL_WO_NO)
-    map_col("summary", COL_SUMMARY)
-    map_col("user/tsg", COL_USER_TSG)
-    map_col("status", COL_STATUS)
-    
-    for col in df.columns:
-        if "reason" in str(col).lower() and "status" in str(col).lower():
-            norm_df[COL_STATUS_REASON] = df[col]
-        elif "status" in str(col).lower() and "reason" not in str(col).lower():
-            norm_df[COL_STATUS] = df[col]
-            
-    map_col("assignee", COL_ASSIGNEE)
-    norm_df[COL_AGEING] = norm_df[ageing_col]
-    
-    return norm_df, norm_df[COL_AGEING]
+def is_active_status(status_str):
+    s = clean_status(status_str)
+    # Typical active statuses: Pending, In Progress, Warning
+    # Exclude: Closed, Resolved, Cancelled
+    if not s:
+        return False
+    inactive = {"closed", "resolved", "cancelled"}
+    return s not in inactive
+
+def find_sheet_by_columns(excel_file, required_columns):
+    """
+    Scans an Excel file to find a sheet containing ALL of the required columns.
+    Returns the sheet name if found, else None.
+    Skips 'Untitled' sheets entirely.
+    """
+    xl = pd.ExcelFile(excel_file)
+    for sheet_name in xl.sheet_names:
+        if "untitled" in sheet_name.lower():
+            continue
+        try:
+            # Read just 5 rows to quickly check columns
+            df = pd.read_excel(excel_file, sheet_name=sheet_name, nrows=5)
+            # Use sets to check subset
+            if required_columns.issubset(set(df.columns)):
+                return sheet_name
+        except Exception:
+            continue
+    return None
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -124,287 +109,176 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================================
-# PREMIUM PETRONAS CSS — White Theme + Teal Accents
-# ============================================================
+# Premium CSS
 st.markdown("""
 <style>
-    /* ========== GOOGLE FONTS ========== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-    /* ========== GLOBAL ========== */
     html, body, [data-testid="stAppViewContainer"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    }
-
-    .main .block-container {
-        padding-top: 2rem !important;
-        max-width: 1400px !important;
-    }
-
-    /* ========== SIDEBAR ========== */
-    [data-testid="stSidebar"] {
-        border-right: 2px solid #00A19C !important;
-    }
-
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
-        color: #00A19C !important;
-        font-weight: 700 !important;
-    }
-
-    /* ========== BUTTONS — Petronas green gradient ========== */
-    .stButton > button,
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
         font-family: 'Inter', sans-serif !important;
-        padding: 0.6rem 1.4rem !important;
-        font-size: 0.9rem !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 4px 14px rgba(0, 161, 156, 0.2) !important;
     }
-
-    .stButton > button:hover,
-    .stDownloadButton > button:hover {
+    .main .block-container { padding-top: 2rem !important; max-width: 1400px !important; }
+    [data-testid="stSidebar"] { border-right: 2px solid #00A19C !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #00A19C !important; font-weight: 700 !important;
+    }
+    .stButton > button, .stDownloadButton > button {
+        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
+        color: white !important; border: none !important; border-radius: 10px !important;
+        font-weight: 600 !important; transition: all 0.3s ease !important;
+    }
+    .stButton > button:hover, .stDownloadButton > button:hover {
         background: linear-gradient(135deg, #00BFB8 0%, #00A19C 100%) !important;
-        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.35) !important;
-        transform: translateY(-1px) !important;
-        color: white !important;
+        transform: translateY(-1px) !important; color: white !important;
     }
-
-    /* ========== METRIC CARDS ========== */
     [data-testid="stMetric"] {
-        background: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-left: 4px solid #00A19C !important;
-        border-radius: 12px !important;
-        padding: 1.1rem 1.2rem !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        transition: all 0.3s ease !important;
+        background: #FFFFFF !important; border: 1px solid #E2E8F0 !important;
+        border-left: 4px solid #00A19C !important; border-radius: 12px !important;
+        padding: 1.1rem 1.2rem !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
-
-    [data-testid="stMetric"]:hover {
-        box-shadow: 0 6px 20px rgba(0, 161, 156, 0.12) !important;
-        transform: translateY(-2px) !important;
-    }
-
-    [data-testid="stMetricValue"] {
-        color: #00A19C !important;
-        font-weight: 800 !important;
-        font-size: 1.8rem !important;
-    }
-
-    [data-testid="stMetricLabel"] {
-        color: #4A5568 !important;
-        font-weight: 500 !important;
-        font-size: 0.82rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-    }
-
-    /* ========== TABS ========== */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 6px !important;
-        background: transparent !important;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: #FFFFFF !important;
-        color: #4A5568 !important;
-        border-radius: 10px !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 0.5rem 1.2rem !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 0.88rem !important;
-        transition: all 0.25s ease !important;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important;
-        color: white !important;
-        border-color: #00A19C !important;
-        box-shadow: 0 4px 12px rgba(0, 161, 156, 0.25) !important;
-    }
-
-    .stTabs [data-baseweb="tab-highlight"],
-    .stTabs [data-baseweb="tab-border"] {
-        display: none !important;
-    }
-
-    /* ========== FILE UPLOADER ========== */
-    [data-testid="stFileUploader"] {
-        border: 2px dashed rgba(0, 161, 156, 0.35) !important;
-        border-radius: 12px !important;
-        transition: all 0.3s ease !important;
-    }
-
-    [data-testid="stFileUploader"]:hover {
-        border-color: #00A19C !important;
-        box-shadow: 0 0 12px rgba(0, 161, 156, 0.1) !important;
-    }
-
-    /* ========== EMAIL PREVIEW IFRAME ========== */
-    iframe {
-        border-radius: 10px !important;
-        border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    /* ========== SCROLLBAR ========== */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #F7F9FC; }
-    ::-webkit-scrollbar-thumb { background: #00A19C; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #00BFB8; }
-
-    /* ========== HIDE STREAMLIT BRANDING & DEPLOY ========== */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: visible;}
+    [data-testid="stMetricValue"] { color: #00A19C !important; font-weight: 800 !important; font-size: 1.8rem !important; }
+    [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
+    .stTabs [data-baseweb="tab"] { border-radius: 10px !important; background: #FFFFFF !important; }
+    .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important; color: white !important; }
+    [data-testid="stFileUploader"] { border: 2px dashed rgba(0, 161, 156, 0.35) !important; border-radius: 12px !important; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stDeployButton {display: none !important;}
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================
-# HEADER WITH PETRONAS LOGO
-# ============================================================
-import base64 as _b64
-
+# Header
 def _image_to_data_uri(path, mime_type):
-    with open(os.path.join(BASE_DIR, path), 'rb') as f:
-        data = f.read()
-    encoded = _b64.b64encode(data).decode()
-    return f"data:{mime_type};base64,{encoded}"
+    try:
+        with open(os.path.join(BASE_DIR, path), 'rb') as f:
+            data = f.read()
+        return f"data:{mime_type};base64,{base64.b64encode(data).decode()}"
+    except:
+        return ""
 
 _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="
-    display: flex; 
-    align-items: center; 
-    gap: 24px; 
-    padding: 24px 30px; 
-    background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); 
-    border-radius: 16px; 
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 25px rgba(0, 161, 156, 0.2);
-">
-    <img src="{_logo_banner_uri}" 
-         alt="PETRONAS" 
-         style="height: 85px; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+<div style="display: flex; align-items: center; gap: 24px; padding: 24px 30px; background: linear-gradient(135deg, #00A19C 0%, #008C87 100%); border-radius: 16px; margin-bottom: 2rem;">
+    <img src="{_logo_banner_uri}" style="height: 85px;" />
     <div>
-        <h1 style="margin: 0 !important; padding: 0 !important; font-size: 2.2rem !important; 
-                    color: #FFFFFF !important;
-                    font-weight: 800 !important; letter-spacing: -0.02em !important;">
-            Weekly SR & Incident Report Generator
-        </h1>
-        <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important; font-size: 1.05rem; font-weight: 500;">
-            Automate your MyGenie Excel exports into production-ready HTML email reports.
-        </p>
+        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important;">Weekly SR & Incident Report Generator</h1>
+        <p style="margin: 6px 0 0 0 !important; color: #E6F7F6 !important;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
-# SIDEBAR
-# ============================================================
+# Sidebar
 with st.sidebar:
-    # Sidebar branding
     st.markdown(f"""
     <div style="text-align:center; padding: 12px 0 16px 0;">
-        <img src="{_logo_sidebar_uri}" 
-             style="height: 65px;" />
-        <div style="height: 2px; background: linear-gradient(90deg, transparent, #00A19C, transparent); margin: 18px auto 0; width: 80%;"></div>
+        <img src="{_logo_sidebar_uri}" style="height: 65px;" />
     </div>
     """, unsafe_allow_html=True)
-
+    
     st.markdown("### Report Configuration")
-    st.markdown("")
-
     report_date = st.date_input("Report Date", datetime.date.today())
     report_date_str = report_date.strftime("%d %B %Y")
-
-    st.markdown("")
+    
     st.markdown("---")
-    st.markdown("")
+    st.markdown("### Data Upload")
+    
+    sr_wo_file = st.file_uploader("Upload SR & Work Order Excel", type=['xlsx', 'xls'], key="sr_wo")
+    inc_file = st.file_uploader("Upload Incident Excel", type=['xlsx', 'xls'], key="inc")
 
-    st.markdown("### Upload Data")
-    uploaded_file = st.file_uploader("Upload MyGenie Excel (.xlsx)", type=['xlsx', 'xls'])
-
-    sr_sheet = None
-    inc_sheet = None
-
-    if uploaded_file:
-        try:
-            xl = pd.ExcelFile(uploaded_file)
-            sheet_names = xl.sheet_names
-            st.markdown("")
-            st.markdown("##### Sheet Mapping")
-            sr_sheet = st.selectbox("SR Tickets Sheet", sheet_names, index=0)
-            inc_sheet = st.selectbox("INC Tickets Sheet", sheet_names, index=min(1, len(sheet_names)-1))
-        except Exception as e:
-            st.error(f"Error reading Excel: {e}")
-            uploaded_file = None
-
-    # Sidebar footer
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align:center; padding: 10px 0;">
-        <p style="font-size: 0.7rem; color: #A0AEC0 !important; margin: 0;">
-            PETRONAS Weekly Report Tool v1.0<br/>
-            © 2026 PETRONAS. Internal Use Only.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ============================================================
-# MAIN CONTENT
-# ============================================================
-if uploaded_file and sr_sheet and inc_sheet:
-
+if sr_wo_file and inc_file:
     try:
-        # Load sheets
-        df_sr = pd.read_excel(uploaded_file, sheet_name=sr_sheet)
-        df_inc = pd.read_excel(uploaded_file, sheet_name=inc_sheet)
+        sr_required = {"Service Request Ageing Days", "Service Request ID", "Service Request Status"}
+        wo_required = {"Service Request Ageing Days", "Work Order ID", "Work Order Summary", "Work Order Status"}
+        inc_required = {"Incident Ageing Days", "Incident ID", "Status"}
 
-        # --- SR Processing ---
-        norm_sr, sr_ageing = process_tickets(df_sr)
-        if norm_sr is not None:
-            sr_total = len(norm_sr)
-            sr_gt_30 = norm_sr[norm_sr[COL_AGEING] > 30]
-            sr_gt_30_count = len(sr_gt_30)
-            sr_15_30 = norm_sr[(norm_sr[COL_AGEING] >= 15) & (norm_sr[COL_AGEING] <= 30)]
-            sr_15_30_count = len(sr_15_30)
-            sr_1_14 = norm_sr[(norm_sr[COL_AGEING] >= 1) & (norm_sr[COL_AGEING] <= 14)]
-            sr_1_14_count = len(sr_1_14)
-            sr_gt_1_count = len(norm_sr[norm_sr[COL_AGEING] > 1])
-            sr_gt_1_pct = round((sr_gt_1_count / sr_total * 100) if sr_total > 0 else 0, 2)
-            sr_gt_30_pct = round((sr_gt_30_count / sr_total * 100) if sr_total > 0 else 0, 2)
-            sr_gt_30_dict = sr_gt_30[[COL_AGEING, COL_WO_NO, COL_SUMMARY, COL_USER_TSG, COL_STATUS, COL_STATUS_REASON, COL_ASSIGNEE]].to_dict('records')
-            sr_15_30_dict = sr_15_30[[COL_AGEING, COL_WO_NO, COL_SUMMARY, COL_USER_TSG, COL_STATUS, COL_STATUS_REASON, COL_ASSIGNEE]].to_dict('records')
+        sr_sheet_name = find_sheet_by_columns(sr_wo_file, sr_required)
+        wo_sheet_name = find_sheet_by_columns(sr_wo_file, wo_required)
+        inc_sheet_name = find_sheet_by_columns(inc_file, inc_required)
 
-        # --- INC Processing ---
-        norm_inc, inc_ageing = process_tickets(df_inc)
-        if norm_inc is not None:
-            inc_total = len(norm_inc)
-            inc_gt_90_count = len(norm_inc[norm_inc[COL_AGEING] > 90])
-            inc_61_90_count = len(norm_inc[(norm_inc[COL_AGEING] >= 61) & (norm_inc[COL_AGEING] <= 90)])
-            inc_31_60_count = len(norm_inc[(norm_inc[COL_AGEING] >= 31) & (norm_inc[COL_AGEING] <= 60)])
-            inc_15_30_count = len(norm_inc[(norm_inc[COL_AGEING] >= 15) & (norm_inc[COL_AGEING] <= 30)])
-            inc_8_14_count  = len(norm_inc[(norm_inc[COL_AGEING] >= 8) & (norm_inc[COL_AGEING] <= 14)])
-            inc_3_7_count   = len(norm_inc[(norm_inc[COL_AGEING] >= 3) & (norm_inc[COL_AGEING] <= 7)])
-            inc_gt_1_count = len(norm_inc[norm_inc[COL_AGEING] > 1])
-            inc_gt_1_pct = round((inc_gt_1_count / inc_total * 100) if inc_total > 0 else 0, 2)
+        st.info(f"Detected: SR Sheet: `{sr_sheet_name}`, WO Sheet: `{wo_sheet_name}`, INC Sheet: `{inc_sheet_name}`")
 
-        # --- History Tracking (4 weeks) ---
+        # Fallback handling
+        if not sr_sheet_name:
+            st.error(f"Could not automatically locate the Service Request sheet in the first file. It must contain the columns: {sr_required}.")
+            st.stop()
+        if not wo_sheet_name:
+            st.error(f"Could not automatically locate the Work Order Detail sheet in the first file. It must contain the columns: {wo_required}.")
+            st.stop()
+        if not inc_sheet_name:
+            st.error(f"Could not automatically locate the Incident sheet in the second file. It must contain the columns: {inc_required}.")
+            st.stop()
+
+        # Load authoritative data sheets
+        df_sr_raw = pd.read_excel(sr_wo_file, sheet_name=sr_sheet_name)
+        df_wo_raw = pd.read_excel(sr_wo_file, sheet_name=wo_sheet_name)
+        df_inc_raw = pd.read_excel(inc_file, sheet_name=inc_sheet_name)
+
+        # --- SR Metric Calculations (from SR sheet) ---
+        df_sr = df_sr_raw.dropna(subset=['Service Request Ageing Days'])
+        # Optional: convert Ageing to numeric explicitly if not already
+        df_sr['Service Request Ageing Days'] = pd.to_numeric(df_sr['Service Request Ageing Days'], errors='coerce')
+        # Filter for ACTIVE SR statuses
+        df_sr = df_sr[df_sr['Service Request Status'].apply(is_active_status)]
+
+        sr_total = len(df_sr)
+        sr_gt_30_count = len(df_sr[df_sr['Service Request Ageing Days'] > 30])
+        sr_15_30_count = len(df_sr[(df_sr['Service Request Ageing Days'] >= 15) & (df_sr['Service Request Ageing Days'] <= 30)])
+        sr_1_14_count = len(df_sr[(df_sr['Service Request Ageing Days'] >= 1) & (df_sr['Service Request Ageing Days'] <= 14)])
+        sr_gt_1_count = len(df_sr[df_sr['Service Request Ageing Days'] > 1])
+        sr_gt_1_pct = round((sr_gt_1_count / sr_total * 100) if sr_total > 0 else 0, 2)
+        sr_gt_30_pct = round((sr_gt_30_count / sr_total * 100) if sr_total > 0 else 0, 2)
+
+        # --- SR Details (from WO sheet) ---
+        df_wo = df_wo_raw.dropna(subset=['Service Request Ageing Days'])
+        df_wo['Service Request Ageing Days'] = pd.to_numeric(df_wo['Service Request Ageing Days'], errors='coerce')
+        # Filter for ACTIVE WO statuses as well for details
+        df_wo = df_wo[df_wo['Work Order Status'].apply(is_active_status)]
+
+        # Determine subset columns for the template
+        # Template keys: 'SR Ageing', 'Work Order No.', 'Summary', 'User/TSG', 'WO Status', 'WO Status Reason', 'Assignee'
+        def extract_wo_records(wo_df):
+            records = []
+            for _, row in wo_df.iterrows():
+                # Provide fallbacks using 'get' on the row to avoid complete crash if col missing
+                records.append({
+                    'SR Ageing': row.get('Service Request Ageing Days', ''),
+                    'Work Order No.': row.get('Work Order ID', ''),
+                    'Summary': row.get('Work Order Summary', ''),
+                    'User/TSG': row.get('Customer Full Name (Service Request)', row.get('Customer Full Name', '')),
+                    'WO Status': row.get('Work Order Status', ''),
+                    'WO Status Reason': row.get('Work Order Status Reason', ''),
+                    'Assignee': row.get('Work Order Assignee', '')
+                })
+            return records
+
+        df_wo_gt_30 = df_wo[df_wo['Service Request Ageing Days'] > 30]
+        df_wo_15_30 = df_wo[(df_wo['Service Request Ageing Days'] >= 15) & (df_wo['Service Request Ageing Days'] <= 30)]
+
+        sr_ageing_gt_30_tickets = extract_wo_records(df_wo_gt_30)
+        sr_ageing_15_30_tickets = extract_wo_records(df_wo_15_30)
+
+        # --- INC Metric Calculations (from INC sheet) ---
+        df_inc = df_inc_raw.dropna(subset=['Incident Ageing Days'])
+        df_inc['Incident Ageing Days'] = pd.to_numeric(df_inc['Incident Ageing Days'], errors='coerce')
+        
+        # Filter for active INC: rely on 'Status' primarily. If 'Active Incident' column exists, check it too.
+        df_inc = df_inc[df_inc['Status'].apply(is_active_status)]
+        if 'Active Incident' in df_inc.columns:
+            # Typically Yes/No
+            df_inc = df_inc[df_inc['Active Incident'].astype(str).str.lower() != 'no']
+
+        inc_total = len(df_inc)
+        inc_gt_90_count = len(df_inc[df_inc['Incident Ageing Days'] > 90])
+        inc_61_90_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 61) & (df_inc['Incident Ageing Days'] <= 90)])
+        inc_31_60_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 31) & (df_inc['Incident Ageing Days'] <= 60)])
+        inc_15_30_count = len(df_inc[(df_inc['Incident Ageing Days'] >= 15) & (df_inc['Incident Ageing Days'] <= 30)])
+        inc_8_14_count  = len(df_inc[(df_inc['Incident Ageing Days'] >= 8) & (df_inc['Incident Ageing Days'] <= 14)])
+        inc_3_7_count   = len(df_inc[(df_inc['Incident Ageing Days'] >= 3) & (df_inc['Incident Ageing Days'] <= 7)])
+        inc_gt_1_count = len(df_inc[df_inc['Incident Ageing Days'] > 1])
+        inc_gt_1_pct = round((inc_gt_1_count / inc_total * 100) if inc_total > 0 else 0, 2)
+
+
+        # --- History Tracking ---
         history = load_history()
         short_date = report_date.strftime("%d-%b-%Y")
 
@@ -444,13 +318,13 @@ if uploaded_file and sr_sheet and inc_sheet:
 
         m1, m2, m3, m4, m5 = st.columns(5)
         with m1:
-            st.metric("Total SR Tickets", sr_total)
+            st.metric("Total SR Tickets (Active)", sr_total)
         with m2:
             st.metric("SR Ageing > 30d", sr_gt_30_count)
         with m3:
             st.metric("SR > 1 day %", f"{sr_gt_1_pct}%")
         with m4:
-            st.metric("Total INC Tickets", inc_total)
+            st.metric("Total INC Tickets (Active)", inc_total)
         with m5:
             st.metric("INC > 1 day %", f"{inc_gt_1_pct}%")
 
@@ -458,238 +332,73 @@ if uploaded_file and sr_sheet and inc_sheet:
 
         # ========== GENERATE HTML ==========
         env = Environment(loader=FileSystemLoader(BASE_DIR))
-        try:
-            template = env.get_template("template.html")
-            html_output = template.render(
-                report_date=report_date_str,
-                sr_total=sr_total,
-                sr_ageing_more_than_1_day_pct=sr_gt_1_pct,
-                sr_ageing_more_than_30_days_pct=sr_gt_30_pct,
-                sr_ageing_gt_30_tickets=sr_gt_30_dict,
-                sr_ageing_15_30_tickets=sr_15_30_dict,
-                inc_total=inc_total,
-                inc_ageing_more_than_1_day_pct=inc_gt_1_pct,
-                trend_dates=trend_dates,
-                sr_trend_gt_30=sr_trend_gt_30,
-                sr_trend_15_30=sr_trend_15_30,
-                sr_trend_1_14=sr_trend_1_14,
-                inc_trend_gt_90=inc_trend_gt_90,
-                inc_trend_61_90=inc_trend_61_90,
-                inc_trend_31_60=inc_trend_31_60,
-                inc_trend_15_30=inc_trend_15_30,
-                inc_trend_8_14=inc_trend_8_14,
-                inc_trend_3_7=inc_trend_3_7
-            )
+        template = env.get_template("template.html")
+        html_output = template.render(
+            report_date=report_date_str,
+            sr_total=sr_total,
+            sr_ageing_more_than_1_day_pct=sr_gt_1_pct,
+            sr_ageing_more_than_30_days_pct=sr_gt_30_pct,
+            sr_ageing_gt_30_tickets=sr_ageing_gt_30_tickets,
+            sr_ageing_15_30_tickets=sr_ageing_15_30_tickets,
+            inc_total=inc_total,
+            inc_ageing_more_than_1_day_pct=inc_gt_1_pct,
+            trend_dates=trend_dates,
+            sr_trend_gt_30=sr_trend_gt_30,
+            sr_trend_15_30=sr_trend_15_30,
+            sr_trend_1_14=sr_trend_1_14,
+            inc_trend_gt_90=inc_trend_gt_90,
+            inc_trend_61_90=inc_trend_61_90,
+            inc_trend_31_60=inc_trend_31_60,
+            inc_trend_15_30=inc_trend_15_30,
+            inc_trend_8_14=inc_trend_8_14,
+            inc_trend_3_7=inc_trend_3_7
+        )
 
-            # ========== TABBED INTERFACE ==========
-            tab_preview, tab_source, tab_export = st.tabs(["Email Preview", "HTML Source", "Export Options"])
+        tab_preview, tab_source, tab_export = st.tabs(["Email Preview", "HTML Source", "Export Options"])
 
-            with tab_preview:
-                st.markdown("""
-                <div style="
-                    background: #FFFFFF; 
-                    border: 1px solid #E2E8F0; 
-                    border-radius: 14px; 
-                    padding: 8px; 
-                    margin-top: 10px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-                ">
-                """, unsafe_allow_html=True)
-                st.components.v1.html(html_output, height=900, scrolling=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+        with tab_preview:
+            st.markdown("""<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 8px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);">""", unsafe_allow_html=True)
+            st.components.v1.html(html_output, height=900, scrolling=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            with tab_source:
-                st.markdown("##### Raw HTML — Copy for manual paste into Outlook")
-                st.code(html_output, language="html")
+        with tab_source:
+            st.code(html_output, language="html")
 
-            with tab_export:
-                st.markdown("### Export Actions")
-                st.markdown("")
+        with tab_export:
+            st.markdown("### Export Actions")
+            exp1, exp2, exp3 = st.columns(3)
 
-                exp1, exp2, exp3 = st.columns(3)
+            with exp1:
+                st.download_button(
+                    label="Download .html",
+                    data=html_output,
+                    file_name=f"Weekly_Report_{report_date.strftime('%Y%m%d')}.html",
+                    mime="text/html",
+                    use_container_width=True
+                )
 
-                with exp1:
-                    st.markdown("""
-                    <div style="
-                        background: #FFFFFF; 
-                        border: 1px solid #E2E8F0; 
-                        border-radius: 14px; 
-                        padding: 24px; 
-                        text-align: center;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                    ">
-                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg></div>
-                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Download HTML</p>
-                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Save as .html file</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.download_button(
-                        label="Download .html",
-                        data=html_output,
-                        file_name=f"Weekly_Report_{report_date.strftime('%Y%m%d')}.html",
-                        mime="text/html",
-                        use_container_width=True
-                    )
-
-                with exp2:
-                    st.markdown("""
-                    <div style="
-                        background: #FFFFFF; 
-                        border: 1px solid #E2E8F0; 
-                        border-radius: 14px; 
-                        padding: 24px; 
-                        text-align: center;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                    ">
-                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg></div>
-                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Copy to Clipboard</p>
-                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Copy HTML source code</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if st.button("Copy HTML Source", use_container_width=True):
-                        st.code(html_output[:200] + "...", language="html")
-                        st.info("Use the HTML Source tab to copy the full source.")
-
-                with exp3:
-                    st.markdown("""
-                    <div style="
-                        background: #FFFFFF; 
-                        border: 1px solid #E2E8F0; 
-                        border-radius: 14px; 
-                        padding: 24px; 
-                        text-align: center;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                    ">
-                        <div style="margin-bottom: 8px;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 32px; height: 32px; margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg></div>
-                        <p style="color: #1A202C !important; font-weight: 700; margin: 8px 0 4px 0;">Outlook Draft</p>
-                        <p style="color: #A0AEC0 !important; font-size: 0.8rem; margin-bottom: 16px;">Push directly to Outlook</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if sys.platform == 'win32':
-                        if st.button("Push to Outlook Draft", use_container_width=True):
-                            success = push_to_outlook(html_output, f"Weekly SR & Incident Report - {report_date_str}")
-                            if success:
-                                st.success("Draft created in Outlook.")
-                    else:
-                        st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
-                        st.caption("Only available on Windows with pywin32 installed.")
-
-        except Exception as e:
-            st.error(f"Error rendering template: {e}")
+            with exp2:
+                if st.button("Generate Snippet", use_container_width=True):
+                    st.info("Please use the HTML Source tab to copy the raw text, or Download .html and open it in double click.")
+            
+            with exp3:
+                if sys.platform == 'win32':
+                    if st.button("Push to Outlook Draft", use_container_width=True):
+                        success = push_to_outlook(html_output, f"Weekly SR & Incident Report - {report_date_str}")
+                        if success:
+                            st.success("Draft created in Outlook.")
+                else:
+                    st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 
     except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
+        st.error(f"Error processing the files: {e}")
 
 else:
-    # ========== EMPTY STATE ==========
-    st.markdown("")
-
     st.markdown("""
-    <div style="
-        text-align: center; 
-        padding: 70px 40px; 
-        background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%); 
-        border: 1px solid #E2E8F0; 
-        border-top: 4px solid #00A19C;
-        border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
-    ">
-        <div style="
-            width: 64px; height: 64px; 
-            background: linear-gradient(135deg, #00A19C, #008C87); 
-            border-radius: 16px; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-bottom: 20px;
-            box-shadow: 0 6px 16px rgba(0, 161, 156, 0.25);
-        ">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#FFFFFF" style="width: 32px; height: 32px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>
-        </div>
-        <h2 style="color: #1A202C !important; font-size: 1.6rem !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">
-            Ready to Generate Your Weekly Report
-        </h2>
-        <p style="color: #718096 !important; font-size: 1rem; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.7;">
-            Upload your MyGenie Excel export using the sidebar to automatically generate the formatted HTML email report.
+    <div style="text-align: center; padding: 70px 40px; background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%); border: 1px solid #E2E8F0; border-top: 4px solid #00A19C; border-radius: 16px;">
+        <h2 style="color: #1A202C !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">Data Upload Required</h2>
+        <p style="color: #718096 !important; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.7;">
+            Please upload both your Service Request/Work Order Excel and your Incident Excel using the sidebars.
         </p>
-        <div style="display: inline-flex; gap: 8px; align-items: center; 
-                    background: rgba(0,161,156,0.08); padding: 12px 24px; border-radius: 12px; 
-                    border: 1px solid rgba(0,161,156,0.2);">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#00A19C" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
-            <span style="color: #00A19C; font-weight: 600; font-size: 0.9rem;">Use the sidebar to get started</span>
-        </div>
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("")
-
-    # Feature highlight cards
-    f1, f2, f3 = st.columns(3)
-    with f1:
-        st.markdown("""
-        <div style="
-            background: #FFFFFF; 
-            border: 1px solid #E2E8F0; 
-            border-top: 3px solid #00A19C;
-            border-radius: 14px; 
-            padding: 28px; 
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            height: 210px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg></div>
-            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Instant Processing</p>
-            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Upload your Excel and get a fully formatted email in seconds. No manual copy-paste.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with f2:
-        st.markdown("""
-        <div style="
-            background: #FFFFFF; 
-            border: 1px solid #E2E8F0; 
-            border-top: 3px solid #00A19C;
-            border-radius: 14px; 
-            padding: 28px; 
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            height: 210px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg></div>
-            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">4-Week Trends</p>
-            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Tracks and displays a 4-week historical snapshot of your SR & Incident ageing data.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with f3:
-        st.markdown("""
-        <div style="
-            background: #FFFFFF; 
-            border: 1px solid #E2E8F0; 
-            border-top: 3px solid #00A19C;
-            border-radius: 14px; 
-            padding: 28px; 
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            height: 210px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <div><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00A19C" style="width: 36px; height: 36px; margin: 0 auto 12px auto;"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg></div>
-            <p style="color: #1A202C !important; font-weight: 700; font-size: 1rem; margin: 0 0 8px 0;">Fully Offline</p>
-            <p style="color: #718096 !important; font-size: 0.82rem; line-height: 1.5; margin: 0;">
-                Runs entirely on your machine. No data ever leaves your computer. Secure by design.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
