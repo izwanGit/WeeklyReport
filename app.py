@@ -354,23 +354,40 @@ if sr_wo_file and inc_file:
         history = load_history()
         short_date = report_date.strftime("%d-%b-%Y")
 
-        if len(history) == 0 or history[-1].get("date") != short_date:
-            new_record = {
-                "date": short_date,
-                "sr_count_gt_30": sr_gt_30_count,
-                "sr_count_15_30": sr_15_30_count,
-                "sr_count_1_14": sr_1_14_count,
-                "inc_count_gt_90": inc_gt_90_count,
-                "inc_count_61_90": inc_61_90_count,
-                "inc_count_31_60": inc_31_60_count,
-                "inc_count_15_30": inc_15_30_count,
-                "inc_count_8_14": inc_8_14_count,
-                "inc_count_3_7": inc_3_7_count
-            }
+        new_record = {
+            "date": short_date,
+            "sr_count_gt_30": sr_gt_30_count,
+            "sr_count_15_30": sr_15_30_count,
+            "sr_count_1_14": sr_1_14_count,
+            "inc_count_gt_90": inc_gt_90_count,
+            "inc_count_61_90": inc_61_90_count,
+            "inc_count_31_60": inc_31_60_count,
+            "inc_count_15_30": inc_15_30_count,
+            "inc_count_8_14": inc_8_14_count,
+            "inc_count_3_7": inc_3_7_count
+        }
+
+        # Check if record for this exact date already exists
+        existing_idx = next((i for i, h in enumerate(history) if h.get("date") == short_date), None)
+        if existing_idx is not None:
+            history[existing_idx] = new_record  # Overwrite with updated numbers
+        else:
             history.append(new_record)
-            if len(history) > 4:
-                history = history[-4:]
-            save_history(history)
+
+        # Sort the entire history chronologically from oldest to newest
+        def parse_date(date_str):
+            try:
+                return datetime.datetime.strptime(date_str, "%d-%b-%Y")
+            except ValueError:
+                return datetime.datetime.min # Fallback if someone manually edited the json
+
+        history.sort(key=lambda x: parse_date(x.get("date", "")))
+
+        # Enforce max 4 records cap AFTER sorting
+        if len(history) > 4:
+            history = history[-4:]
+
+        save_history(history)
 
         # Prepare arrays for template
         trend_dates = [h["date"] for h in history]
