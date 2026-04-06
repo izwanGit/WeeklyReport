@@ -186,8 +186,8 @@ st.markdown("""
     }
     [data-testid="stMetricValue"] { color: #00A19C !important; font-weight: 800 !important; font-size: 1.8rem !important; }
     [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
-    .stTabs [data-baseweb="tab"] { border-radius: 10px !important; background: #FFFFFF !important; }
-    .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #00A19C 0%, #008C87 100%) !important; color: white !important; }
+    .stTabs [data-baseweb="tab"] { font-weight: 500 !important; }
+    .stTabs [aria-selected="true"] { color: #00A19C !important; font-weight: 700 !important; border-bottom-color: #00A19C !important; }
     [data-testid="stFileUploader"] { border: 2px dashed rgba(0, 161, 156, 0.35) !important; border-radius: 12px !important; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stDeployButton {display: none !important;}
