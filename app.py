@@ -211,11 +211,11 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 12px; padding: 24px 30px; background-color: #03BFB5; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(3, 191, 181, 0.25);">
-    <img src="{_logo_banner_uri}" style="height: 85px; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
-    <div>
-        <h1 style="margin: 0 !important; color: #1A202C !important; font-weight: 800 !important; text-transform: uppercase; font-size: 1.18rem !important; white-space: nowrap; letter-spacing: -0.5px;">Weekly SR & Incident Report Generator</h1>
-        <p style="margin: 6px 0 0 0 !important; color: #1A202C !important; font-size: 0.9rem !important; opacity: 0.85;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+<div style="display: flex; align-items: center; gap: 12px; padding: 20px 24px; background-color: #03BFB5; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(3, 191, 181, 0.25); overflow: hidden;">
+    <img src="{_logo_banner_uri}" style="height: 60px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+    <div style="min-width: 0;">
+        <h1 style="margin: 0 !important; color: #1A202C !important; font-weight: 800 !important; text-transform: uppercase; font-size: 0.95rem !important; letter-spacing: -0.3px; white-space: nowrap;">Weekly SR &amp; Incident Report Generator</h1>
+        <p style="margin: 6px 0 0 0 !important; color: #1A202C !important; font-size: 0.82rem !important; opacity: 0.85; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
