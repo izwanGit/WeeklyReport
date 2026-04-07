@@ -212,11 +212,11 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 
 st.markdown(f"""
 <style>
-    .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: 0.82rem !important; letter-spacing: 0.1px; }}
-    .banner-subtitle {{ color: #FFFFFF !important; font-weight: 400 !important; text-shadow: 0px 1px 3px rgba(0,0,0,0.2) !important; margin: 2px 0 0 0 !important; white-space: nowrap; font-size: 0.72rem !important; opacity: 0.95 !important; }}
+    .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.2rem, 2.5vw, 1.6rem) !important; letter-spacing: 0.1px; }}
+    .banner-subtitle {{ color: #FFFFFF !important; font-weight: 400 !important; text-shadow: 0px 1px 3px rgba(0,0,0,0.2) !important; margin: 4px 0 0 0 !important; white-space: nowrap; font-size: clamp(0.7rem, 1.5vw, 0.95rem) !important; opacity: 0.95 !important; }}
 </style>
-<div style="display: flex; align-items: center; gap: 14px; padding: 20px 28px; background-color: #00B1A9; border-radius: 18px; margin-bottom: 2.5rem; box-shadow: 0 10px 30px rgba(0, 177, 169, 0.2); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
-    <img src="{_logo_banner_uri}" style="height: 64px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+<div style="display: flex; align-items: center; gap: 20px; padding: 24px 32px; background-color: #00B1A9; border-radius: 18px; margin-bottom: 2.5rem; box-shadow: 0 10px 30px rgba(0, 177, 169, 0.2); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <img src="{_logo_banner_uri}" style="height: 76px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
     <div style="min-width: 0;">
         <h1 class="banner-title">Weekly SR &amp; Incident Report Generator</h1>
         <p class="banner-subtitle">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
