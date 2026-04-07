@@ -232,20 +232,22 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### Report Configuration")
+    st.markdown("### Open Ticket Counts <span style='color:red;'>*</span>", unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        sr_open_wo = st.number_input("Open WO", min_value=1, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
+    with c2:
+        inc_open_input = st.number_input("Open INC", min_value=1, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
+
+    st.markdown("<div style='margin-bottom: -15px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Report Settings")
     report_date = st.date_input("Report Date", datetime.date.today())
     report_date_str = report_date.strftime("%d %B %Y")
     
-    st.markdown("---")
+    st.markdown("<div style='margin-bottom: -15px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
-    
-    sr_wo_file = st.file_uploader("Upload SR & Work Order Excel", type=['xlsx', 'xls'], key="sr_wo")
-    inc_file = st.file_uploader("Upload Incident Excel", type=['xlsx', 'xls'], key="inc")
-
-    st.markdown("---")
-    st.markdown("### Open Ticket Counts")
-    sr_open_wo = st.number_input("Open WO Tickets", min_value=1, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
-    inc_open_input = st.number_input("Open INC Tickets", min_value=1, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
+    sr_wo_file = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo")
+    inc_file = st.file_uploader("Incident Excel", type=['xlsx', 'xls'], key="inc")
 
 if sr_wo_file and inc_file:
     try:
