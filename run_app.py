@@ -7,7 +7,7 @@ from threading import Timer
 def resolve_path(path):
     # Handle pathing for PyInstaller 'onedir' or 'onefile' mode
     if getattr(sys, 'frozen', False):
-        curr_dir = sys._MEIPATH
+        curr_dir = sys._MEIPASS
     else:
         curr_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(curr_dir, path)
