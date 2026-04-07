@@ -211,11 +211,11 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 20px; padding: 24px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2.5rem; box-shadow: 0 12px 30px rgba(0, 177, 169, 0.25); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
-    <img src="{_logo_banner_uri}" style="height: 65px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
-    <div style="min-width: 0; flex-grow: 1;">
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: clamp(0.9rem, 2.5vw, 1.05rem) !important; letter-spacing: 0.5px; line-height: 1.2; word-wrap: break-word; overflow-wrap: break-word;">Weekly SR &amp; Incident Report Generator</h1>
-        <p style="margin: 4px 0 0 0 !important; color: #FFFFFF !important; font-size: clamp(0.75rem, 1.8vw, 0.85rem) !important; opacity: 0.9; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; background-color: #00B1A9; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(0, 177, 169, 0.2); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <img src="{_logo_banner_uri}" style="height: 50px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+    <div style="min-width: 0;">
+        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: 0.9rem !important; letter-spacing: 0.3px; white-space: nowrap;">Weekly SR &amp; Incident Report Generator</h1>
+        <p style="margin: 2px 0 0 0 !important; color: #FFFFFF !important; font-size: 0.75rem !important; opacity: 0.85; font-weight: 400; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
