@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_data_files, copy_metadata
+from PyInstaller.utils.hooks import collect_data_files, copy_metadata, collect_submodules
 import os
 
 block_cipher = None
@@ -9,11 +9,14 @@ datas = collect_data_files("streamlit")
 datas += copy_metadata("streamlit")
 datas += [("app.py", "."), ("template.html", "."), ("PETRONAS_LOGO_SQUARE.png", "."), ("PETRONAS_LOGO_HORIZONTAL.svg", "."), ("icon.ico", ".")]
 
+all_hidden = ["pandas", "openpyxl", "jinja2", "win32com.client", "pythoncom"]
+all_hidden += collect_submodules("streamlit")
+
 a = Analysis(
     ["run_app.py"],
     pathex=[base_dir],
     datas=datas,
-    hiddenimports=["pandas", "openpyxl", "jinja2", "streamlit", "win32com.client", "pythoncom", "streamlit.runtime.scriptrunner.magic_funcs"],
+    hiddenimports=all_hidden,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
