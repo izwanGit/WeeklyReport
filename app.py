@@ -227,7 +227,7 @@ st.markdown(f"""
 # Sidebar
 with st.sidebar:
     st.markdown(f"""
-    <div style="text-align:center; padding: 0; margin-top: -50px; margin-bottom: -10px;">
+    <div style="text-align:center; padding: 0; margin-top: -50px; margin-bottom: 15px;">
         <img src="{_logo_sidebar_uri}" style="height: 60px;" />
     </div>
     """, unsafe_allow_html=True)
