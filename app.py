@@ -205,7 +205,8 @@ st.markdown("""
         margin-bottom: -10px !important;
     }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    .stDeployButton {display: none !important;}
+    .stDeployButton, .st-emotion-cache-12fmjuu, .st-emotion-cache-1vt7v5r { display: none !important; }
+    [data-testid="stDeployButton"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
