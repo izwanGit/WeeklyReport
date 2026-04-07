@@ -166,6 +166,8 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     .main .block-container { padding-top: 2rem !important; max-width: 1400px !important; }
+    #custom-banner-title { color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; }
+    #custom-banner-subtitle { color: #FFFFFF !important; opacity: 0.9 !important; font-weight: 400 !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
         color: #00B1A9 !important; font-weight: 700 !important;
@@ -212,10 +214,10 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 
 st.markdown(f"""
 <div style="display: flex; align-items: center; gap: 14px; padding: 20px 28px; background-color: #00B1A9; border-radius: 18px; margin-bottom: 2.5rem; box-shadow: 0 10px 30px rgba(0, 177, 169, 0.2); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
-    <img src="{_logo_banner_uri}" style="height: 68px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+    <img src="{_logo_banner_uri}" style="height: 64px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
     <div style="min-width: 0;">
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; line-height: 1.1 !important; white-space: nowrap; font-weight: 800 !important; font-size: 0.82rem !important; letter-spacing: 0.1px; text-transform: uppercase;">Weekly SR &amp; Incident Report Generator</h1>
-        <p style="margin: 2px 0 0 0 !important; color: #FFFFFF !important; white-space: nowrap; font-size: 0.72rem !important; opacity: 0.9; font-weight: 400;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+        <h1 id="custom-banner-title" style="margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: 0.82rem !important; letter-spacing: 0.1px;">Weekly SR &amp; Incident Report Generator</h1>
+        <p id="custom-banner-subtitle" style="margin: 2px 0 0 0 !important; white-space: nowrap; font-size: 0.72rem !important;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
