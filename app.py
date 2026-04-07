@@ -193,6 +193,17 @@ st.markdown("""
         border-radius: 12px !important; 
         padding: 16px 20px !important; 
     }
+    /* Tighten Sidebar Spacing */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+        margin-bottom: 0px !important;
+    }
+    [data-testid="stSidebar"] blockquote { margin-bottom: 0px !important; }
+    [data-testid="stSidebar"] .stNumberInput, [data-testid="stSidebar"] .stDateInput, [data-testid="stSidebar"] .stFileUploader {
+        margin-bottom: -10px !important;
+    }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     .stDeployButton {display: none !important;}
 </style>
@@ -239,12 +250,12 @@ with st.sidebar:
     with c2:
         inc_open_input = st.number_input("Open INC", min_value=1, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
 
-    st.markdown("<div style='margin-bottom: -15px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
     st.markdown("### Report Settings")
     report_date = st.date_input("Report Date", datetime.date.today())
     report_date_str = report_date.strftime("%d %B %Y")
     
-    st.markdown("<div style='margin-bottom: -15px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: -25px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
     sr_wo_file = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo")
     inc_file = st.file_uploader("Incident Excel", type=['xlsx', 'xls'], key="inc")
