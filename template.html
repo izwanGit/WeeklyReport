@@ -22,14 +22,14 @@ Please also take note on the SLA with warning status and ensure to close the tic
 
 <p><u>SR Ageing Percentage</u></p>
 
-<p><b>Open tickets as of {{ report_date }} : {{ sr_total }} WO tickets</b><br>
+<p><b>Open tickets as of {{ report_date }} : {{ sr_open_wo }} WO tickets.</b><br>
 <b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><br>
 <b>Ageing Service Request more than 30 days is {{ sr_ageing_more_than_30_days_pct }}% as of {{ report_date }}</b>
 </p>
 
 <!-- SUMMARY TABLE -->
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00A19C" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th>Date</th>
 {% for date in trend_dates %}
 <th>{{ date }}</th>
@@ -59,11 +59,11 @@ Please also take note on the SLA with warning status and ensure to close the tic
 
 <!-- >30 DAYS DETAILS -->
 {% if sr_ageing_gt_30_tickets %}
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00A19C" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th colspan="7">Ageing &gt; 30 days</th>
 </tr>
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th>SR Ageing</th>
 <th>Work Order No.</th>
 <th>Summary</th>
@@ -90,11 +90,11 @@ Please also take note on the SLA with warning status and ensure to close the tic
 
 <!-- 15–30 DAYS DETAILS -->
 {% if sr_ageing_15_30_tickets %}
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00A19C" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th colspan="7">Ageing 15 – 30 Days</th>
 </tr>
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th>SR Ageing</th>
 <th>Work Order No.</th>
 <th>Summary</th>
@@ -124,13 +124,13 @@ Please also take note on the SLA with warning status and ensure to close the tic
 <p><u>Incident Ageing Percentage</u></p>
 
 <p>
-<b>Open INC as of {{ report_date }} : {{ inc_total }} ticket</b><br>
+<b>Open INC as of {{ report_date }} : {{ inc_open_input }} INC tickets.</b><br>
 <b>Ageing Incident more than 1 day is {{ inc_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b>
 </p>
 
 <!-- INCIDENT TABLE -->
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00A19C" style="border-collapse:collapse; background-color:#00A19C; color:#FFFFFF;">
-<tr bgcolor="#00A19C" style="background-color:#00A19C; color:#FFFFFF;">
+<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th>Date</th>
 {% for date in trend_dates %}
 <th>{{ date }}</th>

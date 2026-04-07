@@ -238,6 +238,11 @@ with st.sidebar:
     sr_wo_file = st.file_uploader("Upload SR & Work Order Excel", type=['xlsx', 'xls'], key="sr_wo")
     inc_file = st.file_uploader("Upload Incident Excel", type=['xlsx', 'xls'], key="inc")
 
+    st.markdown("---")
+    st.markdown("### Open Ticket Counts")
+    sr_open_wo = st.number_input("Open WO Tickets", min_value=1, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
+    inc_open_input = st.number_input("Open INC Tickets", min_value=1, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
+
 if sr_wo_file and inc_file:
     try:
         # Read each file into ExcelFile ONCE to avoid file-pointer exhaustion
@@ -284,8 +289,10 @@ if sr_wo_file and inc_file:
         sr_15_30_count = int(((df_sr[sr_ageing_col] >= 15) & (df_sr[sr_ageing_col] <= 30)).sum())
         sr_1_14_count  = int(((df_sr[sr_ageing_col] >= 1) & (df_sr[sr_ageing_col] <= 14)).sum())
         sr_gt_1_count  = int((df_sr[sr_ageing_col] > 1).sum())
-        sr_gt_1_pct  = round((sr_gt_1_count / sr_total * 100) if sr_total > 0 else 0, 2)
-        sr_gt_30_pct = round((sr_gt_30_count / sr_total * 100) if sr_total > 0 else 0, 2)
+        # Use user-provided Open WO ticket count as denominator for >1 day %
+        # And use total ageing (>1 day) as denominator for >30 day %
+        sr_gt_1_pct  = round((sr_gt_1_count / sr_open_wo * 100) if sr_open_wo > 0 else 0)
+        sr_gt_30_pct = round((sr_gt_30_count / sr_gt_1_count * 100) if sr_gt_1_count > 0 else 0)
 
         # --- SR Details (from WO sheet) ---
         df_wo = df_wo_raw.copy() if not df_wo_raw.empty else pd.DataFrame()
@@ -351,7 +358,8 @@ if sr_wo_file and inc_file:
         inc_8_14_count  = int(((df_inc[inc_ageing_col] >= 8)  & (df_inc[inc_ageing_col] <= 14)).sum())
         inc_3_7_count   = int(((df_inc[inc_ageing_col] >= 3)  & (df_inc[inc_ageing_col] <= 7)).sum())
         inc_gt_1_count  = int((df_inc[inc_ageing_col] > 1).sum())
-        inc_gt_1_pct = round((inc_gt_1_count / inc_total * 100) if inc_total > 0 else 0, 2)
+        # Use user-provided Open INC ticket count as denominator for >1 day %
+        inc_gt_1_pct = round((inc_gt_1_count / inc_open_input * 100) if inc_open_input > 0 else 0)
 
 
         # --- History Tracking ---
@@ -453,12 +461,17 @@ if sr_wo_file and inc_file:
         template = env.get_template("template.html")
         html_output = template.render(
             report_date=report_date_str,
+            sr_open_wo=sr_open_wo,
             sr_total=sr_total,
+            sr_gt_1_count=sr_gt_1_count,
+            sr_gt_30_count=sr_gt_30_count,
             sr_ageing_more_than_1_day_pct=sr_gt_1_pct,
             sr_ageing_more_than_30_days_pct=sr_gt_30_pct,
             sr_ageing_gt_30_tickets=sr_ageing_gt_30_tickets,
             sr_ageing_15_30_tickets=sr_ageing_15_30_tickets,
+            inc_open_input=inc_open_input,
             inc_total=inc_total,
+            inc_gt_1_count=inc_gt_1_count,
             inc_ageing_more_than_1_day_pct=inc_gt_1_pct,
             trend_dates=trend_dates,
             sr_trend_gt_30=sr_trend_gt_30,
