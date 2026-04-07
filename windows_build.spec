@@ -7,7 +7,7 @@ base_dir = os.path.abspath(os.getcwd())
 
 datas = collect_data_files("streamlit")
 datas += copy_metadata("streamlit")
-datas += [("app.py", "."), ("template.html", "."), ("PETRONAS_LOGO_SQUARE.png", "."), ("PETRONAS_LOGO_HORIZONTAL.svg", ".")]
+datas += [("app.py", "."), ("template.html", "."), ("PETRONAS_LOGO_SQUARE.png", "."), ("PETRONAS_LOGO_HORIZONTAL.svg", "."), ("icon.ico", ".")]
 
 a = Analysis(
     ["run_app.py"],
@@ -29,7 +29,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=True,
-    icon=None
+    icon="icon.ico"
 )
 coll = COLLECT(
     exe, a.binaries, a.zipfiles, a.datas,
