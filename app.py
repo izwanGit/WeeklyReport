@@ -165,7 +165,7 @@ st.markdown("""
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif !important;
     }
-    .main .block-container { padding-top: 2rem !important; max-width: 1400px !important; }
+    .main .block-container { padding-top: 0.5rem !important; max-width: 1400px !important; }
     [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
         color: #00B1A9 !important; font-weight: 700 !important;
@@ -215,7 +215,7 @@ st.markdown(f"""
     .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 3px 6px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.4rem, 4vw, 2.2rem) !important; letter-spacing: 0.2px; }}
     .banner-subtitle {{ color: #FFFFFF !important; font-weight: 400 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important; margin: 6px 0 0 0 !important; white-space: nowrap; font-size: clamp(0.9rem, 2vw, 1.1rem) !important; opacity: 0.95 !important; }}
 </style>
-<div style="display: flex; align-items: center; gap: 24px; padding: 28px 40px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 3rem; box-shadow: 0 15px 40px rgba(0, 177, 169, 0.3); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15);">
+<div style="display: flex; align-items: center; gap: 24px; padding: 20px 40px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 1.5rem; box-shadow: 0 15px 40px rgba(0, 177, 169, 0.3); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15);">
     <img src="{_logo_banner_uri}" style="height: 90px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
     <div style="min-width: 0;">
         <h1 class="banner-title">Weekly SR &amp; Incident Report Generator</h1>
@@ -227,12 +227,12 @@ st.markdown(f"""
 # Sidebar
 with st.sidebar:
     st.markdown(f"""
-    <div style="text-align:center; padding: 12px 0 16px 0;">
-        <img src="{_logo_sidebar_uri}" style="height: 65px;" />
+    <div style="text-align:center; padding: 0; margin-top: -50px; margin-bottom: -10px;">
+        <img src="{_logo_sidebar_uri}" style="height: 60px;" />
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### Open Ticket Counts <span style='color:red;'>*</span>", unsafe_allow_html=True)
+    st.markdown("### Open Ticket Counts")
     c1, c2 = st.columns(2)
     with c1:
         sr_open_wo = st.number_input("Open WO", min_value=1, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
@@ -419,8 +419,10 @@ if sr_wo_file and inc_file:
         inc_trend_3_7   = [h.get("inc_count_3_7", 0) for h in render_history]
 
         # ========== KPI METRICS CARDS ==========
+        st.markdown("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True)
         st.markdown("### Key Metrics Overview")
-        st.markdown(f"<p style='color:#64748B; margin-top:-10px;'>Report date: <b style='color:#00B1A9;'>{report_date_str}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:#64748B; margin-top:-15px;'>Report date: <b style='color:#00B1A9;'>{report_date_str}</b></p>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: -5px;'></div>", unsafe_allow_html=True)
 
         m1, m2, m3, m4, m5 = st.columns(5)
         with m1:
