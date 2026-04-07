@@ -166,30 +166,30 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
     .main .block-container { padding-top: 2rem !important; max-width: 1400px !important; }
-    [data-testid="stSidebar"] { border-right: 2px solid #03BFB5 !important; }
+    [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #03BFB5 !important; font-weight: 700 !important;
+        color: #00B1A9 !important; font-weight: 700 !important;
     }
     .stButton > button, .stDownloadButton > button {
-        background: #03BFB5 !important;
+        background: #00B1A9 !important;
         color: white !important; border: none !important; border-radius: 10px !important;
         font-weight: 600 !important; transition: all 0.3s ease !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
-        background: #02A69D !important;
+        background: #008C86 !important;
         transform: translateY(-1px) !important; color: white !important;
     }
     [data-testid="stMetric"] {
         background: #FFFFFF !important; border: 1px solid #E2E8F0 !important;
-        border-left: 4px solid #03BFB5 !important; border-radius: 12px !important;
+        border-left: 4px solid #00B1A9 !important; border-radius: 12px !important;
         padding: 1.1rem 1.2rem !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     }
-    [data-testid="stMetricValue"] { color: #03BFB5 !important; font-weight: 800 !important; font-size: 1.8rem !important; }
+    [data-testid="stMetricValue"] { color: #00B1A9 !important; font-weight: 800 !important; font-size: 1.8rem !important; }
     [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
     .stTabs [data-baseweb="tab"] { font-weight: 500 !important; }
-    .stTabs [aria-selected="true"] { color: #03BFB5 !important; font-weight: 700 !important; border-bottom-color: #03BFB5 !important; }
+    .stTabs [aria-selected="true"] { color: #00B1A9 !important; font-weight: 700 !important; border-bottom-color: #00B1A9 !important; }
     [data-testid="stFileUploader"] { 
-        border: 2px dashed rgba(3, 191, 181, 0.4) !important; 
+        border: 2px dashed rgba(0, 177, 169, 0.4) !important; 
         border-radius: 12px !important; 
         padding: 16px 20px !important; 
     }
@@ -211,11 +211,11 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 12px; padding: 20px 24px; background-color: #03BFB5; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(3, 191, 181, 0.25); overflow: hidden;">
-    <img src="{_logo_banner_uri}" style="height: 60px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+<div style="display: flex; align-items: center; gap: 24px; padding: 24px 32px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2.5rem; box-shadow: 0 12px 30px rgba(0, 177, 169, 0.25); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <img src="{_logo_banner_uri}" style="height: 70px; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />
     <div style="min-width: 0;">
-        <h1 style="margin: 0 !important; color: #1A202C !important; font-weight: 800 !important; text-transform: uppercase; font-size: 0.95rem !important; letter-spacing: -0.3px; white-space: nowrap;">Weekly SR &amp; Incident Report Generator</h1>
-        <p style="margin: 6px 0 0 0 !important; color: #1A202C !important; font-size: 0.82rem !important; opacity: 0.85; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: 1.05rem !important; letter-spacing: 0.5px; white-space: nowrap;">Weekly SR &amp; Incident Report Generator</h1>
+        <p style="margin: 4px 0 0 0 !important; color: #FFFFFF !important; font-size: 0.85rem !important; opacity: 0.9; font-weight: 400; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -414,7 +414,7 @@ if sr_wo_file and inc_file:
 
         # ========== KPI METRICS CARDS ==========
         st.markdown("### Key Metrics Overview")
-        st.markdown(f"<p style='color:#64748B; margin-top:-10px;'>Report date: <b style='color:#00A19C;'>{report_date_str}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:#64748B; margin-top:-10px;'>Report date: <b style='color:#00B1A9;'>{report_date_str}</b></p>", unsafe_allow_html=True)
 
         m1, m2, m3, m4, m5 = st.columns(5)
         with m1:
@@ -516,12 +516,13 @@ if sr_wo_file and inc_file:
                 body {{ margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }}
                 button {{
                     background: linear-gradient(135deg, #00A19C 0%, #008C87 100%);
+                    background: linear-gradient(135deg, #00B1A9 0%, #008C86 100%);
                     color: white; border: none; border-radius: 10px; font-weight: 600;
                     padding: 0.6rem 1.4rem; font-size: 0.9rem; cursor: pointer;
                     width: 100%; transition: all 0.3s ease;
                 }}
                 button:hover {{ filter: brightness(1.1); transform: translateY(-1px); }}
-                #msg {{ color: #00A19C; font-size: 0.8rem; font-weight: 600; margin-top: 5px; display: none; }}
+                #msg {{ color: #00B1A9; font-size: 0.8rem; font-weight: 600; margin-top: 5px; display: none; }}
                 </style>
                 </head>
                 <body>
