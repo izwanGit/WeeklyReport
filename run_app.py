@@ -3,6 +3,8 @@ import sys
 import streamlit.web.cli as stcli
 import webbrowser
 from threading import Timer
+import streamlit.runtime.scriptrunner.magic_funcs
+
 
 def resolve_path(path):
     # Handle pathing for PyInstaller 'onedir' or 'onefile' mode

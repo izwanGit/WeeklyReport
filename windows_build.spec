@@ -13,7 +13,7 @@ a = Analysis(
     ["run_app.py"],
     pathex=[base_dir],
     datas=datas,
-    hiddenimports=["pandas", "openpyxl", "jinja2", "streamlit", "win32com.client", "pythoncom"],
+    hiddenimports=["pandas", "openpyxl", "jinja2", "streamlit", "win32com.client", "pythoncom", "streamlit.runtime.scriptrunner.magic_funcs"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
