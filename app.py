@@ -211,11 +211,11 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display: flex; align-items: center; gap: 12px; padding: 20px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2.5rem; box-shadow: 0 12px 30px rgba(0, 177, 169, 0.25); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
-    <img src="{_logo_banner_uri}" style="height: 80px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+<div style="display: flex; align-items: center; gap: 14px; padding: 20px 28px; background-color: #00B1A9; border-radius: 18px; margin-bottom: 2.5rem; box-shadow: 0 10px 30px rgba(0, 177, 169, 0.2); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <img src="{_logo_banner_uri}" style="height: 72px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
     <div style="min-width: 0;">
-        <h1 style="margin: 0 !important; color: #FFFFFF !important; font-weight: 800 !important; text-transform: uppercase; font-size: 0.7rem !important; letter-spacing: 0.3px; white-space: nowrap;">Weekly SR &amp; Incident Report Generator</h1>
-        <p style="margin: 4px 0 0 0 !important; color: #FFFFFF !important; font-size: 0.6rem !important; opacity: 0.9; font-weight: 400; white-space: nowrap;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+        <h1 style="margin: 0 !important; line-height: 1.1 !important; white-space: nowrap;"><span style="color: #FFFFFF !important; font-weight: 800 !important; font-size: 0.85rem !important; letter-spacing: 0.2px;">Weekly SR &amp; Incident Report Generator</span></h1>
+        <p style="margin: 2px 0 0 0 !important; white-space: nowrap;"><span style="color: #FFFFFF !important; font-size: 0.75rem !important; opacity: 0.9; font-weight: 400;">Automate your MyGenie Excel exports into production-ready HTML email reports.</span></p>
     </div>
 </div>
 """, unsafe_allow_html=True)
