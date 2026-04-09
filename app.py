@@ -520,7 +520,12 @@ if sr_wo_file and inc_file:
         tab_preview, tab_source, tab_export, tab_history = st.tabs(["Email Preview", "HTML Source", "Export Options", "Manage History"])
 
         with tab_preview:
-            st.markdown(f'<p style="font-size: 0.95rem; font-weight: 600; color: #1A202C;">Subject: <span style="font-weight: 400;">{email_subject}</span></p>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;">
+                <span style="background-color: #00B1A9; color: white; font-weight: 700; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Subject</span>
+                <span style="color: #334155; font-size: 0.95rem; font-weight: 600;">{email_subject}</span>
+            </div>
+            """, unsafe_allow_html=True)
             st.markdown("""<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);">""", unsafe_allow_html=True)
             st.components.v1.html(html_output, height=900, scrolling=True)
             st.markdown("</div>", unsafe_allow_html=True)
