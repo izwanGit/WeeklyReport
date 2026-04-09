@@ -10,7 +10,7 @@
 <p>Dear team,</p>
 
 <p>
-Append herewith the SRs and Incidents aging status for your attention.<br>
+Append herewith the SRs and Incidents aging status for your attention.<div style="margin-bottom: 8px;"></div>
 We appreciate your immediate action to follow-up and close the ticket immediately.
 Please be informed that for those who required <b>a ticket cancellation due to ageing</b>,
 please inform the user and <b>continue to create a new ticket on behalf</b>.
@@ -22,8 +22,8 @@ Please also take note on the SLA with warning status and ensure to close the tic
 
 <p><u>SR Ageing Percentage</u></p>
 
-<p><b>Open tickets as of {{ report_date }} : {{ sr_open_wo }} WO tickets.</b><br>
-<b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><br>
+<p><b>Open tickets as of {{ report_date }} : {{ sr_open_wo }} WO tickets.</b><div style="margin-bottom: 8px;"></div>
+<b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><div style="margin-bottom: 8px;"></div>
 <b>Ageing Service Request more than 30 days is {{ sr_ageing_more_than_30_days_pct }}% as of {{ report_date }}</b>
 </p>
 
@@ -36,30 +36,30 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing &gt; 30 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 30 days</b></td>
 {% for count in sr_trend_gt_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 15 – 30 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
 {% for count in sr_trend_15_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 1 – 14 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 1 – 14 days</b></td>
 {% for count in sr_trend_1_14 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 </table>
 
-<br>
+<div style="margin-bottom: 20px;"></div>
 
 <!-- >30 DAYS DETAILS -->
 {% if sr_ageing_gt_30_tickets %}
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<table width="100%" cellpadding="3" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF; font-size: 13px;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th colspan="7">Ageing &gt; 30 days</th>
 </tr>
@@ -85,12 +85,12 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </table>
 
-<br>
+<div style="margin-bottom: 20px;"></div>
 {% endif %}
 
 <!-- 15–30 DAYS DETAILS -->
 {% if sr_ageing_15_30_tickets %}
-<table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
+<table width="100%" cellpadding="3" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF; font-size: 13px;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
 <th colspan="7">Ageing 15 – 30 Days</th>
 </tr>
@@ -116,7 +116,7 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </table>
 
-<br>
+<div style="margin-bottom: 20px;"></div>
 {% endif %}
 
 <p><b>Incident:</b></p>
@@ -124,7 +124,7 @@ Please also take note on the SLA with warning status and ensure to close the tic
 <p><u>Incident Ageing Percentage</u></p>
 
 <p>
-<b>Open INC as of {{ report_date }} : {{ inc_open_input }} INC tickets.</b><br>
+<b>Open INC as of {{ report_date }} : {{ inc_open_input }} INC tickets.</b><div style="margin-bottom: 8px;"></div>
 <b>Ageing Incident more than 1 day is {{ inc_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b>
 </p>
 
@@ -137,47 +137,47 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing &gt; 90 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 90 days</b></td>
 {% for count in inc_trend_gt_90 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 61 – 90 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 61 – 90 days</b></td>
 {% for count in inc_trend_61_90 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 31 – 60 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 31 – 60 days</b></td>
 {% for count in inc_trend_31_60 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 15 – 30 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
 {% for count in inc_trend_15_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 8 – 14 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 8 – 14 days</b></td>
 {% for count in inc_trend_8_14 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td><b>Ageing 3 – 7 days</b></td>
+<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 3 – 7 days</b></td>
 {% for count in inc_trend_3_7 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 </table>
 
-<br>
+<div style="margin-bottom: 12px;"></div>
 
 <p style="color:#222A35;">
-Do let your leads know for any challenges/concern and your cooperation is greatly appreciate
+Do let your leads know if you have any challenges or concerns. Your cooperation is greatly appreciated.
 </p>
 
 </body>

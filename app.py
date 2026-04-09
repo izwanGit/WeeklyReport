@@ -138,6 +138,8 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
         st.error("Outlook integration is only supported on Windows machines with pywin32 installed.")
         return False
     try:
+        import pythoncom
+        pythoncom.CoInitialize()
         outlook = win32.Dispatch('outlook.application')
         mail = outlook.CreateItem(0)
         mail.Subject = subject
@@ -147,6 +149,12 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
     except Exception as e:
         st.error(f"Failed to open Outlook draft: {str(e)}")
         return False
+    finally:
+        try:
+            import pythoncom
+            pythoncom.CoUninitialize()
+        except:
+            pass
 
 # ----------------------------------------------------
 # Page Config & Premium Styling
@@ -205,9 +213,9 @@ st.markdown("""
         margin-bottom: -10px !important;
     }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    header {visibility: hidden !important;}
-    .stDeployButton {display: none !important;}
-    [data-testid="stDeployButton"] {display: none !important;}
+    .stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] {
+        display: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -506,10 +514,14 @@ if sr_wo_file and inc_file:
             inc_trend_3_7=inc_trend_3_7
         )
 
+        # Generate the requested subject format
+        email_subject = f"MyCareerX BAU Support Ticket - Ageing Service Request and Incident as {report_date.day} {report_date.strftime('%B')}"
+
         tab_preview, tab_source, tab_export, tab_history = st.tabs(["Email Preview", "HTML Source", "Export Options", "Manage History"])
 
         with tab_preview:
-            st.markdown("""<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 8px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);">""", unsafe_allow_html=True)
+            st.markdown(f'<p style="font-size: 0.95rem; font-weight: 600; color: #1A202C;">Subject: <span style="font-weight: 400;">{email_subject}</span></p>', unsafe_allow_html=True)
+            st.markdown("""<div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);">""", unsafe_allow_html=True)
             st.components.v1.html(html_output, height=900, scrolling=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -518,6 +530,59 @@ if sr_wo_file and inc_file:
 
         with tab_export:
             st.markdown("### Export Actions")
+            
+            # Premium Subject Copy Component
+            subject_copy_html = f"""
+            <html>
+            <head>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+                body {{ margin: 0; padding: 0; font-family: 'Inter', sans-serif; }}
+                .container {{
+                    display: flex; align-items: center; background: #F8FAFC; 
+                    border: 1px solid #E2E8F0; border-radius: 10px; padding: 8px 12px;
+                    gap: 12px;
+                }}
+                .text {{
+                    flex-grow: 1; color: #1E293B; font-size: 0.95rem; font-weight: 500;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                }}
+                button {{
+                    background: #00B1A9; color: white; border: none; border-radius: 6px;
+                    padding: 6px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+                    transition: all 0.2s; flex-shrink: 0;
+                }}
+                button:hover {{ background: #008C86; transform: translateY(-1px); }}
+                button:active {{ transform: translateY(0); }}
+                #msg {{ 
+                    position: absolute; right: 80px; color: #00B1A9; 
+                    font-size: 0.75rem; font-weight: 700; display: none; 
+                }}
+            </style>
+            </head>
+            <body>
+                <div style="color: #4A5568; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Email Subject</div>
+                <div class="container">
+                    <div class="text">{email_subject}</div>
+                    <span id="msg">COPIED!</span>
+                    <button onclick="copySubject()">COPY</button>
+                </div>
+                <script>
+                function copySubject() {{
+                    const text = "{email_subject}";
+                    navigator.clipboard.writeText(text).then(() => {{
+                        const msg = document.getElementById("msg");
+                        msg.style.display = "inline";
+                        setTimeout(() => msg.style.display = "none", 2000);
+                    }});
+                }}
+                </script>
+            </body>
+            </html>
+            """
+            st.components.v1.html(subject_copy_html, height=85)
+            st.markdown("<br>", unsafe_allow_html=True)
+            
             exp1, exp2, exp3 = st.columns(3)
 
             with exp1:
@@ -573,7 +638,7 @@ if sr_wo_file and inc_file:
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
-                        success = push_to_outlook(html_output, f"Weekly SR & Incident Report - {report_date_str}")
+                        success = push_to_outlook(html_output, email_subject)
                         if success:
                             st.success("Draft created in Outlook.")
                 else:
