@@ -32,7 +32,7 @@ TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 # ----------------------------------------------------
 # Helper Functions
 # ----------------------------------------------------
-MIN_NUMERIC_ROWS = 5  # Sheet must have ≥5 valid numeric ageing rows to qualify
+MIN_NUMERIC_ROWS = 1  # Sheet must have ≥1 valid numeric ageing row to qualify
 
 def find_col(df, target):
     """Find actual column name in df matching target (case-insensitive, stripped)."""
@@ -256,9 +256,9 @@ with st.sidebar:
     st.markdown("### Open Ticket Counts")
     c1, c2 = st.columns(2)
     with c1:
-        sr_open_wo = st.number_input("Open WO", min_value=1, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
+        sr_open_wo = st.number_input("Open WO", min_value=0, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)")
     with c2:
-        inc_open_input = st.number_input("Open INC", min_value=1, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
+        inc_open_input = st.number_input("Open INC", min_value=0, value=1, step=1, help="Total open Incident ticket count (e.g. 7)")
 
     st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
     st.markdown("### Report Settings")
