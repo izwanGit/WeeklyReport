@@ -24,9 +24,9 @@ except ImportError:
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
 else:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-HISTORY_FILE = "history.json"
+HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
 
 # ----------------------------------------------------
@@ -157,14 +157,8 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
             pass
 
 # ----------------------------------------------------
-# Page Config & Premium Styling
+# Premium Styling (page_config is set by the Hub landing page)
 # ----------------------------------------------------
-st.set_page_config(
-    page_title="PETRONAS Weekly Report Generator",
-    page_icon="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Premium CSS
 st.markdown("""

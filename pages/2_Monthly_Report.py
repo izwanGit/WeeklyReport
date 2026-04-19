@@ -5,7 +5,6 @@ import sys
 import os
 import base64
 
-# Conditionally import PyMuPDF and python-pptx safely
 try:
     import fitz  # PyMuPDF
     from pptx import Presentation
@@ -19,37 +18,78 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# ── Page Config ──
 st.set_page_config(
-    page_title="Monthly Report Generator | PETRONAS",
+    page_title="Monthly Report | PETRONAS",
     page_icon="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png",
     layout="wide",
 )
 
+# ── Premium Corporate CSS ──
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif !important;
     }
+    .main .block-container {
+        padding-top: 1rem !important;
+        max-width: 1200px !important;
+    }
     [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #00B1A9 !important; font-weight: 700 !important;
+    }
     .stButton > button, .stDownloadButton > button {
         background: #00B1A9 !important; color: white !important;
         border: none !important; border-radius: 10px !important;
         font-weight: 600 !important; transition: all 0.3s ease !important;
+        padding: 0.6rem 1.4rem !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
         background: #008C86 !important; transform: translateY(-1px) !important; color: white !important;
     }
-    [data-testid="stFileUploader"] { 
-        border: 2px dashed rgba(0, 177, 169, 0.4) !important; 
-        border-radius: 12px !important; padding: 16px 20px !important; 
+    [data-testid="stFileUploader"] {
+        border: 2px dashed rgba(0, 177, 169, 0.35) !important;
+        border-radius: 12px !important; padding: 16px 20px !important;
     }
-    /* Hide Deploy button */
-    .stDeployButton { display: none !important; }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    [data-testid="stMetric"] {
+        background: #FFFFFF !important; border: 1px solid #E2E8F0 !important;
+        border-left: 4px solid #00B1A9 !important; border-radius: 12px !important;
+        padding: 1rem 1.2rem !important; box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+    }
+    [data-testid="stMetricValue"] { color: #00B1A9 !important; font-weight: 800 !important; }
+    [data-testid="stMetricLabel"] { color: #4A5568 !important; font-weight: 500 !important; }
+
+    /* Tighten Sidebar Spacing */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+        margin-bottom: 0px !important;
+    }
+    [data-testid="stSidebar"] .stTextInput { margin-bottom: -10px !important; }
+
+    /* Hide Streamlit chrome */
+    .stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
+    #MainMenu { visibility: hidden; } footer { visibility: hidden; }
+
+    /* Section dividers */
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94A3B8;
+        margin-bottom: 12px;
+        margin-top: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
+
+# ── Helpers ──
 def _image_to_data_uri(path, mime_type):
     try:
         with open(os.path.join(BASE_DIR, path), 'rb') as f:
@@ -58,117 +98,187 @@ def _image_to_data_uri(path, mime_type):
     except:
         return ""
 
+_logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
+
+# ── Sidebar ──
 with st.sidebar:
     st.markdown(f"""
-    <div style="text-align:center; padding: 0; margin-top: -30px; margin-bottom: 25px;">
+    <div style="text-align:center; padding: 0; margin-top: -30px; margin-bottom: 20px;">
         <img src="{_logo_sidebar_uri}" style="height: 60px;" />
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("### PPTX Settings")
-    old_month = st.text_input("Replace this month:", value="February 2026", help="The month name currently in your template PowerPoint.")
-    new_month = st.text_input("With this month:", value="March 2026", help="The new month name for the generated report.")
 
-st.markdown("""
-<div style="display: flex; align-items: center; gap: 20px; padding: 20px 30px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2rem; box-shadow: 0 12px 35px rgba(0, 177, 169, 0.25);">
+    st.markdown("### Report Configuration")
+
+    old_month = st.text_input(
+        "Previous Month",
+        value="February 2026",
+        help="The month string currently present in your PowerPoint template. This text will be found and replaced."
+    )
+    new_month = st.text_input(
+        "Current Month",
+        value="March 2026",
+        help="The new month string that will replace the previous month across all slides."
+    )
+
+    st.markdown("<div style='margin-top: -15px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Year Reference")
+    old_year_ref = st.text_input(
+        "Previous Year Text",
+        value="2025 Dashboard",
+        help="Optional: year reference in slide titles like '2025 Dashboard - Incident'. Leave blank to skip."
+    )
+    new_year_ref = st.text_input(
+        "Current Year Text",
+        value="2026 Dashboard",
+        help="The replacement year reference text."
+    )
+
+
+# ── Header Banner ──
+st.markdown(f"""
+<div style="
+    display: flex; align-items: center; gap: 24px;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #00B1A9 0%, #00897B 100%);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 141, 134, 0.2);
+    border: 1px solid rgba(255,255,255,0.12);
+">
+    <img src="{_logo_banner_uri}" style="height: 64px; flex-shrink: 0; filter: brightness(1.05);" />
     <div style="min-width: 0;">
-        <h1 style="color: white; margin: 0; font-weight: 800; font-size: 1.8rem; text-transform: uppercase;">Reporting Engine: PPTX Automation</h1>
-        <p style="color: #E2E8F0; margin: 4px 0 0 0; font-size: 1.1rem;">Zero-touch bridge from Power BI Dashboard Export to PowerPoint Deck.</p>
+        <h1 style="color:#FFFFFF; margin:0; font-weight:800; font-size:1.5rem; text-transform:uppercase; letter-spacing:0.5px; line-height:1.15;">
+            Monthly PPTX Automation
+        </h1>
+        <p style="color:rgba(255,255,255,0.85); margin:4px 0 0 0; font-size:0.92rem; font-weight:400;">
+            Power BI dashboard export to corporate PowerPoint deck — zero-touch pipeline.
+        </p>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
+
+# ── Dependency Check ──
 if not PPTX_AVAILABLE:
-    st.error("Missing python-pptx or PyMuPDF. Please re-run dependencies installation.")
+    st.error("Required libraries (python-pptx, PyMuPDF) are not installed. Please run: pip install -r requirements.txt")
     st.stop()
 
-st.markdown("### 1. Upload Assets")
+
+# ── Upload Section ──
+st.markdown('<p class="section-label">Step 1 &mdash; Upload Assets</p>', unsafe_allow_html=True)
+
 c1, c2 = st.columns(2)
 with c1:
-    pdf_file = st.file_uploader("Upload Power BI PDF Export (13 Pages)", type=['pdf'])
+    pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], help="Export your Power BI dashboard as PDF with 1 visual per page (13 pages total).")
 with c2:
-    pptx_file = st.file_uploader("Upload PPTX Template", type=['pptx'])
+    pptx_file = st.file_uploader("PowerPoint Template", type=['pptx'], help="Your corporate PPTX template. The script will never modify the original — a new copy is generated.")
 
-def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
-    # 1. Extract Images
+
+# ── Processing Engine ──
+def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text, old_year, new_year):
+    """
+    Core automation engine.
+    1. Extracts each PDF page as a high-resolution PNG (4x zoom = ~300 DPI).
+    2. Opens the PPTX template.
+    3. Performs global text replacement (month, year).
+    4. Replaces image placeholders on slides 3-10 with sequentially mapped PDF pages.
+    5. Returns the final PPTX bytes and a structured build log.
+    """
+
+    # ── Phase 1: Extract high-res images from the Power BI PDF ──
     pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
     pdf_images = []
-    
-    # We enforce high quality rendering for the PBI charts
     for page_num in range(len(pdf)):
         page = pdf.load_page(page_num)
-        # 300 DPI equivalent for extremely crisp text/tables in PPT
+        # 4x zoom matrix produces extremely crisp output for presentation use
         pix = page.get_pixmap(matrix=fitz.Matrix(4, 4))
         pdf_images.append(pix.tobytes("png"))
-        
-    # 2. Open PPTX
+
+    # ── Phase 2: Open the PPTX template ──
     prs = Presentation(io.BytesIO(pptx_bytes))
-    
-    # 3. Global Text Replacement
-    # Replaces 'February 2026' with 'March 2026' everywhere
+
+    # ── Phase 3: Global text replacement ──
+    replacement_pairs = []
+    if old_text and new_text:
+        replacement_pairs.append((old_text, new_text))
+    if old_year and new_year:
+        replacement_pairs.append((old_year, new_year))
+
+    text_replacements = 0
     for slide in prs.slides:
         for shape in slide.shapes:
             if shape.has_text_frame:
                 for paragraph in shape.text_frame.paragraphs:
                     for run in paragraph.runs:
-                        if old_text in run.text:
-                            run.text = run.text.replace(old_text, new_text)
+                        for old_str, new_str in replacement_pairs:
+                            if old_str in run.text:
+                                run.text = run.text.replace(old_str, new_str)
+                                text_replacements += 1
             if shape.has_table:
                 for row in shape.table.rows:
                     for cell in row.cells:
                         for paragraph in cell.text_frame.paragraphs:
                             for run in paragraph.runs:
-                                if old_text in run.text:
-                                    run.text = run.text.replace(old_text, new_text)
+                                for old_str, new_str in replacement_pairs:
+                                    if old_str in run.text:
+                                        run.text = run.text.replace(old_str, new_str)
+                                        text_replacements += 1
 
-    # 4. Image/Placeholder Replacement (The Mapping Engine)
-    # Target slides: 3, 4, 5, 6, 7, 8, 9, 10
-    # Which corresponds to array indices: 2, 3, 4, 5, 6, 7, 8, 9
+    # ── Phase 4: Image replacement engine ──
+    # Slide index (0-based) → number of images to replace on that slide
+    # Slide 3 = index 2, Slide 4 = index 3, etc.
     mapping = {
-        2: 2, # Slide 3 -> 2 images
-        3: 1, # Slide 4 -> 1 image
-        4: 1, # Slide 5 -> 1 image (Table screenshot)
-        5: 2, # Slide 6 -> 2 images
-        6: 3, # Slide 7 -> 3 images
-        7: 1, # Slide 8 -> 1 image
-        8: 1, # Slide 9 -> 1 image (Table screenshot)
-        9: 2  # Slide 10 -> 2 images
+        2: 2,  # Slide 3:  SLA + Ticket Trend
+        3: 1,  # Slide 4:  1 histogram visual
+        4: 1,  # Slide 5:  1 table (as image)
+        5: 2,  # Slide 6:  2 visuals
+        6: 3,  # Slide 7:  3 visuals
+        7: 1,  # Slide 8:  1 histogram visual
+        8: 1,  # Slide 9:  1 table (as image)
+        9: 2,  # Slide 10: 2 visuals
     }
-    
+
     pdf_idx = 0
     log = []
-    
+
     for slide_idx, num_images in mapping.items():
         if slide_idx >= len(prs.slides):
-            log.append(f"⚠️ Slide {slide_idx+1} does not exist in template. Skipping.")
+            log.append(f"WARN | Slide {slide_idx + 1} does not exist in the template. Skipped.")
             continue
-            
+
         slide = prs.slides[slide_idx]
-        
-        # Collect all picture shapes and picture placeholders
+
+        # Collect all picture shapes on this slide
         target_shapes = []
         for shape in slide.shapes:
             if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                 target_shapes.append(shape)
-            elif getattr(shape, 'is_placeholder', False) and shape.placeholder_format.type == 18:
-                target_shapes.append(shape)
-                
-        # Sort them Top-to-Bottom, Left-to-Right for deterministic replacement
+            elif getattr(shape, 'is_placeholder', False):
+                try:
+                    if shape.placeholder_format.type == 18:  # Picture placeholder
+                        target_shapes.append(shape)
+                except:
+                    pass
+
+        # Sort top-to-bottom, left-to-right for deterministic sequencing
         target_shapes.sort(key=lambda s: (s.top, s.left))
-        
+
         for k in range(num_images):
-            if k >= len(target_shapes):
-                log.append(f"⚠️ Slide {slide_idx+1}: Expected {num_images} images but only found {len(target_shapes)}.")
-                break
             if pdf_idx >= len(pdf_images):
-                log.append(f"⚠️ Ran out of PDF pages! Stopped at page {pdf_idx}.")
+                log.append(f"WARN | Ran out of PDF pages at page {pdf_idx + 1}. Remaining slides were not updated.")
                 break
-                
+
+            if k >= len(target_shapes):
+                log.append(f"WARN | Slide {slide_idx + 1}: Expected {num_images} image(s) but found only {len(target_shapes)}. Partial replacement.")
+                break
+
             old_shape = target_shapes[k]
             img_io = io.BytesIO(pdf_images[pdf_idx])
-            
-            # Insert the new HD Image identically where the old one was
+
+            # Place the new image at the exact position and size of the old one
             slide.shapes.add_picture(
                 img_io,
                 old_shape.left,
@@ -176,45 +286,100 @@ def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
                 old_shape.width,
                 old_shape.height
             )
-            
-            # Delete old shape using XML removal to clean up
+
+            # Remove old shape from the XML tree
             sp = old_shape._element
             sp.getparent().remove(sp)
-            
-            log.append(f"✅ Slide {slide_idx+1}: Replaced image/placeholder with PowerBI PDF Page {pdf_idx+1}")
+
+            log.append(f"  OK | Slide {slide_idx + 1}: Image {k + 1}/{num_images} replaced with PDF page {pdf_idx + 1}")
             pdf_idx += 1
-            
-    # Save the polished presentation
+
+    # ── Phase 5: Save the polished presentation ──
     output = io.BytesIO()
     prs.save(output)
     output.seek(0)
-    return output.read(), log
 
+    return output.read(), log, text_replacements, pdf_idx
+
+
+# ── Generate Section ──
 if pdf_file and pptx_file:
-    st.markdown("### 2. Generate Deck")
-    if st.button("🚀 Process Power BI and Build PPTX", use_container_width=True, type="primary"):
-        with st.spinner("Extracting High-Res Graphics and Automating Deck..."):
+    st.markdown('<p class="section-label">Step 2 &mdash; Generate Deck</p>', unsafe_allow_html=True)
+
+    # Preview metrics
+    pdf_file.seek(0)
+    try:
+        preview_pdf = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        pdf_page_count = len(preview_pdf)
+        pdf_file.seek(0)
+    except:
+        pdf_page_count = "?"
+
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        st.metric("PDF Pages Detected", pdf_page_count)
+    with m2:
+        st.metric("Target Slides", "8 (Slides 3–10)")
+    with m3:
+        st.metric("Total Image Swaps", "13")
+
+    st.markdown("")
+
+    if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
+        with st.spinner("Extracting visuals and building the presentation..."):
             try:
-                out_bytes, build_logs = process_monthly_report(pdf_file.read(), pptx_file.read(), old_month, new_month)
-                
-                st.success("✅ Presentation successfully built!")
-                
-                # Show logs in expander
-                with st.expander("Show Build Logs"):
+                out_bytes, build_logs, txt_count, img_count = process_monthly_report(
+                    pdf_file.read(),
+                    pptx_file.read(),
+                    old_month,
+                    new_month,
+                    old_year_ref,
+                    new_year_ref
+                )
+
+                st.success(f"Presentation built successfully — {img_count} images replaced, {txt_count} text substitutions applied.")
+
+                with st.expander("Build Log", expanded=False):
                     for msg in build_logs:
-                        st.text(msg)
-                
-                st.warning(f"**Reminder**: All dates matching `{old_month}` were successfully replaced with `{new_month}`. However, you may need to manually verify or update numbered metrics (e.g., 'Ticket logged increased by 41') in Slides 4 and 8.", icon="ℹ️")
-                
+                        if msg.startswith("WARN"):
+                            st.warning(msg)
+                        else:
+                            st.text(msg)
+
+                st.markdown("")
+                st.markdown('<p class="section-label">Step 3 &mdash; Download</p>', unsafe_allow_html=True)
+
+                st.info(
+                    f"All occurrences of \"{old_month}\" have been replaced with \"{new_month}\". "
+                    f"Please verify the summary text on Slides 4 and 8 manually "
+                    f"(e.g., ticket counts and ageing numbers) as these metrics may require manual update.",
+                    icon="ℹ️"
+                )
+
                 st.download_button(
-                    label="⬇️ Download Final Monthly Report (PPTX)",
+                    label="Download Final Report (.pptx)",
                     data=out_bytes,
                     file_name=f"Monthly_Report_{new_month.replace(' ', '_')}.pptx",
                     mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     use_container_width=True
                 )
+
             except Exception as e:
-                st.error("There was an error generating the document.")
-                st.code(traceback.format_exc())
+                st.error(f"An error occurred during generation: {e}")
+                st.code(traceback.format_exc(), language="text")
+
 else:
-    st.info("👆 Upload both the Power BI PDF file and the PPTX template to proceed.")
+    st.markdown("""
+    <div style="
+        text-align: center; padding: 60px 40px;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%);
+        border: 1px solid #E2E8F0; border-top: 4px solid #00B1A9;
+        border-radius: 16px; margin-top: 8px;
+    ">
+        <h2 style="color: #1A202C; font-weight: 800; margin: 0 0 10px 0;">Upload Required</h2>
+        <p style="color: #718096; max-width: 520px; margin: 0 auto; line-height: 1.7; font-size: 0.95rem;">
+            Upload your Power BI PDF export and the corporate PowerPoint template using the file uploaders above.
+            Configure the month and year text in the sidebar before generating.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
