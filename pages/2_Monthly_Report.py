@@ -143,7 +143,21 @@ with st.sidebar:
 </div>
 """, unsafe_allow_html=True)
 
-# No Report Configuration required for pure PPTX deck automation
+    st.markdown("### Report Settings")
+    sel_month = st.selectbox(
+        "Report Month",
+        options=["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        index=1
+    )
+    sel_year = st.selectbox(
+        "Report Year",
+        options=["2025", "2026", "2027", "2028"],
+        index=1
+    )
+
+    st.markdown("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Data Upload")
+    pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'])
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
@@ -174,16 +188,8 @@ if not PPTX_AVAILABLE:
     st.stop()
 
 
-# ── Upload Section ──
-st.markdown('<p class="section-label">Step 1 &mdash; Upload Assets</p>', unsafe_allow_html=True)
-
-pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], help="Export your Power BI dashboard as PDF with 1 visual per page (13 pages total).")
-
 TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
 pptx_available = os.path.exists(TEMPLATE_PATH)
-
-if not pptx_available:
-    st.error("⚠️ Corporate PowerPoint template not found in the system. \n\nPlease place a file named `template.pptx` in the application root directory.")
 
 
 # ── Processing Engine ──
@@ -338,7 +344,7 @@ if pdf_file and pptx_available:
                 st.download_button(
                     label="Download Final Report (.pptx)",
                     data=out_bytes,
-                    file_name=f"Monthly_Report_{datetime.date.today().strftime('%b_%Y')}.pptx",
+                    file_name=f"Monthly_Report_{sel_month}_{sel_year}.pptx",
                     mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     use_container_width=True
                 )
@@ -357,8 +363,8 @@ else:
     ">
         <h2 style="color: #1A202C; font-weight: 800; margin: 0 0 10px 0;">Upload Required</h2>
         <p style="color: #718096; max-width: 520px; margin: 0 auto; line-height: 1.7; font-size: 0.95rem;">
-            Upload your Power BI PDF export using the file uploader above. The corporate PowerPoint template runs automatically from the system.
-            The script will automatically detect images and map them to the corresponding slide layouts.
+            Please select the target Report Month and Year, and upload your Power BI PDF export using the sidebar.
+            The corporate PowerPoint template will be automatically loaded from the system.
         </p>
     </div>
     """, unsafe_allow_html=True)
