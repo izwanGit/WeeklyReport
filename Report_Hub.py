@@ -248,7 +248,9 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<a href="/" target="_self"><img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/></a>
+<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-block;">
+    <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -281,7 +283,7 @@ st.markdown("""
 <div class="hub-grid">
 
 <!-- Weekly Report Card -->
-<a href="/Weekly_Report" target="_self" class="hub-card-link-wrapper">
+<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[1].click()" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -304,10 +306,10 @@ st.markdown("""
         </div>
     </div>
 </div>
-</a>
+</div>
 
 <!-- Monthly Report Card -->
-<a href="/Monthly_Report" target="_self" class="hub-card-link-wrapper">
+<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[2].click()" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -330,7 +332,7 @@ st.markdown("""
         </div>
     </div>
 </div>
-</a>
+</div>
 
 </div>
 """, unsafe_allow_html=True)

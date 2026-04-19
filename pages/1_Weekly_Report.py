@@ -285,10 +285,10 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown("""
-<a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     Back to Hub
-</a>
+</div>
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
@@ -309,7 +309,9 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<a href="/" target="_self"><img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/></a>
+<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-block;">
+    <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+</div>
 </div>
 """, unsafe_allow_html=True)
     
