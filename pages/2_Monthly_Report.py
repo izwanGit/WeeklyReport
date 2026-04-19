@@ -35,17 +35,28 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* ── Smooth page transition ── */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* ── Anti-glitch: kill flash of unstyled content ── */
+    @keyframes smoothEntry {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
     [data-testid="stAppViewContainer"] > .main {
-        animation: fadeIn 0.35s ease-out;
+        animation: smoothEntry 0.3s ease-in-out;
     }
-    .stSpinner, [data-testid="stStatusWidget"] {
-        transition: opacity 0.3s ease;
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarNavItems"],
+    [data-testid="stSidebarNavSeparator"],
+    [data-testid="stStatusWidget"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
     }
+    header[data-testid="stHeader"] {
+        background: #F8FAFC !important;
+        backdrop-filter: none !important;
+    }
+
     .main .block-container {
         padding-top: 1rem !important;
         max-width: 1200px !important;

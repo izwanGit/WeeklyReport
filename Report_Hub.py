@@ -25,18 +25,29 @@ html, body, [data-testid="stAppViewContainer"] {
     background-color: #F8FAFC !important;
 }
 
-/* ── Smooth page transition ── */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ── Anti-glitch: kill flash of unstyled content ── */
+@keyframes smoothEntry {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 [data-testid="stAppViewContainer"] > .main {
-    animation: fadeIn 0.35s ease-out;
+    animation: smoothEntry 0.3s ease-in-out;
 }
-/* Hide loading indicators for seamless feel */
-.stSpinner, [data-testid="stStatusWidget"] {
-    transition: opacity 0.3s ease;
+/* Hide skeleton / loading flash elements */
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNavItems"],
+[data-testid="stSidebarNavSeparator"],
+[data-testid="stStatusWidget"],
+div[data-testid="stDecoration"],
+div[data-testid="stToolbar"] {
+    display: none !important;
+    visibility: hidden !important;
 }
+header[data-testid="stHeader"] {
+    background: #F8FAFC !important;
+    backdrop-filter: none !important;
+}
+
 .main .block-container {
     padding-top: 1.5rem !important;
     max-width: 1100px !important;
