@@ -287,9 +287,9 @@ st.markdown("""
 <!-- Monthly Report Card -->
 <a href="/Monthly_Report" target="_self" class="hub-card-link-wrapper">
 <div class="hub-card">
-    <div class="hub-card-banner" style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border-bottom-color: #C7D2FE;">
-        <div class="hub-card-icon" style="border-color: #4F46E5;">
-            <svg viewBox="0 0 24 24" style="stroke: #4F46E5;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <div class="hub-card-banner">
+        <div class="hub-card-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </div>
     </div>
     <div class="hub-card-content">
@@ -302,7 +302,7 @@ st.markdown("""
             <li>Automatic slide image replacement</li>
             <li>Zero-touch template preservation</li>
         </ul>
-        <div class="hub-card-footer" style="color: #4F46E5;">
+        <div class="hub-card-footer">
             Launch Module
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </div>
