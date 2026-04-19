@@ -156,19 +156,6 @@ with st.sidebar:
         help="The new month string that will replace the previous month across all slides."
     )
 
-    st.markdown("<div style='margin-top: -15px;'></div>", unsafe_allow_html=True)
-    st.markdown("### Year Reference")
-    old_year_ref = st.text_input(
-        "Previous Year Text",
-        value="2025 Dashboard",
-        help="Optional: year reference in slide titles like '2025 Dashboard - Incident'. Leave blank to skip."
-    )
-    new_year_ref = st.text_input(
-        "Current Year Text",
-        value="2026 Dashboard",
-        help="The replacement year reference text."
-    )
-
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
@@ -210,12 +197,12 @@ with c2:
 
 
 # ── Processing Engine ──
-def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text, old_year, new_year):
+def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
     """
     Core automation engine.
     1. Extracts each PDF page as a high-resolution PNG (4x zoom = ~300 DPI).
     2. Opens the PPTX template.
-    3. Performs global text replacement (month, year).
+    3. Performs global text replacement (month).
     4. Replaces image placeholders on slides 3-10 with sequentially mapped PDF pages.
     5. Returns the final PPTX bytes and a structured build log.
     """
@@ -236,8 +223,6 @@ def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text, old_year, 
     replacement_pairs = []
     if old_text and new_text:
         replacement_pairs.append((old_text, new_text))
-    if old_year and new_year:
-        replacement_pairs.append((old_year, new_year))
 
     text_replacements = 0
     for slide in prs.slides:
@@ -364,9 +349,7 @@ if pdf_file and pptx_file:
                     pdf_file.read(),
                     pptx_file.read(),
                     old_month,
-                    new_month,
-                    old_year_ref,
-                    new_year_ref
+                    new_month
                 )
 
                 st.success(f"Presentation built successfully — {img_count} images replaced, {txt_count} text substitutions applied.")
