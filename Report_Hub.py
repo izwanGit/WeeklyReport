@@ -197,12 +197,8 @@ with st.sidebar:
 <div style="text-align:center; padding:8px 0 20px 0;">
 <img src="{_logo_sidebar_uri}" style="height:56px;" />
 </div>
-<p style="font-size:0.68rem; font-weight:800; color:#00B1A9; letter-spacing:1.5px; padding:0 16px; margin:0 0 8px 0;">MODULES</p>
-<a href="/" target="_self" class="sidebar-nav active">Report Hub</a>
-<a href="/Weekly_Report" target="_self" class="sidebar-nav">Weekly Report</a>
-<a href="/Monthly_Report" target="_self" class="sidebar-nav">Monthly Report</a>
-<hr class="sidebar-sep">
 """, unsafe_allow_html=True)
+
 
     st.markdown("""
 <div style="padding:0 16px; font-size:0.78rem; color:#94A3B8; line-height:1.5;">
@@ -230,13 +226,15 @@ st.markdown(f"""
 # ── Card Grid ──
 st.markdown("""
 <div class="hub-grid">
+<!-- Weekly Report Card -->
+<a href="/Weekly_Report" target="_self" style="text-decoration: none; display: block; color: inherit;">
 <div class="hub-card">
 <div class="hub-card-icon">
 <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 </div>
 <span class="hub-badge hub-badge-weekly">Weekly</span>
 <div class="hub-card-title">Email Report Generator</div>
-<div class="hub-card-desc">
+<div class="hub-card-desc" style="color: #64748B;">
 Transform MyGenie Excel exports into polished, production-ready HTML email reports
 with automated ticket analysis and one-click Outlook delivery.
 </div>
@@ -247,13 +245,17 @@ with automated ticket analysis and one-click Outlook delivery.
 <li>Formatted HTML copy-to-clipboard</li>
 </ul>
 </div>
+</a>
+
+<!-- Monthly Report Card -->
+<a href="/Monthly_Report" target="_self" style="text-decoration: none; display: block; color: inherit;">
 <div class="hub-card">
 <div class="hub-card-icon">
 <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
 </div>
 <span class="hub-badge hub-badge-monthly">Monthly</span>
 <div class="hub-card-title">PPTX Deck Automation</div>
-<div class="hub-card-desc">
+<div class="hub-card-desc" style="color: #64748B;">
 Bridge your Power BI analytics dashboard directly into the corporate PowerPoint template
 with automated high-fidelity image extraction and intelligent date replacement.
 </div>
@@ -264,6 +266,7 @@ with automated high-fidelity image extraction and intelligent date replacement.
 <li>Zero-touch template preservation</li>
 </ul>
 </div>
+</a>
 </div>
 """, unsafe_allow_html=True)
 

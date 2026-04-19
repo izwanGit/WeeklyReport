@@ -141,11 +141,6 @@ with st.sidebar:
 <div style="text-align:center; padding:8px 0 20px 0;">
 <img src="{_logo_sidebar_uri}" style="height:56px;" />
 </div>
-<p style="font-size:0.68rem; font-weight:800; color:#00B1A9; letter-spacing:1.5px; padding:0 16px; margin:0 0 8px 0;">MODULES</p>
-<a href="/" target="_self" class="sidebar-nav">Report Hub</a>
-<a href="/Weekly_Report" target="_self" class="sidebar-nav">Weekly Report</a>
-<a href="/Monthly_Report" target="_self" class="sidebar-nav active">Monthly Report</a>
-<hr class="sidebar-sep">
 """, unsafe_allow_html=True)
 
     st.markdown("### Report Configuration")
@@ -174,6 +169,13 @@ with st.sidebar:
         help="The replacement year reference text."
     )
 
+
+st.markdown("""
+<a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    Back to Hub
+</a>
+""", unsafe_allow_html=True)
 
 # ── Header Banner ──
 st.markdown(f"""

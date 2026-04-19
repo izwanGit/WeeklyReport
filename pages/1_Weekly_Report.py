@@ -264,6 +264,13 @@ def _image_to_data_uri(path, mime_type):
 _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
+st.markdown("""
+<a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    Back to Hub
+</a>
+""", unsafe_allow_html=True)
+
 st.markdown(f"""
 <style>
 .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.2rem, 3.5vw, 1.8rem) !important; letter-spacing: 0.1px; }}
@@ -284,11 +291,6 @@ with st.sidebar:
 <div style="text-align:center; padding:8px 0 20px 0;">
 <img src="{_logo_sidebar_uri}" style="height:56px;" />
 </div>
-<p style="font-size:0.68rem; font-weight:800; color:#00B1A9; letter-spacing:1.5px; padding:0 16px; margin:0 0 8px 0;">MODULES</p>
-<a href="/" target="_self" class="sidebar-nav">Report Hub</a>
-<a href="/Weekly_Report" target="_self" class="sidebar-nav active">Weekly Report</a>
-<a href="/Monthly_Report" target="_self" class="sidebar-nav">Monthly Report</a>
-<hr class="sidebar-sep">
 """, unsafe_allow_html=True)
     
     st.markdown("### Open Ticket Counts")
