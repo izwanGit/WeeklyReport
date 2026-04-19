@@ -256,45 +256,43 @@ st.markdown(f"""
 # ── Card Grid ──
 st.markdown("""
 <div class="hub-grid">
+<!-- Weekly Report Card -->
+<div class="hub-card">
+<div class="hub-card-icon">
+<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+</div>
+<span class="hub-badge hub-badge-weekly">Weekly</span>
+<div class="hub-card-title">Email Report Generator</div>
+<div class="hub-card-desc">
+Transform MyGenie Excel exports into polished, production-ready HTML email reports
+with automated ticket analysis and one-click Outlook delivery.
+</div>
+<ul class="hub-card-features">
+<li>Automated ageing ticket calculations</li>
+<li>Historical trend snapshots</li>
+<li>Direct Outlook draft integration</li>
+<li>Formatted HTML copy-to-clipboard</li>
+</ul>
+</div>
 
-    <!-- Weekly Report Card -->
-    <div class="hub-card">
-        <div class="hub-card-icon">
-            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        </div>
-        <span class="hub-badge hub-badge-weekly">Weekly</span>
-        <div class="hub-card-title">Email Report Generator</div>
-        <div class="hub-card-desc">
-            Transform MyGenie Excel exports into polished, production-ready HTML email reports
-            with automated ticket analysis and one-click Outlook delivery.
-        </div>
-        <ul class="hub-card-features">
-            <li>Automated ageing ticket calculations</li>
-            <li>Historical trend snapshots</li>
-            <li>Direct Outlook draft integration</li>
-            <li>Formatted HTML copy-to-clipboard</li>
-        </ul>
-    </div>
-
-    <!-- Monthly Report Card -->
-    <div class="hub-card">
-        <div class="hub-card-icon">
-            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <span class="hub-badge hub-badge-monthly">Monthly</span>
-        <div class="hub-card-title">PPTX Deck Automation</div>
-        <div class="hub-card-desc">
-            Bridge your Power BI analytics dashboard directly into the corporate PowerPoint template
-            with automated high-fidelity image extraction and intelligent date replacement.
-        </div>
-        <ul class="hub-card-features">
-            <li>300 DPI lossless chart extraction</li>
-            <li>Automatic slide image replacement</li>
-            <li>Global date and text substitution</li>
-            <li>Zero-touch template preservation</li>
-        </ul>
-    </div>
-
+<!-- Monthly Report Card -->
+<div class="hub-card">
+<div class="hub-card-icon">
+<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+</div>
+<span class="hub-badge hub-badge-monthly">Monthly</span>
+<div class="hub-card-title">PPTX Deck Automation</div>
+<div class="hub-card-desc">
+Bridge your Power BI analytics dashboard directly into the corporate PowerPoint template
+with automated high-fidelity image extraction and intelligent date replacement.
+</div>
+<ul class="hub-card-features">
+<li>300 DPI lossless chart extraction</li>
+<li>Automatic slide image replacement</li>
+<li>Global date and text substitution</li>
+<li>Zero-touch template preservation</li>
+</ul>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
