@@ -232,8 +232,37 @@ with st.sidebar:
 
 
     st.markdown("""
-<div style="padding:0 16px; font-size:0.78rem; color:#94A3B8; line-height:1.5;">
-PETRONAS ERP HCM Support<br>Internal Use Only
+<div style="margin-top: 10px; padding: 18px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+    <div style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">System Status</div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #334155; font-weight: 500;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #10B981; box-shadow: 0 0 0 2px rgba(16,185,129,0.2);"></div>
+            Network
+        </div>
+        <span style="font-size: 0.8rem; color: #64748B;">Connected</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #334155; font-weight: 500;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #10B981; box-shadow: 0 0 0 2px rgba(16,185,129,0.2);"></div>
+            Environment
+        </div>
+        <span style="font-size: 0.8rem; color: #64748B;">Production</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #334155; font-weight: 500;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #00B1A9; box-shadow: 0 0 0 2px rgba(0,177,169,0.2);"></div>
+            Version
+        </div>
+        <span style="font-size: 0.8rem; color: #64748B; font-family: monospace;">v3.0.1</span>
+    </div>
+</div>
+
+<div style="margin-top: 32px; padding:0 16px; font-size:0.75rem; color:#94A3B8; line-height:1.6; text-align: center;">
+    <strong>PETRONAS ERP HCM Support</strong><br>
+    Internal Use Only &copy; 2026
 </div>
 """, unsafe_allow_html=True)
 

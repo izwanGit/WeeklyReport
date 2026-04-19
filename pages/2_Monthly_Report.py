@@ -177,11 +177,13 @@ if not PPTX_AVAILABLE:
 # ── Upload Section ──
 st.markdown('<p class="section-label">Step 1 &mdash; Upload Assets</p>', unsafe_allow_html=True)
 
-c1, c2 = st.columns(2)
-with c1:
-    pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], help="Export your Power BI dashboard as PDF with 1 visual per page (13 pages total).")
-with c2:
-    pptx_file = st.file_uploader("PowerPoint Template", type=['pptx'], help="Your corporate PPTX template. The script will never modify the original — a new copy is generated.")
+pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], help="Export your Power BI dashboard as PDF with 1 visual per page (13 pages total).")
+
+TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
+pptx_available = os.path.exists(TEMPLATE_PATH)
+
+if not pptx_available:
+    st.error("⚠️ Corporate PowerPoint template not found in the system. \n\nPlease place a file named `template.pptx` in the application root directory.")
 
 
 # ── Processing Engine ──
@@ -282,8 +284,8 @@ def process_monthly_report(pdf_bytes, pptx_bytes):
 
 
 # ── Generate Section ──
-if pdf_file and pptx_file:
-    st.markdown('<p class="section-label">Step 2 &mdash; Generate Deck</p>', unsafe_allow_html=True)
+if pdf_file and pptx_available:
+    st.markdown('<p class="section-label">Step 2 &mdash; Validation & Generation</p>', unsafe_allow_html=True)
 
     # Preview metrics
     pdf_file.seek(0)
@@ -307,9 +309,12 @@ if pdf_file and pptx_file:
     if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
         with st.spinner("Extracting visuals and building the presentation..."):
             try:
+                with open(TEMPLATE_PATH, "rb") as f:
+                    template_bytes = f.read()
+
                 out_bytes, build_logs, img_count = process_monthly_report(
                     pdf_file.read(),
-                    pptx_file.read()
+                    template_bytes
                 )
 
                 st.success(f"Presentation built successfully — {img_count} slide images replaced automagically.")
@@ -352,7 +357,7 @@ else:
     ">
         <h2 style="color: #1A202C; font-weight: 800; margin: 0 0 10px 0;">Upload Required</h2>
         <p style="color: #718096; max-width: 520px; margin: 0 auto; line-height: 1.7; font-size: 0.95rem;">
-            Upload your Power BI PDF export and the corporate PowerPoint template using the file uploaders above.
+            Upload your Power BI PDF export using the file uploader above. The corporate PowerPoint template runs automatically from the system.
             The script will automatically detect images and map them to the corresponding slide layouts.
         </p>
     </div>
