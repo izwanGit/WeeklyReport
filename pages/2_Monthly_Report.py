@@ -143,19 +143,7 @@ with st.sidebar:
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown("### Report Configuration")
-
-    old_month = st.text_input(
-        "Previous Month",
-        value="February 2026",
-        help="The month string currently present in your PowerPoint template. This text will be found and replaced."
-    )
-    new_month = st.text_input(
-        "Current Month",
-        value="March 2026",
-        help="The new month string that will replace the previous month across all slides."
-    )
-
+# No Report Configuration required for pure PPTX deck automation
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
@@ -197,14 +185,13 @@ with c2:
 
 
 # ── Processing Engine ──
-def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
+def process_monthly_report(pdf_bytes, pptx_bytes):
     """
     Core automation engine.
     1. Extracts each PDF page as a high-resolution PNG (4x zoom = ~300 DPI).
     2. Opens the PPTX template.
-    3. Performs global text replacement (month).
-    4. Replaces image placeholders on slides 3-10 with sequentially mapped PDF pages.
-    5. Returns the final PPTX bytes and a structured build log.
+    3. Replaces image placeholders on slides 3-10 with sequentially mapped PDF pages.
+    4. Returns the final PPTX bytes and a structured build log.
     """
 
     # ── Phase 1: Extract high-res images from the Power BI PDF ──
@@ -219,32 +206,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
     # ── Phase 2: Open the PPTX template ──
     prs = Presentation(io.BytesIO(pptx_bytes))
 
-    # ── Phase 3: Global text replacement ──
-    replacement_pairs = []
-    if old_text and new_text:
-        replacement_pairs.append((old_text, new_text))
-
-    text_replacements = 0
-    for slide in prs.slides:
-        for shape in slide.shapes:
-            if shape.has_text_frame:
-                for paragraph in shape.text_frame.paragraphs:
-                    for run in paragraph.runs:
-                        for old_str, new_str in replacement_pairs:
-                            if old_str in run.text:
-                                run.text = run.text.replace(old_str, new_str)
-                                text_replacements += 1
-            if shape.has_table:
-                for row in shape.table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.text_frame.paragraphs:
-                            for run in paragraph.runs:
-                                for old_str, new_str in replacement_pairs:
-                                    if old_str in run.text:
-                                        run.text = run.text.replace(old_str, new_str)
-                                        text_replacements += 1
-
-    # ── Phase 4: Image replacement engine ──
+    # ── Phase 3: Image replacement engine ──
     # Slide index (0-based) → number of images to replace on that slide
     # Slide 3 = index 2, Slide 4 = index 3, etc.
     mapping = {
@@ -316,7 +278,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, old_text, new_text):
     prs.save(output)
     output.seek(0)
 
-    return output.read(), log, text_replacements, pdf_idx
+    return output.read(), log, pdf_idx
 
 
 # ── Generate Section ──
@@ -345,14 +307,12 @@ if pdf_file and pptx_file:
     if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
         with st.spinner("Extracting visuals and building the presentation..."):
             try:
-                out_bytes, build_logs, txt_count, img_count = process_monthly_report(
+                out_bytes, build_logs, img_count = process_monthly_report(
                     pdf_file.read(),
-                    pptx_file.read(),
-                    old_month,
-                    new_month
+                    pptx_file.read()
                 )
 
-                st.success(f"Presentation built successfully — {img_count} images replaced, {txt_count} text substitutions applied.")
+                st.success(f"Presentation built successfully — {img_count} slide images replaced automagically.")
 
                 with st.expander("Build Log", expanded=False):
                     for msg in build_logs:
@@ -365,16 +325,15 @@ if pdf_file and pptx_file:
                 st.markdown('<p class="section-label">Step 3 &mdash; Download</p>', unsafe_allow_html=True)
 
                 st.info(
-                    f"All occurrences of \"{old_month}\" have been replaced with \"{new_month}\". "
-                    f"Please verify the summary text on Slides 4 and 8 manually "
-                    f"(e.g., ticket counts and ageing numbers) as these metrics may require manual update.",
+                    "Please verify the summary text on Slides 4 and 8 manually "
+                    "(e.g., ticket counts and ageing numbers) as these metrics require manual update.",
                     icon="ℹ️"
                 )
 
                 st.download_button(
                     label="Download Final Report (.pptx)",
                     data=out_bytes,
-                    file_name=f"Monthly_Report_{new_month.replace(' ', '_')}.pptx",
+                    file_name=f"Monthly_Report_{datetime.date.today().strftime('%b_%Y')}.pptx",
                     mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     use_container_width=True
                 )
@@ -394,7 +353,7 @@ else:
         <h2 style="color: #1A202C; font-weight: 800; margin: 0 0 10px 0;">Upload Required</h2>
         <p style="color: #718096; max-width: 520px; margin: 0 auto; line-height: 1.7; font-size: 0.95rem;">
             Upload your Power BI PDF export and the corporate PowerPoint template using the file uploaders above.
-            Configure the month and year text in the sidebar before generating.
+            The script will automatically detect images and map them to the corresponding slide layouts.
         </p>
     </div>
     """, unsafe_allow_html=True)
