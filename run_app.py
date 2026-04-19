@@ -60,7 +60,7 @@ if __name__ == "__main__":
     sys.argv = [
         "streamlit",
         "run",
-        resolve_path("app.py"),
+        resolve_path("Report_Hub.py"),
         "--global.developmentMode=false",
         "--server.port=8501",
         "--server.headless=true"

@@ -85,6 +85,43 @@ st.markdown("""
         margin-bottom: 12px;
         margin-top: 8px;
     }
+
+    /* ── Ultra-Premium Sidebar Nav Redesign ── */
+    [data-testid="stSidebarNav"] {
+        padding-top: 16px !important;
+    }
+    [data-testid="stSidebarNav"]::before {
+        content: "PETRONAS MODULES";
+        color: #00B1A9;
+        font-size: 0.70rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        padding-left: 24px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    [data-testid="stSidebarNav"] li a {
+        border-radius: 10px !important;
+        margin: 4px 16px !important;
+        padding: 10px 16px !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stSidebarNav"] li a:hover {
+        background-color: #F1F5F9 !important;
+    }
+    [data-testid="stSidebarNav"] li a[aria-current="page"] {
+        background: linear-gradient(90deg, #00B1A9, #008C86) !important;
+        box-shadow: 0 4px 10px rgba(0, 177, 169, 0.3) !important;
+    }
+    [data-testid="stSidebarNav"] li a[aria-current="page"] span {
+        color: white !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stSidebarNav"] span {
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        color: #334155 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
