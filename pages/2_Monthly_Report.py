@@ -139,7 +139,7 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<img src="{_logo_sidebar_uri}" style="height:56px;" />
+<a href="/" target="_self"><img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/></a>
 </div>
 """, unsafe_allow_html=True)
 
