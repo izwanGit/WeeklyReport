@@ -161,7 +161,7 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-block;">
+<div id="btn-back-logo" style="cursor: pointer; display: inline-block;">
     <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
 </div>
 </div>
@@ -188,7 +188,7 @@ with st.sidebar:
     pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'])
 
 st.markdown("""
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+<div id="btn-back-hub" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     Back to Hub
 </div>
@@ -396,3 +396,23 @@ else:
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+import streamlit.components.v1 as components
+components.html("""
+<script>
+    const parent = window.parent.document;
+    setInterval(() => {
+        const triggers = ['btn-back-hub', 'btn-back-logo'];
+        triggers.forEach(id => {
+            const el = parent.getElementById(id);
+            if (el && !el.dataset.routed) {
+                el.dataset.routed = 'true';
+                el.addEventListener('click', () => {
+                    const links = parent.querySelectorAll('[data-testid="stSidebarNav"] a');
+                    if (links && links[0]) links[0].click();
+                });
+            }
+        });
+    }, 250);
+</script>
+""", height=0, width=0)

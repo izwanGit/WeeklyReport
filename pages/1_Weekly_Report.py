@@ -285,7 +285,7 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown("""
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+<div id="btn-back-hub" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
     Back to Hub
 </div>
@@ -309,7 +309,7 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-block;">
+<div id="btn-back-logo" style="cursor: pointer; display: inline-block;">
     <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
 </div>
 </div>
@@ -742,8 +742,28 @@ else:
     st.markdown("""
     <div style="text-align: center; padding: 70px 40px; background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%); border: 1px solid #E2E8F0; border-top: 4px solid #00A19C; border-radius: 16px;">
         <h2 style="color: #1A202C !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">Data Upload Required</h2>
-        <p style="color: #718096 !important; max-width: 480px; margin: 0 auto 10px auto; line-height: 1.7;">
-            Please upload both your Service Request/Work Order Excel and your Incident Excel using the sidebar.
+        <p style="color: #718096; max-width: 480px; margin: 0 auto; line-height: 1.6; font-size: 0.95rem;">
+            Upload your exported `.xlsx` file using the sidebar to analyze the latest ticket data.
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+import streamlit.components.v1 as components
+components.html("""
+<script>
+    const parent = window.parent.document;
+    setInterval(() => {
+        const triggers = ['btn-back-hub', 'btn-back-logo'];
+        triggers.forEach(id => {
+            const el = parent.getElementById(id);
+            if (el && !el.dataset.routed) {
+                el.dataset.routed = 'true';
+                el.addEventListener('click', () => {
+                    const links = parent.querySelectorAll('[data-testid="stSidebarNav"] a');
+                    if (links && links[0]) links[0].click();
+                });
+            }
+        });
+    }, 250);
+</script>
+""", height=0, width=0)

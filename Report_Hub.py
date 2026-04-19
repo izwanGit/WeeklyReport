@@ -248,7 +248,7 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[0].click()" style="cursor: pointer; display: inline-block;">
+<div id="btn-back-logo" class="hub-card-link-wrapper" style="cursor: pointer; display: inline-block;">
     <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
 </div>
 </div>
@@ -283,7 +283,7 @@ st.markdown("""
 <div class="hub-grid">
 
 <!-- Weekly Report Card -->
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[1].click()" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
+<div id="card-weekly" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -309,7 +309,7 @@ st.markdown("""
 </div>
 
 <!-- Monthly Report Card -->
-<div onclick="window.parent.document.querySelectorAll('[data-testid=\\'stSidebarNav\\'] a')[2].click()" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
+<div id="card-monthly" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -344,3 +344,29 @@ st.markdown("""
 PETRONAS ERP HCM Support &mdash; Internal Use Only
 </div>
 """, unsafe_allow_html=True)
+
+import streamlit.components.v1 as components
+components.html("""
+<script>
+    const parent = window.parent.document;
+    setInterval(() => {
+        const triggers = [
+            { id: 'btn-back-logo', index: 0 },
+            { id: 'card-weekly', index: 1 },
+            { id: 'card-monthly', index: 2 }
+        ];
+        triggers.forEach(t => {
+            const el = parent.getElementById(t.id);
+            if (el && !el.dataset.routed) {
+                el.dataset.routed = 'true';
+                el.addEventListener('click', () => {
+                    const links = parent.querySelectorAll('[data-testid="stSidebarNav"] a');
+                    if (links && links[t.index]) {
+                        links[t.index].click();
+                    }
+                });
+            }
+        });
+    }, 250);
+</script>
+""", height=0, width=0)
