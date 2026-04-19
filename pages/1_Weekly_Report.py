@@ -265,11 +265,15 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<div style="display:flex; align-items:center; gap:24px; padding:28px 32px; background:linear-gradient(135deg, #00B1A9 0%, #00897B 100%); border-radius:16px; margin-bottom:1.5rem; box-shadow:0 8px 32px rgba(0,141,134,0.2); border:1px solid rgba(255,255,255,0.12);">
-<img src="{_logo_banner_uri}" style="height:64px; flex-shrink:0; filter:brightness(1.05);" />
-<div style="min-width:0;">
-<h1 style="color:#FFFFFF; margin:0; font-weight:800; font-size:1.5rem; text-transform:uppercase; letter-spacing:0.5px; line-height:1.15;">Weekly SR & Incident Report</h1>
-<p style="color:rgba(255,255,255,0.85); margin:4px 0 0 0; font-size:0.92rem; font-weight:400;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+<style>
+.banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.2rem, 3.5vw, 1.8rem) !important; letter-spacing: 0.1px; }}
+.banner-subtitle {{ color: #FFFFFF !important; font-weight: 400 !important; text-shadow: 0px 1px 3px rgba(0,0,0,0.2) !important; margin: 4px 0 0 0 !important; white-space: nowrap; font-size: clamp(0.85rem, 2vw, 1.0rem) !important; opacity: 0.95 !important; }}
+</style>
+<div style="display: flex; align-items: center; gap: 24px; padding: 22px 32px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2rem; box-shadow: 0 12px 35px rgba(0, 177, 169, 0.25); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15);">
+<img src="{_logo_banner_uri}" style="height: 80px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
+<div style="min-width: 0;">
+<h1 class="banner-title">Weekly SR &amp; Incident Report Generator</h1>
+<p class="banner-subtitle">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
 </div>
 </div>
 """, unsafe_allow_html=True)
