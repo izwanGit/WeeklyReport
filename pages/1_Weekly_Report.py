@@ -157,8 +157,14 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
             pass
 
 # ----------------------------------------------------
-# Premium Styling (page_config is set by the Hub landing page)
+# Page Config & Premium Styling
 # ----------------------------------------------------
+st.set_page_config(
+    page_title="Weekly Report | PETRONAS",
+    page_icon="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # Premium CSS
 st.markdown("""
@@ -211,41 +217,37 @@ st.markdown("""
         display: none !important;
     }
 
-    /* ── Ultra-Premium Sidebar Nav Redesign ── */
-    [data-testid="stSidebarNav"] {
-        padding-top: 16px !important;
-    }
-    [data-testid="stSidebarNav"]::before {
-        content: "PETRONAS MODULES";
-        color: #00B1A9;
-        font-size: 0.70rem;
-        font-weight: 800;
-        letter-spacing: 1.5px;
-        padding-left: 24px;
-        margin-bottom: 8px;
+    /* ── Hide default Streamlit sidebar nav ── */
+    [data-testid="stSidebarNav"] { display: none !important; }
+
+    /* ── Custom Sidebar Nav ── */
+    .sidebar-nav {
         display: block;
-    }
-    [data-testid="stSidebarNav"] li a {
-        border-radius: 10px !important;
-        margin: 4px 16px !important;
-        padding: 10px 16px !important;
-        transition: all 0.2s ease !important;
-    }
-    [data-testid="stSidebarNav"] li a:hover {
-        background-color: #F1F5F9 !important;
-    }
-    [data-testid="stSidebarNav"] li a[aria-current="page"] {
-        background: linear-gradient(90deg, #00B1A9, #008C86) !important;
-        box-shadow: 0 4px 10px rgba(0, 177, 169, 0.3) !important;
-    }
-    [data-testid="stSidebarNav"] li a[aria-current="page"] span {
-        color: white !important;
-        font-weight: 700 !important;
-    }
-    [data-testid="stSidebarNav"] span {
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        padding: 10px 16px;
+        margin: 3px 12px;
+        border-radius: 8px;
+        text-decoration: none !important;
         color: #334155 !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
+    }
+    .sidebar-nav:hover {
+        background: #F1F5F9;
+        color: #1E293B !important;
+        text-decoration: none !important;
+    }
+    .sidebar-nav.active {
+        background: linear-gradient(135deg, #00B1A9, #008C86);
+        color: white !important;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(0,177,169,0.25);
+    }
+    .sidebar-sep {
+        border: none;
+        border-top: 1px solid #E2E8F0;
+        margin: 16px 12px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -263,26 +265,27 @@ _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 st.markdown(f"""
-<style>
-    .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.2rem, 3.5vw, 1.8rem) !important; letter-spacing: 0.1px; }}
-    .banner-subtitle {{ color: #FFFFFF !important; font-weight: 400 !important; text-shadow: 0px 1px 3px rgba(0,0,0,0.2) !important; margin: 4px 0 0 0 !important; white-space: nowrap; font-size: clamp(0.85rem, 2vw, 1.0rem) !important; opacity: 0.95 !important; }}
-</style>
-<div style="display: flex; align-items: center; gap: 24px; padding: 22px 32px; background-color: #00B1A9; border-radius: 20px; margin-bottom: 2rem; box-shadow: 0 12px 35px rgba(0, 177, 169, 0.25); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15);">
-    <img src="{_logo_banner_uri}" style="height: 80px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
-    <div style="min-width: 0;">
-        <h1 class="banner-title">Weekly SR &amp; Incident Report Generator</h1>
-        <p class="banner-subtitle">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
-    </div>
+<div style="display:flex; align-items:center; gap:24px; padding:28px 32px; background:linear-gradient(135deg, #00B1A9 0%, #00897B 100%); border-radius:16px; margin-bottom:1.5rem; box-shadow:0 8px 32px rgba(0,141,134,0.2); border:1px solid rgba(255,255,255,0.12);">
+<img src="{_logo_banner_uri}" style="height:64px; flex-shrink:0; filter:brightness(1.05);" />
+<div style="min-width:0;">
+<h1 style="color:#FFFFFF; margin:0; font-weight:800; font-size:1.5rem; text-transform:uppercase; letter-spacing:0.5px; line-height:1.15;">Weekly SR & Incident Report</h1>
+<p style="color:rgba(255,255,255,0.85); margin:4px 0 0 0; font-size:0.92rem; font-weight:400;">Automate your MyGenie Excel exports into production-ready HTML email reports.</p>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
     st.markdown(f"""
-    <div style="text-align:center; padding: 0; margin-top: -30px; margin-bottom: 15px;">
-        <img src="{_logo_sidebar_uri}" style="height: 60px;" />
-    </div>
-    """, unsafe_allow_html=True)
+<div style="text-align:center; padding:8px 0 20px 0;">
+<img src="{_logo_sidebar_uri}" style="height:56px;" />
+</div>
+<p style="font-size:0.68rem; font-weight:800; color:#00B1A9; letter-spacing:1.5px; padding:0 16px; margin:0 0 8px 0;">MODULES</p>
+<a href="/" target="_self" class="sidebar-nav">Report Hub</a>
+<a href="/Weekly_Report" target="_self" class="sidebar-nav active">Weekly Report</a>
+<a href="/Monthly_Report" target="_self" class="sidebar-nav">Monthly Report</a>
+<hr class="sidebar-sep">
+""", unsafe_allow_html=True)
     
     st.markdown("### Open Ticket Counts")
     c1, c2 = st.columns(2)
