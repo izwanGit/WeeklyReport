@@ -37,9 +37,7 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebarNav"],
 [data-testid="stSidebarNavItems"],
 [data-testid="stSidebarNavSeparator"],
-[data-testid="stStatusWidget"],
-div[data-testid="stDecoration"],
-div[data-testid="stToolbar"] {
+[data-testid="stStatusWidget"] {
     display: none !important;
     visibility: hidden !important;
 }
