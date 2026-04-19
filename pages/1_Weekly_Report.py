@@ -720,17 +720,8 @@ else:
     st.markdown("""
     <div style="text-align: center; padding: 70px 40px; background: linear-gradient(180deg, #FFFFFF 0%, #F0FAFA 100%); border: 1px solid #E2E8F0; border-top: 4px solid #00A19C; border-radius: 16px;">
         <h2 style="color: #1A202C !important; font-weight: 800 !important; margin: 0 0 10px 0 !important;">Data Upload Required</h2>
-        <p style="color: #718096 !important; max-width: 480px; margin: 0 auto 28px auto; line-height: 1.7;">
+        <p style="color: #718096 !important; max-width: 480px; margin: 0 auto 10px auto; line-height: 1.7;">
             Please upload both your Service Request/Work Order Excel and your Incident Excel using the sidebar.
         </p>
-        <button onclick="window.parent.document.querySelector('[data-testid=\\'collapsedControl\\']').click()" 
-                style="background-color: #00B1A9; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,177,169,0.3);"
-                onmouseover="this.style.backgroundColor='#008C86'; this.style.transform='translateY(-2px)'"
-                onmouseout="this.style.backgroundColor='#00B1A9'; this.style.transform='translateY(0)'">
-            <span style="display: flex; align-items: center; gap: 8px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-                Open Sidebar to Upload Files
-            </span>
-        </button>
     </div>
     """, unsafe_allow_html=True)
