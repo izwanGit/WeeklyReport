@@ -173,7 +173,19 @@ st.markdown("""
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif !important;
     }
-    .main .block-container { padding-top: 0.5rem !important; max-width: 1400px !important; }
+
+    /* ── Smooth page transition ── */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-testid="stAppViewContainer"] > .main {
+        animation: fadeIn 0.35s ease-out;
+    }
+    .stSpinner, [data-testid="stStatusWidget"] {
+        transition: opacity 0.3s ease;
+    }
+
     [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
         color: #00B1A9 !important; font-weight: 700 !important;

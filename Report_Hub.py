@@ -24,6 +24,19 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'Inter', sans-serif !important;
     background-color: #F8FAFC !important;
 }
+
+/* ── Smooth page transition ── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+[data-testid="stAppViewContainer"] > .main {
+    animation: fadeIn 0.35s ease-out;
+}
+/* Hide loading indicators for seamless feel */
+.stSpinner, [data-testid="stStatusWidget"] {
+    transition: opacity 0.3s ease;
+}
 .main .block-container {
     padding-top: 1.5rem !important;
     max-width: 1100px !important;

@@ -4,6 +4,7 @@ import traceback
 import sys
 import os
 import base64
+import datetime
 
 try:
     import fitz  # PyMuPDF
@@ -32,6 +33,18 @@ st.markdown("""
 
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif !important;
+    }
+
+    /* ── Smooth page transition ── */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-testid="stAppViewContainer"] > .main {
+        animation: fadeIn 0.35s ease-out;
+    }
+    .stSpinner, [data-testid="stStatusWidget"] {
+        transition: opacity 0.3s ease;
     }
     .main .block-container {
         padding-top: 1rem !important;
@@ -144,14 +157,18 @@ with st.sidebar:
 """, unsafe_allow_html=True)
 
     st.markdown("### Report Settings")
+    _months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    _now = datetime.date.today()
     sel_month = st.selectbox(
         "Report Month",
-        options=["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-        index=1
+        options=_months,
+        index=_now.month - 1
     )
+    _current_year = _now.year
+    _years = [str(y) for y in range(_current_year - 1, _current_year + 3)]
     sel_year = st.selectbox(
         "Report Year",
-        options=["2025", "2026", "2027", "2028"],
+        options=_years,
         index=1
     )
 
