@@ -76,94 +76,125 @@ footer { visibility: hidden; }
     gap: 28px;
     margin-top: 32px;
 }
+.hub-card-link-wrapper {
+    text-decoration: none !important;
+    display: block;
+    color: inherit !important;
+    height: 100%;
+    outline: none;
+}
 .hub-card {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 32px 28px 28px 28px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-    transition: all 0.25s ease;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    cursor: pointer;
+}
+.hub-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 177, 169, 0.15);
+    border-color: #00B1A9;
+}
+.hub-card-banner {
+    height: 110px;
+    background: linear-gradient(135deg, #F0FDFA 0%, #E0F7F5 100%);
+    border-bottom: 1px solid #C6F7F3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
     overflow: hidden;
 }
-.hub-card::before {
+.hub-card-banner::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #00B1A9, #008C86);
-}
-.hub-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    border-color: #CBD5E1;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 20% 50%, rgba(0,177,169,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(0,177,169,0.04) 0%, transparent 40%);
+    top: -50%; left: -50%;
 }
 .hub-card-icon {
-    width: 44px; height: 44px;
-    border-radius: 10px;
+    width: 64px; height: 64px;
+    background: #FFFFFF;
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    margin-bottom: 18px;
-    background: linear-gradient(135deg, #F0FDFA, #E0F7F5);
-    border: 1px solid #C6F7F3;
+    box-shadow: 0 8px 16px rgba(0,177,169,0.15);
+    border: 2px solid #00B1A9;
+    z-index: 1;
 }
 .hub-card-icon svg {
-    width: 22px; height: 22px;
-    stroke: #00897B;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: 32px; height: 32px;
+    stroke: #00B1A9;
+    fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.hub-card-content {
+    padding: 28px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 .hub-card-title {
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.25rem;
+    font-weight: 800;
     color: #1E293B;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     letter-spacing: -0.01em;
 }
 .hub-card-desc {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     color: #64748B;
     line-height: 1.65;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 .hub-card-features {
     list-style: none;
-    padding: 0; margin: 0;
+    padding: 0; margin: 0 0 24px 0;
 }
 .hub-card-features li {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: #475569;
-    padding: 5px 0;
+    padding: 6px 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 .hub-card-features li::before {
     content: '';
     display: inline-block;
-    width: 6px; height: 6px;
+    width: 7px; height: 7px;
     background: #00B1A9;
     border-radius: 50%;
     flex-shrink: 0;
 }
-.hub-badge {
-    display: inline-block;
-    font-size: 0.65rem;
-    font-weight: 700;
+.hub-card-footer {
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #00B1A9;
+    font-weight: 800;
+    font-size: 0.95rem;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
 }
-.hub-badge-weekly {
-    background: #E0F7F5;
-    color: #00796B;
+.hub-card:hover .hub-card-footer {
+    color: #008C86;
+    border-top-color: #CBD5E1;
 }
-.hub-badge-monthly {
-    background: #E8EAF6;
-    color: #3949AB;
+.hub-card-footer svg {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hub-card:hover .hub-card-footer svg {
+    transform: translateX(6px);
 }
 .hub-footer {
     margin-top: 48px;
@@ -226,47 +257,59 @@ st.markdown(f"""
 # ── Card Grid ──
 st.markdown("""
 <div class="hub-grid">
+
 <!-- Weekly Report Card -->
-<a href="/Weekly_Report" target="_self" style="text-decoration: none; display: block; color: inherit;">
+<a href="/Weekly_Report" target="_self" class="hub-card-link-wrapper">
 <div class="hub-card">
-<div class="hub-card-icon">
-<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-</div>
-<span class="hub-badge hub-badge-weekly">Weekly</span>
-<div class="hub-card-title">Email Report Generator</div>
-<div class="hub-card-desc" style="color: #64748B;">
-Transform MyGenie Excel exports into polished, production-ready HTML email reports
-with automated ticket analysis and one-click Outlook delivery.
-</div>
-<ul class="hub-card-features">
-<li>Automated ageing ticket calculations</li>
-<li>Historical trend snapshots</li>
-<li>Direct Outlook draft integration</li>
-<li>Formatted HTML copy-to-clipboard</li>
-</ul>
+    <div class="hub-card-banner">
+        <div class="hub-card-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+    </div>
+    <div class="hub-card-content">
+        <div class="hub-card-title">Weekly Report</div>
+        <div class="hub-card-desc">
+            Transform MyGenie Excel exports into polished, production-ready HTML email reports with automated ticket analysis.
+        </div>
+        <ul class="hub-card-features">
+            <li>Automated ageing ticket calculations</li>
+            <li>Historical trend snapshots</li>
+            <li>Direct Outlook draft integration</li>
+        </ul>
+        <div class="hub-card-footer">
+            Launch Module
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+    </div>
 </div>
 </a>
 
 <!-- Monthly Report Card -->
-<a href="/Monthly_Report" target="_self" style="text-decoration: none; display: block; color: inherit;">
+<a href="/Monthly_Report" target="_self" class="hub-card-link-wrapper">
 <div class="hub-card">
-<div class="hub-card-icon">
-<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-</div>
-<span class="hub-badge hub-badge-monthly">Monthly</span>
-<div class="hub-card-title">PPTX Deck Automation</div>
-<div class="hub-card-desc" style="color: #64748B;">
-Bridge your Power BI analytics dashboard directly into the corporate PowerPoint template
-with automated high-fidelity image extraction and intelligent date replacement.
-</div>
-<ul class="hub-card-features">
-<li>300 DPI lossless chart extraction</li>
-<li>Automatic slide image replacement</li>
-<li>Global date and text substitution</li>
-<li>Zero-touch template preservation</li>
-</ul>
+    <div class="hub-card-banner" style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border-bottom-color: #C7D2FE;">
+        <div class="hub-card-icon" style="border-color: #4F46E5;">
+            <svg viewBox="0 0 24 24" style="stroke: #4F46E5;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+    </div>
+    <div class="hub-card-content">
+        <div class="hub-card-title">Monthly Report</div>
+        <div class="hub-card-desc">
+            Bridge your Power BI analytics dashboard directly into the corporate PowerPoint template with high-fidelity extraction.
+        </div>
+        <ul class="hub-card-features">
+            <li>300 DPI lossless chart extraction</li>
+            <li>Automatic slide image replacement</li>
+            <li>Zero-touch template preservation</li>
+        </ul>
+        <div class="hub-card-footer" style="color: #4F46E5;">
+            Launch Module
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+    </div>
 </div>
 </a>
+
 </div>
 """, unsafe_allow_html=True)
 
