@@ -151,6 +151,18 @@ st.markdown("""
         border-top: 1px solid #E2E8F0;
         margin: 16px 12px;
     }
+    .genie-link {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #31333F !important;
+        text-decoration: none !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+    .genie-link:hover {
+        color: #00B1A9 !important;
+        text-decoration: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -196,7 +208,8 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
-    pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'])
+    st.markdown("<a href='#' target='_blank' class='genie-link'>Power BI PDF Export ↗</a>", unsafe_allow_html=True)
+    pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], label_visibility="collapsed")
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
