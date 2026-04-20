@@ -12,7 +12,7 @@ pip install -r requirements.txt
 pip install pyinstaller streamlit
 
 echo 3. Generating EXE (This may take 1-2 minutes)...
-pyinstaller --clean windows_build.spec
+pyinstaller --clean app.spec
 
 echo.
 echo ==================================================
