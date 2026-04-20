@@ -11,7 +11,6 @@ datas = [
     ('PETRONAS_LOGO_SQUARE.png', '.'),
     ('PETRONAS_LOGO_HORIZONTAL.svg', '.'),
     ('PETRONAS_LOGO_HORIZONTAL_WHITE.svg', '.'),
-    ('history.json', '.'),
 ]
 datas += collect_data_files('streamlit')
 datas += copy_metadata('streamlit')
