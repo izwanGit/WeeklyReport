@@ -280,6 +280,18 @@ st.markdown("""
         border-top: 1px solid #E2E8F0;
         margin: 16px 12px;
     }
+    .genie-link {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #31333F !important;
+        text-decoration: none !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+    .genie-link:hover {
+        color: #00B1A9 !important;
+        text-decoration: underline !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -329,10 +341,10 @@ with st.sidebar:
     st.markdown("### Open Ticket Counts")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/aegyhutg26kn4a/f350ff42-68d2-5195-bce1-6a86eeaf6336?orgId=204007533&var-ASORG=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-assignee=All&var-Status=All' target='_blank' style='font-size:0.85rem; font-weight:500; color:#00B1A9; text-decoration:none;'>Open WO ↗</a>", unsafe_allow_html=True)
+        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/aegyhutg26kn4a/f350ff42-68d2-5195-bce1-6a86eeaf6336?orgId=204007533&var-ASORG=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-assignee=All&var-Status=All' target='_blank' class='genie-link'>Open WO</a>", unsafe_allow_html=True)
         sr_open_wo = st.number_input("Open WO", min_value=0, value=1, step=1, help="Total open Work Order ticket count (e.g. 215)", label_visibility="collapsed")
     with c2:
-        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/beg9bk10a07i8e/39afb7b?orgId=204007533&var-Assigned_Support_Org=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-Assignee=All&var-SLA=All' target='_blank' style='font-size:0.85rem; font-weight:500; color:#00B1A9; text-decoration:none;'>Open INC ↗</a>", unsafe_allow_html=True)
+        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/beg9bk10a07i8e/39afb7b?orgId=204007533&var-Assigned_Support_Org=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-Assignee=All&var-SLA=All' target='_blank' class='genie-link'>Open INC</a>", unsafe_allow_html=True)
         inc_open_input = st.number_input("Open INC", min_value=0, value=1, step=1, help="Total open Incident ticket count (e.g. 7)", label_visibility="collapsed")
 
     st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
@@ -342,9 +354,9 @@ with st.sidebar:
     
     st.markdown("<div style='margin-top: -25px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
-    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' style='font-size:0.85rem; font-weight:500; color:#00B1A9; text-decoration:none;'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
+    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel</a>", unsafe_allow_html=True)
     sr_wo_file = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo", label_visibility="collapsed")
-    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ddxo5d7th1gqob/incident-ageing-raw-data?orgId=204007533&var-Assignee_Login=All&var-Assigned_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All&var-enableOverridesForExcel=true' target='_blank' style='font-size:0.85rem; font-weight:500; color:#00B1A9; text-decoration:none;'>Incident Excel ↗</a>", unsafe_allow_html=True)
+    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ddxo5d7th1gqob/incident-ageing-raw-data?orgId=204007533&var-Assignee_Login=All&var-Assigned_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All&var-enableOverridesForExcel=true' target='_blank' class='genie-link'>Incident Excel</a>", unsafe_allow_html=True)
     inc_file = st.file_uploader("Incident Excel", type=['xlsx', 'xls'], key="inc", label_visibility="collapsed")
 
 if sr_wo_file and inc_file:
