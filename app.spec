@@ -2,6 +2,7 @@
 
 from PyInstaller.utils.hooks import collect_data_files
 from PyInstaller.utils.hooks import copy_metadata
+from PyInstaller.utils.hooks import collect_submodules
 
 datas = [
     ('template.html', '.'),
@@ -11,10 +12,24 @@ datas = [
     ('PETRONAS_LOGO_SQUARE.png', '.'),
     ('PETRONAS_LOGO_HORIZONTAL.svg', '.'),
     ('PETRONAS_LOGO_HORIZONTAL_WHITE.svg', '.'),
-    ('.streamlit/*', '.streamlit'),
+    ('.streamlit', '.streamlit'),
 ]
 datas += collect_data_files('streamlit')
 datas += copy_metadata('streamlit')
+
+# Collect ALL streamlit submodules so nothing is missed at runtime
+hiddenimports = [
+    'streamlit',
+    'pandas',
+    'openpyxl',
+    'jinja2',
+    'win32com.client',
+    'pythoncom',
+    'pywintypes',
+    'pymupdf',
+    'pptx',
+]
+hiddenimports += collect_submodules('streamlit')
 
 block_cipher = None
 
@@ -23,7 +38,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=['streamlit', 'pandas', 'openpyxl', 'jinja2', 'win32com.client', 'pymupdf', 'pptx'],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

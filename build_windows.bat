@@ -11,8 +11,8 @@ echo 2. Installing Requirements...
 pip install -r requirements.txt
 pip install pyinstaller streamlit
 
-echo 3. Generating EXE (This may take 1-2 minutes)...
-pyinstaller --clean app.spec
+echo 3. Generating EXE (This may take 2-5 minutes)...
+pyinstaller --clean --noconfirm app.spec
 
 echo.
 echo ==================================================
