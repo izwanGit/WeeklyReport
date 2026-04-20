@@ -1,6 +1,6 @@
 @echo off
 echo ==================================================
-echo Petronas Weekly Report Tool - Windows Build Kit
+echo PETRONAS Report Hub - Windows Build Kit
 echo ==================================================
 echo.
 echo 1. Creating Virtual Environment...
