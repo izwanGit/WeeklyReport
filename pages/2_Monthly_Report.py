@@ -35,18 +35,25 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* ── Fast smooth entry — only main content, sidebar stays static ── */
-    @keyframes smoothEntry {
-        from { opacity: 0.6; }
-        to { opacity: 1; }
+    /* KILL ALL BLINKING */
+    [data-testid="stDecoration"], 
+    [data-testid="stStatusWidget"],
+    [data-testid="stSidebarNav"],
+    .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
     }
-    [data-testid="stAppViewContainer"] > .main {
-        animation: smoothEntry 0.15s ease-out;
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        border-bottom: none !important;
     }
-    /* Keep sidebar rock-solid — no animation, no flash */
+    
+    /* Ensure no transitions that look like blinks */
+    * { transition: none !important; }
+    
     [data-testid="stSidebar"] {
         animation: none !important;
-        opacity: 1 !important;
+        transform: none !important;
     }
     [data-testid="stSidebarNav"],
     [data-testid="stSidebarNavItems"],

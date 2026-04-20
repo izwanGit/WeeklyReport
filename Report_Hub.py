@@ -25,14 +25,22 @@ html, body, [data-testid="stAppViewContainer"] {
     background-color: #F8FAFC !important;
 }
 
-/* ── Minimal smooth entry — fast so no visible blink ── */
-@keyframes smoothEntry {
-    from { opacity: 0.6; }
-    to { opacity: 1; }
+/* KILL ALL BLINKING */
+[data-testid="stDecoration"], 
+[data-testid="stStatusWidget"],
+[data-testid="stSidebarNav"],
+.stDeployButton {
+    display: none !important;
+    visibility: hidden !important;
 }
-[data-testid="stAppViewContainer"] > .main {
-    animation: smoothEntry 0.15s ease-out;
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: none !important;
 }
+
+/* Ensure no transitions that look like blinks */
+* { transition: none !important; }
+.hub-card, .hub-card svg, .hub-card-link-wrapper { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease !important; }
 
 /* ── Hide Streamlit chrome ── */
 [data-testid="stStatusWidget"],
@@ -47,6 +55,12 @@ header[data-testid="stHeader"] {
 .stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
+
+/* YouTube Sidebar Effect */
+[data-testid="stSidebar"] {
+    animation: none !important;
+    transform: none !important;
+}
 
 .main .block-container {
     padding-top: 1.5rem !important;
