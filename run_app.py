@@ -6,6 +6,7 @@ from threading import Thread
 import time
 import subprocess
 import signal
+import socket
 
 def resolve_path(path):
     if getattr(sys, 'frozen', False):
@@ -58,8 +59,15 @@ if __name__ == "__main__":
     server_thread = Thread(target=start_server, daemon=True)
     server_thread.start()
 
-    # 2. Wait a moment for server to initialize
-    time.sleep(3)
+    # 2. Wait until Streamlit is actually serving on the port (timeout after 30s)
+    port = 8501
+    start_time = time.time()
+    while time.time() - start_time < 30:
+        try:
+            with socket.create_connection(("localhost", port), timeout=0.5):
+                break
+        except OSError:
+            time.sleep(0.5)
 
     # 3. Launch browser in App Mode (blocks until closed)
     url = "http://localhost:8501/?splash=true"
