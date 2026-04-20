@@ -67,7 +67,7 @@ footer { visibility: hidden; }
     max-width: 1100px !important;
 }
 [data-testid="stSidebar"] {
-    border-right: 2px solid #00B1A9 !important;
+    border-right: none !important;
     background-color: #FFFFFF !important;
 }
 

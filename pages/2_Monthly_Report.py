@@ -65,13 +65,13 @@ st.markdown("""
     header[data-testid="stHeader"] {
         background: #F8FAFC !important;
     }
-    [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
+    [data-testid="stSidebar"] { border-right: none !important; }
 
     .main .block-container {
         padding-top: 1rem !important;
         max-width: 1200px !important;
     }
-    [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
+    [data-testid="stSidebar"] { border-right: none !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
         color: #00B1A9 !important; font-weight: 700 !important;
     }

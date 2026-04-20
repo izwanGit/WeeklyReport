@@ -204,7 +204,7 @@ st.markdown("""
     header[data-testid="stHeader"] {
         background: #F8FAFC !important;
     }
-    [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
+    [data-testid="stSidebar"] { border-right: none !important; }
 
     .main .block-container { padding-top: 0.5rem !important; max-width: 1400px !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
