@@ -17,7 +17,7 @@ pyinstaller --clean app.spec
 echo.
 echo ==================================================
 echo BUILD COMPLETE!
-echo Your executable is in: dist\PetronasReportTool\
-echo Double-click 'PetronasReportTool.exe' to run.
+echo Your executable is in: dist\PETRONAS Report Hub\
+echo Double-click 'PETRONAS Report Hub.exe' to run.
 echo ==================================================
 pause
