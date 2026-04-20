@@ -285,14 +285,11 @@ st.markdown("""
         font-weight: 500;
         color: #31333F !important;
         text-decoration: none !important;
-        border-bottom: 1px dotted #A0AEC0 !important;
-        padding-bottom: 1px !important;
         transition: all 0.2s ease !important;
         cursor: pointer !important;
     }
     .genie-link:hover {
         color: #00B1A9 !important;
-        border-bottom: 1px solid #00B1A9 !important;
         text-decoration: none !important;
     }
 </style>
