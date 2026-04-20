@@ -62,7 +62,7 @@ if __name__ == "__main__":
     time.sleep(3)
 
     # 3. Launch browser in App Mode (blocks until closed)
-    url = "http://localhost:8501"
+    url = "http://localhost:8501/?splash=true"
     cmd = get_browser_command(url)
     
     if cmd:

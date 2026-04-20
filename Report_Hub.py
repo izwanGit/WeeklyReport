@@ -27,9 +27,9 @@ def _image_to_data_uri(path, mime_type):
 _logo_square_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
-# ── Loading Splash Screen (ONLY on first cold start) ──
-if "_splash_shown" not in st.session_state:
-    st.session_state["_splash_shown"] = True
+# ── Loading Splash Screen (ONLY on software open via query param) ──
+if st.query_params.get("splash") == "true":
+    st.query_params.clear()
     st.markdown(f"""
         <style>
             @keyframes pulse-teal {{
