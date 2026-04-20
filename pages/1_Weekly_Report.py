@@ -343,6 +343,18 @@ with st.sidebar:
     sr_wo_file = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo")
     inc_file = st.file_uploader("Incident Excel", type=['xlsx', 'xls'], key="inc")
 
+    st.markdown("<hr style='border:none; border-top:1px solid #E2E8F0; margin:12px 0;'>", unsafe_allow_html=True)
+    with st.expander("📎 Quick Links", expanded=False):
+        st.markdown("""
+**Dashboards**
+- [Open INC Dashboard](https://mygenieplus-ir1.onbmc.com/dashboards/d/beg9bk10a07i8e/39afb7b?orgId=204007533&var-Assigned_Support_Org=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-Assignee=All&var-SLA=All)
+- [Open SR Dashboard](https://mygenieplus-ir1.onbmc.com/dashboards/d/aegyhutg26kn4a/f350ff42-68d2-5195-bce1-6a86eeaf6336?orgId=204007533&var-ASORG=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-assignee=All&var-Status=All)
+
+**Raw Data Downloads**
+- [INC Ageing Raw Data](https://mygenieplus-ir1.onbmc.com/dashboards/d/ddxo5d7th1gqob/incident-ageing-raw-data?orgId=204007533&var-Assignee_Login=All&var-Assigned_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All&var-enableOverridesForExcel=true)
+- [SR Ageing Raw Data](https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All)
+""")
+
 if sr_wo_file and inc_file:
     try:
         # Read each file into ExcelFile ONCE to avoid file-pointer exhaustion
