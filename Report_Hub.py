@@ -25,7 +25,7 @@ html, body, [data-testid="stAppViewContainer"] {
     background-color: #F8FAFC !important;
 }
 
-/* ── Anti-glitch: kill flash of unstyled content ── */
+/* ── Smooth page entry ── */
 @keyframes smoothEntry {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -33,13 +33,8 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stAppViewContainer"] > .main {
     animation: smoothEntry 0.3s ease-in-out;
 }
-/* Hide skeleton / loading flash elements */
-[data-testid="stSidebarNav"],
-[data-testid="stSidebarNavItems"],
-[data-testid="stSidebarNavSeparator"],
 [data-testid="stStatusWidget"] {
     display: none !important;
-    visibility: hidden !important;
 }
 header[data-testid="stHeader"] {
     background: #F8FAFC !important;
@@ -55,41 +50,10 @@ header[data-testid="stHeader"] {
     background-color: #FFFFFF !important;
 }
 
-/* ── Kill default Streamlit nav + chrome ── */
-[data-testid="stSidebarNav"] { display: none !important; }
+/* ── Kill default Streamlit chrome ── */
 .stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
-
-/* ── Custom Sidebar Nav ── */
-.sidebar-nav {
-    display: block;
-    padding: 10px 16px;
-    margin: 3px 12px;
-    border-radius: 8px;
-    text-decoration: none !important;
-    color: #334155 !important;
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.88rem;
-    transition: all 0.2s ease;
-}
-.sidebar-nav:hover {
-    background: #F1F5F9;
-    color: #1E293B !important;
-    text-decoration: none !important;
-}
-.sidebar-nav.active {
-    background: linear-gradient(135deg, #00B1A9, #008C86);
-    color: white !important;
-    font-weight: 700;
-    box-shadow: 0 4px 12px rgba(0,177,169,0.25);
-}
-.sidebar-sep {
-    border: none;
-    border-top: 1px solid #E2E8F0;
-    margin: 16px 12px;
-}
 
 /* ── Hub Card System ── */
 .hub-grid {
@@ -97,13 +61,6 @@ footer { visibility: hidden; }
     grid-template-columns: 1fr 1fr;
     gap: 28px;
     margin-top: 32px;
-}
-.hub-card-link-wrapper {
-    text-decoration: none !important;
-    display: block;
-    color: inherit !important;
-    height: 100%;
-    outline: none;
 }
 .hub-card {
     background: #FFFFFF;
@@ -116,7 +73,6 @@ footer { visibility: hidden; }
     display: flex;
     flex-direction: column;
     height: 100%;
-    cursor: pointer;
 }
 .hub-card:hover {
     transform: translateY(-8px) scale(1.02);
@@ -227,6 +183,29 @@ footer { visibility: hidden; }
     color: #94A3B8;
     letter-spacing: 0.2px;
 }
+
+/* ── Style st.page_link to look premium ── */
+[data-testid="stPageLink-NavLink"] {
+    background: linear-gradient(135deg, #00B1A9, #008C86) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 0.6rem 1.4rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    border: none !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+    width: 100% !important;
+}
+[data-testid="stPageLink-NavLink"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0,177,169,0.3) !important;
+}
+[data-testid="stPageLink-NavLink"] p {
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -248,12 +227,9 @@ _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/sv
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-<div id="btn-back-logo" class="hub-card-link-wrapper" style="cursor: pointer; display: inline-block;">
-    <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
-</div>
+    <img src="{_logo_sidebar_uri}" style="height:56px;"/>
 </div>
 """, unsafe_allow_html=True)
-
 
     st.markdown("""
 <div style="padding:0 16px; font-size:0.78rem; color:#94A3B8; line-height:1.5;">
@@ -278,12 +254,11 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# ── Card Grid ──
-st.markdown("""
-<div class="hub-grid">
+# ── Card Grid using columns + st.page_link ──
+col1, col2 = st.columns(2)
 
-<!-- Weekly Report Card -->
-<div id="card-weekly" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
+with col1:
+    st.markdown("""
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -300,16 +275,13 @@ st.markdown("""
             <li>Historical trend snapshots</li>
             <li>Direct Outlook draft integration</li>
         </ul>
-        <div class="hub-card-footer">
-            Launch Module
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </div>
     </div>
 </div>
-</div>
+""", unsafe_allow_html=True)
+    st.page_link("pages/1_Weekly_Report.py", label="Launch Weekly Report  →", use_container_width=True)
 
-<!-- Monthly Report Card -->
-<div id="card-monthly" class="hub-card-link-wrapper" style="cursor: pointer; outline: none; border: none; text-decoration: none;">
+with col2:
+    st.markdown("""
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -326,16 +298,10 @@ st.markdown("""
             <li>Automatic slide image replacement</li>
             <li>Zero-touch template preservation</li>
         </ul>
-        <div class="hub-card-footer">
-            Launch Module
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </div>
     </div>
 </div>
-</div>
-
-</div>
 """, unsafe_allow_html=True)
+    st.page_link("pages/2_Monthly_Report.py", label="Launch Monthly Report  →", use_container_width=True)
 
 
 # ── Footer ──
@@ -344,29 +310,3 @@ st.markdown("""
 PETRONAS ERP HCM Support &mdash; Internal Use Only
 </div>
 """, unsafe_allow_html=True)
-
-import streamlit.components.v1 as components
-components.html("""
-<script>
-    const parent = window.parent.document;
-    setInterval(() => {
-        const triggers = [
-            { id: 'btn-back-logo', index: 0 },
-            { id: 'card-weekly', index: 1 },
-            { id: 'card-monthly', index: 2 }
-        ];
-        triggers.forEach(t => {
-            const el = parent.getElementById(t.id);
-            if (el && !el.dataset.routed) {
-                el.dataset.routed = 'true';
-                el.addEventListener('click', () => {
-                    const links = parent.querySelectorAll('[data-testid="stSidebarNav"] a');
-                    if (links && links[t.index]) {
-                        links[t.index].click();
-                    }
-                });
-            }
-        });
-    }, 250);
-</script>
-""", height=0, width=0)
