@@ -161,7 +161,7 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
 # ----------------------------------------------------
 st.set_page_config(
     page_title="Weekly Report | PETRONAS",
-    page_icon="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png",
+    page_icon=os.path.join(BASE_DIR, "PETRONAS_LOGO_SQUARE.png"),
     layout="wide",
     initial_sidebar_state="expanded"
 )

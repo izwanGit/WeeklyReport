@@ -22,7 +22,7 @@ else:
 # ── Page Config ──
 st.set_page_config(
     page_title="Monthly Report | PETRONAS",
-    page_icon="https://upload.wikimedia.org/wikipedia/commons/2/22/PETRONAS_Logo_%28for_solid_white_background%29.png",
+    page_icon=os.path.join(BASE_DIR, "PETRONAS_LOGO_SQUARE.png"),
     layout="wide",
 )
 
