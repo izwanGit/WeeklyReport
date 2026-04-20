@@ -38,17 +38,29 @@ def _image_to_data_uri(path, mime_type):
 _logo_square_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
-# ── Loading Splash Screen ──
+# ── Loading Splash Screen (CSS-only) ──
 st.markdown(f"""
-    <div id="splash-screen" style="
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: #F8FAFC;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 999999;
-        pointer-events: none;
-        animation: fadeOutSplash 0.8s ease-out 1.2s forwards;
-    ">
+    <style>
+        @keyframes pulse-teal {{
+            0% {{ transform: scale(0.95); opacity: 0.8; }}
+            50% {{ transform: scale(1.05); opacity: 1; }}
+            100% {{ transform: scale(0.95); opacity: 0.8; }}
+        }}
+        @keyframes splash-fade-out {{
+            0% {{ opacity: 1; visibility: visible; }}
+            90% {{ opacity: 1; visibility: visible; }}
+            100% {{ opacity: 0; visibility: hidden; pointer-events: none; }}
+        }}
+        #splash-screen {{
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #F8FAFC;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 999999;
+            animation: splash-fade-out 2.5s ease-out forwards;
+        }}
+    </style>
+    <div id="splash-screen">
         <div style="text-align: center;">
             <img src="{_logo_square_uri}" style="
                 width: 120px;
@@ -64,18 +76,8 @@ st.markdown(f"""
             ">LOADING MONTHLY GENERATOR...</div>
         </div>
     </div>
-    <style>
-        @keyframes pulse-teal {{
-            0% {{ transform: scale(0.95); opacity: 0.8; }}
-            50% {{ transform: scale(1.05); opacity: 1; }}
-            100% {{ transform: scale(0.95); opacity: 0.8; }}
-        }}
-        @keyframes fadeOutSplash {{
-            from {{ opacity: 1; visibility: visible; }}
-            to {{ opacity: 0; visibility: hidden; }}
-        }}
-    </style>
-""",StartLine:42,TargetContent:""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)
+
 
 # ── Premium Corporate CSS ──
 st.markdown("""
