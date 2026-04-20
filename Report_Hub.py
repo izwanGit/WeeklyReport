@@ -25,21 +25,28 @@ html, body, [data-testid="stAppViewContainer"] {
     background-color: #F8FAFC !important;
 }
 
-/* ── Smooth page entry ── */
+/* ── Minimal smooth entry — fast so no visible blink ── */
 @keyframes smoothEntry {
-    from { opacity: 0; }
+    from { opacity: 0.6; }
     to { opacity: 1; }
 }
 [data-testid="stAppViewContainer"] > .main {
-    animation: smoothEntry 0.3s ease-in-out;
+    animation: smoothEntry 0.15s ease-out;
 }
-[data-testid="stStatusWidget"] {
+
+/* ── Hide Streamlit chrome ── */
+[data-testid="stStatusWidget"],
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNavItems"],
+[data-testid="stSidebarNavSeparator"] {
     display: none !important;
 }
 header[data-testid="stHeader"] {
     background: #F8FAFC !important;
-    backdrop-filter: none !important;
 }
+.stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
 
 .main .block-container {
     padding-top: 1.5rem !important;
@@ -50,17 +57,18 @@ header[data-testid="stHeader"] {
     background-color: #FFFFFF !important;
 }
 
-/* ── Kill default Streamlit chrome ── */
-.stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
-#MainMenu { visibility: hidden; }
-footer { visibility: hidden; }
-
 /* ── Hub Card System ── */
 .hub-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 28px;
     margin-top: 32px;
+}
+.hub-card-link {
+    text-decoration: none !important;
+    color: inherit !important;
+    display: block;
+    outline: none;
 }
 .hub-card {
     background: #FFFFFF;
@@ -73,6 +81,7 @@ footer { visibility: hidden; }
     display: flex;
     flex-direction: column;
     height: 100%;
+    cursor: pointer;
 }
 .hub-card:hover {
     transform: translateY(-8px) scale(1.02);
@@ -183,29 +192,6 @@ footer { visibility: hidden; }
     color: #94A3B8;
     letter-spacing: 0.2px;
 }
-
-/* ── Style st.page_link to look premium ── */
-[data-testid="stPageLink-NavLink"] {
-    background: linear-gradient(135deg, #00B1A9, #008C86) !important;
-    color: white !important;
-    border-radius: 10px !important;
-    padding: 0.6rem 1.4rem !important;
-    font-weight: 700 !important;
-    text-align: center !important;
-    border: none !important;
-    transition: all 0.3s ease !important;
-    text-decoration: none !important;
-    width: 100% !important;
-}
-[data-testid="stPageLink-NavLink"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(0,177,169,0.3) !important;
-}
-[data-testid="stPageLink-NavLink"] p {
-    color: white !important;
-    font-weight: 700 !important;
-    font-size: 0.95rem !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -254,11 +240,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# ── Card Grid using columns + st.page_link ──
-col1, col2 = st.columns(2)
+# ── Card Grid — entire cards are clickable <a> links ──
+st.markdown("""
+<div class="hub-grid">
 
-with col1:
-    st.markdown("""
+<!-- Weekly Report Card -->
+<a href="/Weekly_Report" target="_self" class="hub-card-link">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -275,13 +262,16 @@ with col1:
             <li>Historical trend snapshots</li>
             <li>Direct Outlook draft integration</li>
         </ul>
+        <div class="hub-card-footer">
+            Launch Module
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
     </div>
 </div>
-""", unsafe_allow_html=True)
-    st.page_link("pages/1_Weekly_Report.py", label="Launch Weekly Report  →", use_container_width=True)
+</a>
 
-with col2:
-    st.markdown("""
+<!-- Monthly Report Card -->
+<a href="/Monthly_Report" target="_self" class="hub-card-link">
 <div class="hub-card">
     <div class="hub-card-banner">
         <div class="hub-card-icon">
@@ -298,10 +288,16 @@ with col2:
             <li>Automatic slide image replacement</li>
             <li>Zero-touch template preservation</li>
         </ul>
+        <div class="hub-card-footer">
+            Launch Module
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
     </div>
 </div>
+</a>
+
+</div>
 """, unsafe_allow_html=True)
-    st.page_link("pages/2_Monthly_Report.py", label="Launch Monthly Report  →", use_container_width=True)
 
 
 # ── Footer ──

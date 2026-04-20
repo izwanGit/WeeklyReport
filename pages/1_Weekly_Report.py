@@ -174,13 +174,18 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* ── Anti-glitch: kill flash of unstyled content ── */
+    /* ── Fast smooth entry — only main content, sidebar stays static ── */
     @keyframes smoothEntry {
-        from { opacity: 0; }
+        from { opacity: 0.6; }
         to { opacity: 1; }
     }
     [data-testid="stAppViewContainer"] > .main {
-        animation: smoothEntry 0.3s ease-in-out;
+        animation: smoothEntry 0.15s ease-out;
+    }
+    /* Keep sidebar rock-solid — no animation, no flash */
+    [data-testid="stSidebar"] {
+        animation: none !important;
+        opacity: 1 !important;
     }
     [data-testid="stSidebarNav"],
     [data-testid="stSidebarNavItems"],
@@ -191,8 +196,8 @@ st.markdown("""
     }
     header[data-testid="stHeader"] {
         background: #F8FAFC !important;
-        backdrop-filter: none !important;
     }
+    [data-testid="stSidebar"] { border-right: 2px solid #00B1A9 !important; }
 
     .main .block-container { padding-top: 0.5rem !important; max-width: 1400px !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
@@ -284,7 +289,12 @@ def _image_to_data_uri(path, mime_type):
 _logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
-st.page_link("Report_Hub.py", label="← Back to Hub")
+st.markdown("""
+<a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    Back to Hub
+</a>
+""", unsafe_allow_html=True)
 
 st.markdown(f"""
 <style>
@@ -304,10 +314,11 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
-    <img src="{_logo_sidebar_uri}" style="height:56px;"/>
+    <a href="/" target="_self" style="display:inline-block;">
+        <img src="{_logo_sidebar_uri}" style="height:56px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+    </a>
 </div>
 """, unsafe_allow_html=True)
-    st.page_link("Report_Hub.py", label="🏠 Report Hub", use_container_width=True)
     
     st.markdown("### Open Ticket Counts")
     c1, c2 = st.columns(2)
