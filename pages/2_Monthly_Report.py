@@ -26,6 +26,57 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Branding Helpers ──
+def _image_to_data_uri(path, mime_type):
+    try:
+        with open(os.path.join(BASE_DIR, path), 'rb') as f:
+            data = f.read()
+        return f"data:{mime_type};base64,{base64.b64encode(data).decode()}"
+    except:
+        return ""
+
+_logo_square_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
+_logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
+
+# ── Loading Splash Screen ──
+st.markdown(f"""
+    <div id="splash-screen" style="
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: #F8FAFC;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 999999;
+        pointer-events: none;
+        animation: fadeOutSplash 0.8s ease-out 1.2s forwards;
+    ">
+        <div style="text-align: center;">
+            <img src="{_logo_square_uri}" style="
+                width: 120px;
+                animation: pulse-teal 2s infinite ease-in-out;
+            ">
+            <div style="
+                margin-top: 20px;
+                font-family: 'Inter', sans-serif;
+                color: #00B1A9;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+                font-size: 0.9rem;
+            ">LOADING MONTHLY GENERATOR...</div>
+        </div>
+    </div>
+    <style>
+        @keyframes pulse-teal {{
+            0% {{ transform: scale(0.95); opacity: 0.8; }}
+            50% {{ transform: scale(1.05); opacity: 1; }}
+            100% {{ transform: scale(0.95); opacity: 0.8; }}
+        }}
+        @keyframes fadeOutSplash {{
+            from {{ opacity: 1; visibility: visible; }}
+            to {{ opacity: 0; visibility: hidden; }}
+        }}
+    </style>
+""",StartLine:42,TargetContent:""", unsafe_allow_html=True)
+
 # ── Premium Corporate CSS ──
 st.markdown("""
 <style>
@@ -167,17 +218,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Helpers ──
-def _image_to_data_uri(path, mime_type):
-    try:
-        with open(os.path.join(BASE_DIR, path), 'rb') as f:
-            data = f.read()
-        return f"data:{mime_type};base64,{base64.b64encode(data).decode()}"
-    except:
-        return ""
-
-_logo_banner_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
-_logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
+# ── Helpers (Moved to top) ──
 
 
 # ── Sidebar ──
