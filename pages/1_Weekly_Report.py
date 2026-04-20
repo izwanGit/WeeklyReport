@@ -187,12 +187,11 @@ st.markdown("""
         border-bottom: none !important;
     }
     
-    /* Ensure no transitions that look like blinks */
-    * { transition: none !important; }
+    /* Ensure no transitions that look like blinks — but leave sidebar alone */
+    [data-testid="stAppViewContainer"] > .main { transition: none !important; }
     
     [data-testid="stSidebar"] {
         animation: none !important;
-        transform: none !important;
     }
     [data-testid="stSidebarNav"],
     [data-testid="stSidebarNavItems"],

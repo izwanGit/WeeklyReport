@@ -38,8 +38,8 @@ header[data-testid="stHeader"] {
     border-bottom: none !important;
 }
 
-/* Ensure no transitions that look like blinks */
-* { transition: none !important; }
+/* Ensure no transitions that look like blinks — but leave sidebar alone */
+[data-testid="stAppViewContainer"] > .main { transition: none !important; }
 .hub-card, .hub-card svg, .hub-card-link-wrapper { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease !important; }
 
 /* ── Hide Streamlit chrome ── */
@@ -56,10 +56,9 @@ header[data-testid="stHeader"] {
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 
-/* YouTube Sidebar Effect */
+/* Sidebar — no animation flash, but allow transform for collapse */
 [data-testid="stSidebar"] {
     animation: none !important;
-    transform: none !important;
 }
 
 .main .block-container {
