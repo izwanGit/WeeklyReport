@@ -291,17 +291,104 @@ def _calc_list_rect(img_w, img_h, box_left, box_top, box_w):
     return box_left, box_top, box_w, new_h
 
 
-def _extract_month_values(page_text):
+def _extract_month_values_spatial(page):
     """
-    Extract (month_abbr, numeric_value) pairs from fitz text.
-    Handles Power BI date formats: "Jan 2026", "Jan 26'", "Jan '26", "Jan 26".
+    Extract (month_abbr, numeric_value) pairs using spatial text analysis.
+    Uses fitz page object (not raw text) to get text blocks with X/Y positions.
+    Groups data labels that are vertically aligned with month axis labels.
     Returns list sorted chronologically, or [] on failure.
     """
     MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    MON_PAT = r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+    MON_PAT = re.compile(
+        r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b',
+        re.IGNORECASE
+    )
 
-    # Match: "Jan 2026", "Jan 26'", "Jan '26", "Jan 26"
+    try:
+        blocks = page.get_text("dict")["blocks"]
+    except:
+        return []
+
+    # Collect all text spans with their positions
+    spans = []
+    for block in blocks:
+        if "lines" not in block:
+            continue
+        for line in block["lines"]:
+            for span in line["spans"]:
+                text = span["text"].strip()
+                if not text:
+                    continue
+                bbox = span["bbox"]  # (x0, y0, x1, y1)
+                cx = (bbox[0] + bbox[2]) / 2  # center x
+                cy = (bbox[1] + bbox[3]) / 2  # center y
+                spans.append((text, cx, cy, bbox))
+
+    # Find month labels (typically on the X-axis, near the bottom)
+    month_spans = []
+    for text, cx, cy, bbox in spans:
+        m = MON_PAT.match(text)
+        if m:
+            month_spans.append((m.group(1)[:3].capitalize(), cx, cy))
+
+    if not month_spans:
+        return []
+
+    # Month labels are usually at X-axis (highest Y values among month spans)
+    # Sort by Y descending to find the axis row
+    month_spans_sorted = sorted(month_spans, key=lambda x: x[2], reverse=True)
+    # Use the Y level of the first month as reference (they should be on same row)
+    axis_y = month_spans_sorted[0][2]
+    # Keep only months near the axis Y (within 20pt tolerance)
+    axis_months = [(m, cx, cy) for m, cx, cy in month_spans if abs(cy - axis_y) < 20]
+
+    if not axis_months:
+        return []
+
+    # Find numeric values - look for numbers ABOVE each month's X position
+    # Data labels in bar/line charts sit above the data point, which is
+    # vertically above the axis label
+    found = {}
+    for mon, mcx, mcy in axis_months:
+        if mon in found:
+            continue
+        # Look for numbers vertically above this month label (same X zone, lower Y)
+        best_val = None
+        best_dist = float('inf')
+        for text, cx, cy, bbox in spans:
+            # Must be above the month label (smaller Y) and in same X zone
+            if cy >= mcy:
+                continue
+            x_dist = abs(cx - mcx)
+            if x_dist > 40:  # too far horizontally
+                continue
+            # Try to parse as number
+            clean = text.replace(',', '').replace('%', '').strip()
+            nm = re.match(r'^-?(\d+(?:\.\d+)?)$', clean)
+            if not nm:
+                continue
+            val = float(nm.group(1))
+            # Prefer the value closest to the axis (highest Y that's still above)
+            dist = mcy - cy
+            if dist < best_dist:
+                best_dist = dist
+                best_val = val
+
+        if best_val is not None:
+            found[mon] = best_val
+
+    return [(mon, found[mon]) for mon in MONTHS_ORDER if mon in found]
+
+
+def _extract_month_values_text(page_text):
+    """
+    Fallback: Extract (month_abbr, numeric_value) pairs from raw text lines.
+    Handles Power BI date formats: "Jan 2026", "Jan 26'", "Jan '26", "Jan 26".
+    """
+    MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    MON_PAT = r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
     DATE_PAT = re.compile(
         rf"^{MON_PAT}\s+(?:'?\d{{2}}'?|\d{{4}})$", re.IGNORECASE
     )
@@ -309,7 +396,7 @@ def _extract_month_values(page_text):
     lines = [l.strip() for l in page_text.split('\n') if l.strip()]
     found = {}
 
-    # Pass 1: look for value AFTER month label (within 5 lines)
+    # Pass 1: value AFTER month label
     for i, line in enumerate(lines):
         m = DATE_PAT.match(line)
         if m:
@@ -322,7 +409,7 @@ def _extract_month_values(page_text):
                         found[mon] = val
                     break
 
-    # Pass 2: look for value BEFORE month label (within 5 lines)
+    # Pass 2: value BEFORE month label
     if not found:
         for i, line in enumerate(lines):
             m = DATE_PAT.match(line)
@@ -337,6 +424,36 @@ def _extract_month_values(page_text):
                         break
 
     return [(mon, found[mon]) for mon in MONTHS_ORDER if mon in found]
+
+
+def _extract_with_fallback(pdf, page_num, key, log):
+    """
+    Try spatial extraction first, fall back to text-based.
+    page_num is 1-indexed.
+    Returns list of (month, value) tuples.
+    """
+    if page_num > len(pdf):
+        return []
+
+    page = pdf.load_page(page_num - 1)
+
+    # Strategy 1: Spatial analysis (most accurate)
+    vals = _extract_month_values_spatial(page)
+    if vals:
+        log.append(f"INFO | {key}: Spatial extraction OK ({len(vals)} points)")
+        return vals
+
+    # Strategy 2: Text-based fallback
+    raw_text = page.get_text()
+    vals = _extract_month_values_text(raw_text)
+    if vals:
+        log.append(f"INFO | {key}: Text fallback OK ({len(vals)} points)")
+        return vals
+
+    # Nothing worked - dump raw text for debugging
+    snippet = raw_text[:300].replace('\n', ' | ')
+    log.append(f"INFO | {key}: NO DATA. Raw: '{snippet}...'")
+    return []
 
 
 def _replace_in_para(para, pattern, replacement, flags=re.IGNORECASE):
@@ -376,45 +493,143 @@ def update_dates_in_pptx(prs, new_month, new_year):
     return changes
 
 
-def _compute_change(values):
-    """Compare last two entries. Returns (prev, curr, diff, direction) or None."""
+def _analyze_trend(values):
+    """
+    Deep trend analysis over available data points.
+    Returns dict with: direction, diff, pct_change, streak, trend_desc, is_peak, is_trough
+    """
     if len(values) < 2:
         return None
+
     curr = int(round(values[-1][1]))
     prev = int(round(values[-2][1]))
     diff = abs(curr - prev)
-    direction = "increased" if curr > prev else "decreased" if curr < prev else "remained unchanged"
-    return prev, curr, diff, direction
+    direction = "increased" if curr > prev else "decreased" if curr < prev else "unchanged"
+
+    # Percentage change
+    if prev > 0:
+        pct = round((diff / prev) * 100)
+    else:
+        pct = 0
+
+    # Consecutive streak analysis (how many months in same direction)
+    streak = 1
+    if len(values) >= 3:
+        for k in range(len(values) - 2, 0, -1):
+            v_curr = values[k][1]
+            v_prev = values[k - 1][1]
+            if direction == "increased" and v_curr > v_prev:
+                streak += 1
+            elif direction == "decreased" and v_curr < v_prev:
+                streak += 1
+            else:
+                break
+
+    # Peak / trough detection
+    all_vals = [v[1] for v in values]
+    is_peak = curr == max(all_vals) and curr > prev
+    is_trough = curr == min(all_vals) and curr < prev
+
+    return {
+        "curr": curr,
+        "prev": prev,
+        "diff": diff,
+        "pct": pct,
+        "direction": direction,
+        "streak": streak,
+        "is_peak": is_peak,
+        "is_trough": is_trough,
+    }
+
+
+def _make_smart_ticket_bullet(vals, sel_month, sel_year):
+    """Generate an intelligent ticket trend summary bullet."""
+    if not vals or len(vals) < 2:
+        return None
+
+    a = _analyze_trend(vals)
+    if not a:
+        return None
+
+    curr, prev, diff, pct = a["curr"], a["prev"], a["diff"], a["pct"]
+    direction = a["direction"]
+
+    if direction == "unchanged":
+        return f"Ticket volume remained steady at {curr} in {sel_month} {sel_year}"
+
+    verb = "increased" if direction == "increased" else "decreased"
+
+    # Build the core sentence
+    parts = [f"Ticket logged {verb} by {diff}"]
+
+    # Add percentage if meaningful
+    if pct > 0 and prev > 0:
+        parts[0] += f" ({pct}%)"
+
+    parts[0] += f" in {sel_month} {sel_year}, from {prev} to {curr}"
+
+    # Add streak context if notable
+    if a["streak"] >= 3:
+        parts.append(f"This marks {a['streak']} consecutive months of {verb[:-1] if verb.endswith('d') else verb}ing trend")
+    elif a["streak"] == 2:
+        parts.append(f"continuing the {verb[:-1] if verb.endswith('d') else verb}ing trend from last month")
+
+    # Add peak/trough context
+    if a["is_peak"]:
+        parts.append("reaching the highest level in the observed period")
+    elif a["is_trough"]:
+        parts.append("reaching the lowest level in the observed period")
+
+    return ". ".join(parts)
+
+
+def _make_smart_ageing_bullet(vals, sel_month, sel_year):
+    """Generate an intelligent ageing trend summary bullet."""
+    if not vals or len(vals) < 2:
+        return None
+
+    a = _analyze_trend(vals)
+    if not a:
+        return None
+
+    curr, prev, diff, pct = a["curr"], a["prev"], a["diff"], a["pct"]
+    direction = a["direction"]
+
+    if direction == "unchanged":
+        if curr == 0:
+            return f"No ageing tickets recorded in {sel_month} {sel_year}, maintaining zero backlog"
+        return f"Ageing ticket count remained at {curr} in {sel_month} {sel_year}"
+
+    if curr == 0 and prev > 0:
+        return f"All ageing tickets resolved - count dropped from {prev} to 0 in {sel_month} {sel_year}"
+
+    verb = "increased" if direction == "increased" else "decreased"
+    sign = "+" if direction == "increased" else "-"
+
+    parts = [f"Ageing ticket {verb} from {prev} to {curr} in {sel_month} {sel_year} ({sign}{diff})"]
+
+    # Add percentage context for significant changes
+    if pct >= 50 and diff >= 3:
+        parts.append(f"a significant {pct}% {'rise' if direction == 'increased' else 'reduction'}")
+    elif pct > 0 and prev > 0:
+        parts[0] = parts[0].replace(f"({sign}{diff})", f"({sign}{diff}, {pct}%)")
+
+    # Streak context
+    if a["streak"] >= 3:
+        parts.append(f"continuing a {a['streak']}-month {'upward' if direction == 'increased' else 'downward'} trend")
+
+    return ". ".join(parts)
 
 
 def update_summary_bullets(prs, sel_month, sel_year,
                             sr_trend_vals, sr_ageing_vals,
                             inc_trend_vals, inc_ageing_vals):
     """
-    Update summary bullets on Slides 4 and 8.
+    Update summary bullets on Slides 4 and 8 with smart analysis.
     SAFETY: Only modifies paragraphs inside text frames that
     contain a 'Summary' heading. Title text frames are NEVER touched.
     """
     changes = []
-
-    def make_ticket_bullet(vals):
-        result = _compute_change(vals)
-        if not result:
-            return None
-        prev, curr, diff, direction = result
-        if direction == "remained unchanged":
-            return f"Ticket logged {direction} at {curr} in {sel_month} {sel_year}"
-        return f"Ticket logged {direction} by {diff} in {sel_month} {sel_year} ({prev} to {curr})"
-
-    def make_ageing_bullet(vals):
-        result = _compute_change(vals)
-        if not result:
-            return None
-        prev, curr, diff, direction = result
-        if direction == "remained unchanged":
-            return f"Ageing Ticket is {curr} in {sel_month} {sel_year}"
-        sign = '+' if direction == 'increased' else '-'
-        return f"Ageing Ticket {direction} from {prev} to {curr} in {sel_month} {sel_year} ({sign}{diff})"
 
     CONFIG = [
         (3, sr_trend_vals,  sr_ageing_vals,  "SR"),
@@ -425,8 +640,8 @@ def update_summary_bullets(prs, sel_month, sel_year,
         if slide_idx >= len(prs.slides):
             continue
         slide = prs.slides[slide_idx]
-        ticket_bullet = make_ticket_bullet(ticket_vals)
-        ageing_bullet = make_ageing_bullet(ageing_vals)
+        ticket_bullet = _make_smart_ticket_bullet(ticket_vals, sel_month, sel_year)
+        ageing_bullet = _make_smart_ageing_bullet(ageing_vals, sel_month, sel_year)
         ticket_done = False
         ageing_done = False
 
@@ -477,14 +692,6 @@ def update_summary_bullets(prs, sel_month, sel_year,
 def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     """
     Full automation engine.
-
-    Strategy per entry:
-      BBOX  - Euclidean distance match to known picture coordinates
-      CHART - Find and delete native PPT chart, insert image at same position
-      TABLE - Find and delete native PPT table, insert image at same position
-      POS   - Sort pictures by left position, pick Nth
-
-    Returns: (pptx_bytes, log_list, replaced_count, pdf_images_dict)
     """
     from collections import defaultdict
 
@@ -497,29 +704,22 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
         pdf_images[pn + 1] = pix.tobytes("png")
     log = [f"INFO | PDF loaded: {len(pdf)} pages at 300 DPI"]
 
-    # -- Phase 2: Extract trend data --
-    raw = {}
-    for pn, key in [(3, "sr_trend"), (4, "sr_ageing"), (10, "inc_trend"), (11, "inc_ageing")]:
-        if pn <= len(pdf):
-            raw[key] = pdf.load_page(pn - 1).get_text()
-    sr_trend  = _extract_month_values(raw.get("sr_trend",  ""))
-    sr_ageing = _extract_month_values(raw.get("sr_ageing", ""))
-    inc_trend = _extract_month_values(raw.get("inc_trend", ""))
-    inc_ageing = _extract_month_values(raw.get("inc_ageing", ""))
+    # -- Phase 2: Extract trend data (Smart Spatial Extraction) --
+    sr_trend  = _extract_with_fallback(pdf, 3, "sr_trend", log)
+    sr_ageing = _extract_with_fallback(pdf, 4, "sr_ageing", log)
+    inc_trend = _extract_with_fallback(pdf, 10, "inc_trend", log)
+    inc_ageing = _extract_with_fallback(pdf, 11, "inc_ageing", log)
 
     # Detailed logging for verification
-    for lbl, vals, key in [
-        ("SR Trend (p3)",    sr_trend,  "sr_trend"),
-        ("SR Ageing (p4)",   sr_ageing, "sr_ageing"),
-        ("INC Trend (p10)",  inc_trend, "inc_trend"),
-        ("INC Ageing (p11)", inc_ageing, "inc_ageing"),
+    for lbl, vals in [
+        ("SR Trend (p3)",    sr_trend),
+        ("SR Ageing (p4)",   sr_ageing),
+        ("INC Trend (p10)",  inc_trend),
+        ("INC Ageing (p11)", inc_ageing),
     ]:
         if vals:
             pairs = ", ".join(f"{m}={int(v)}" for m, v in vals)
-            log.append(f"INFO | {lbl}: {pairs}")
-        else:
-            snippet = raw.get(key, "")[:200].replace('\n', ' | ')
-            log.append(f"INFO | {lbl}: NO DATA EXTRACTED. Raw text: '{snippet}...'")
+            log.append(f"INFO | Extract {lbl}: {pairs}")
 
     # -- Phase 3: Auto-crop module list pages --
     for pg in (7, 14):
