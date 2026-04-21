@@ -180,9 +180,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Helpers (Moved to top) ──
-
-
 # ── Sidebar ──
 with st.sidebar:
     st.markdown(f"""
@@ -219,10 +216,10 @@ with st.sidebar:
     pptx_available_locally = os.path.exists(TEMPLATE_PATH)
     uploaded_template = None
     if not pptx_available_locally:
-        st.warning("⚠️ template.pptx not found in app folder.")
+        st.warning("template.pptx not found in app folder.")
         uploaded_template = st.file_uploader("Upload PPTX Template", type=['pptx'])
     else:
-        st.success("✅ template.pptx detected.")
+        st.success("template.pptx detected.")
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
@@ -253,110 +250,176 @@ if not PPTX_AVAILABLE:
     st.stop()
 
 
-# Redundant logic removed. TEMPLATE_PATH and uploaded_template are handled in the sidebar.
+# ── EMU conversion helper ──
+def _emu_to_inches(emu):
+    """PowerPoint uses English Metric Units: 1 inch = 914400 EMU."""
+    return emu / 914400.0
 
-# ── Processing Engine ──
+
+# ══════════════════════════════════════════════════════════════
+# PROCESSING ENGINE (Spec-Compliant)
+# Based on engineering-grade analysis of the 11-slide PPTX
+# template and 14-page Power BI PDF export.
+# ══════════════════════════════════════════════════════════════
 def process_monthly_report(pdf_bytes, pptx_bytes):
     """
-    Core automation engine.
-    1. Extracts each PDF page as a high-resolution PNG (4x zoom = ~300 DPI).
-    2. Opens the PPTX template.
-    3. Replaces image placeholders on slides 3-10 with sequentially mapped PDF pages.
-    4. Returns the final PPTX bytes and a structured build log.
+    Precision automation engine for HCM Dashboard PPTX replacement.
+
+    Only Slides 3, 6, 7, and 10 contain replaceable dashboard pictures.
+    Slides 1, 2, 4, 5, 8, 9, 11 are NEVER touched.
+    Template logo (Picture 3, ~2.3x0.4 at top-left) is ALWAYS protected.
+
+    PDF pages used: 2, 3, 6, 7, 8, 9, 10, 13 (8 total out of 14).
+    PDF pages skipped: 1 (landing), 4, 5, 11, 12 (native charts/tables), 14 (no target).
     """
 
-    # ── Phase 1: Extract high-res images from the Power BI PDF ──
+    # ── Phase 1: Extract all PDF pages as high-res PNGs ──
     pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
-    pdf_images = []
+    pdf_images = {}  # 1-indexed
     for page_num in range(len(pdf)):
         page = pdf.load_page(page_num)
-        # 4x zoom matrix produces extremely crisp output for presentation use
-        pix = page.get_pixmap(matrix=fitz.Matrix(4, 4))
-        pdf_images.append(pix.tobytes("png"))
+        pix = page.get_pixmap(matrix=fitz.Matrix(4, 4))  # 4x zoom ~ 300 DPI
+        pdf_images[page_num + 1] = pix.tobytes("png")
+
+    log = []
+    log.append(f"INFO | PDF loaded: {len(pdf)} pages extracted at 300 DPI")
 
     # ── Phase 2: Open the PPTX template ──
     prs = Presentation(io.BytesIO(pptx_bytes))
+    log.append(f"INFO | PPTX loaded: {len(prs.slides)} slides in template")
 
-    # ── Phase 3: Image replacement engine ──
-    # Slide index (0-based) → number of images to replace on that slide
-    # Slide 3 = index 2, Slide 4 = index 3, etc.
-    mapping = {
-        2: 2,  # Slide 3:  SLA + Ticket Trend
-        3: 1,  # Slide 4:  1 histogram visual
-        4: 1,  # Slide 5:  1 table (as image)
-        5: 2,  # Slide 6:  2 visuals
-        6: 3,  # Slide 7:  3 visuals
-        7: 1,  # Slide 8:  1 histogram visual
-        8: 1,  # Slide 9:  1 table (as image)
-        9: 2,  # Slide 10: 2 visuals
-    }
+    # ── Phase 3: Precise replacement mapping ──
+    # (slide_index_0based, pdf_page_1indexed, target_bbox_inches, label)
+    # bbox = (left, top, width, height)
+    REPLACEMENT_MAP = [
+        # Slide 3 (idx 2): Service Request — SLA + Ticket Trend
+        (2,  2, (0.314, 2.276, 3.782, 1.200), "SR SLA Performance"),
+        (2,  3, (4.570, 2.276, 8.307, 3.286), "SR Ticket Trend"),
+        # Slide 6 (idx 5): Service Request — Category % + Module List
+        (5,  6, (0.488, 2.641, 6.533, 2.449), "SR Category Distribution"),
+        (5,  7, (7.346, 1.448, 3.477, 5.459), "SR Module Ticket List"),
+        # Slide 7 (idx 6): Incident — Response + Resolution + Trend
+        (6,  8, (0.404, 2.406, 3.240, 1.313), "INC Response SLA"),
+        (6,  9, (0.315, 4.294, 3.417, 1.365), "INC Resolution SLA"),
+        (6, 10, (3.932, 2.406, 9.124, 3.567), "INC Ticket Trend"),
+        # Slide 10 (idx 9): Incident — Category Distribution
+        (9, 13, (0.862, 2.647, 11.700, 2.524), "INC Category Distribution"),
+    ]
 
-    pdf_idx = 0
-    log = []
+    # ── Phase 4: Logo protection ──
+    # Template logo (Picture 3): L=0.000, T=0.081, W=2.299, H=0.402
+    LOGO_TOP_MAX = 0.5
+    LOGO_HEIGHT_MAX = 0.6
 
-    for slide_idx, num_images in mapping.items():
+    # ── Phase 5: Execute replacements ──
+    replaced = 0
+    TOLERANCE = 0.15  # inches for bbox matching
+
+    for slide_idx, pdf_page, target_bbox, label in REPLACEMENT_MAP:
         if slide_idx >= len(prs.slides):
-            log.append(f"WARN | Slide {slide_idx + 1} does not exist in the template. Skipped.")
+            log.append(f"WARN | Slide {slide_idx + 1} does not exist. Skipping '{label}'.")
+            continue
+
+        if pdf_page not in pdf_images:
+            log.append(f"WARN | PDF page {pdf_page} not found. Skipping '{label}'.")
             continue
 
         slide = prs.slides[slide_idx]
+        t_left, t_top, t_width, t_height = target_bbox
 
-        # Collect all picture shapes on this slide
-        target_shapes = []
+        # Collect PICTURE shapes, excluding the template logo
+        candidates = []
         for shape in slide.shapes:
-            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
-                target_shapes.append(shape)
-            elif getattr(shape, 'is_placeholder', False):
-                try:
-                    if shape.placeholder_format.type == 18:  # Picture placeholder
-                        target_shapes.append(shape)
-                except:
-                    pass
+            if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
+                continue
+            s_top = _emu_to_inches(shape.top)
+            s_height = _emu_to_inches(shape.height)
+            if s_top < LOGO_TOP_MAX and s_height < LOGO_HEIGHT_MAX:
+                continue
+            candidates.append(shape)
 
-        # Sort top-to-bottom, left-to-right for deterministic sequencing
-        target_shapes.sort(key=lambda s: (s.top, s.left))
+        if not candidates:
+            log.append(f"WARN | Slide {slide_idx + 1}: No replaceable pictures found for '{label}'.")
+            continue
 
-        for k in range(num_images):
-            if pdf_idx >= len(pdf_images):
-                log.append(f"WARN | Ran out of PDF pages at page {pdf_idx + 1}. Remaining slides were not updated.")
-                break
+        # Find the picture closest to the target bbox
+        best_shape = None
+        best_distance = float('inf')
 
-            if k >= len(target_shapes):
-                log.append(f"WARN | Slide {slide_idx + 1}: Expected {num_images} image(s) but found only {len(target_shapes)}. Partial replacement.")
-                break
+        for shape in candidates:
+            s_left = _emu_to_inches(shape.left)
+            s_top = _emu_to_inches(shape.top)
+            s_width = _emu_to_inches(shape.width)
+            s_height = _emu_to_inches(shape.height)
 
-            old_shape = target_shapes[k]
-            img_io = io.BytesIO(pdf_images[pdf_idx])
+            dist = (
+                (s_left - t_left) ** 2 +
+                (s_top - t_top) ** 2 +
+                (s_width - t_width) ** 2 +
+                (s_height - t_height) ** 2
+            ) ** 0.5
 
-            # Place the new image at the exact position and size of the old one
-            slide.shapes.add_picture(
-                img_io,
-                old_shape.left,
-                old_shape.top,
-                old_shape.width,
-                old_shape.height
+            if dist < best_distance:
+                best_distance = dist
+                best_shape = shape
+
+        if best_shape is None or best_distance > TOLERANCE * 4:
+            log.append(
+                f"WARN | Slide {slide_idx + 1}: No picture matched bbox for '{label}' "
+                f"(closest dist: {best_distance:.3f}). Skipping."
             )
+            continue
 
-            # Remove old shape from the XML tree
-            sp = old_shape._element
-            sp.getparent().remove(sp)
+        # Insert new image at the old shape's exact position/size
+        img_io = io.BytesIO(pdf_images[pdf_page])
+        slide.shapes.add_picture(
+            img_io,
+            best_shape.left,
+            best_shape.top,
+            best_shape.width,
+            best_shape.height
+        )
 
-            log.append(f"  OK | Slide {slide_idx + 1}: Image {k + 1}/{num_images} replaced with PDF page {pdf_idx + 1}")
-            pdf_idx += 1
+        # Remove the old shape
+        sp = best_shape._element
+        sp.getparent().remove(sp)
 
-    # ── Phase 5: Save the polished presentation ──
+        actual_bbox = (
+            _emu_to_inches(best_shape.left),
+            _emu_to_inches(best_shape.top),
+            _emu_to_inches(best_shape.width),
+            _emu_to_inches(best_shape.height),
+        )
+        log.append(
+            f"  OK | Slide {slide_idx + 1}: '{label}' <- PDF page {pdf_page} "
+            f"(L={actual_bbox[0]:.2f} T={actual_bbox[1]:.2f} "
+            f"W={actual_bbox[2]:.2f} H={actual_bbox[3]:.2f}, dist={best_distance:.3f})"
+        )
+        replaced += 1
+
+    # ── Phase 6: Save ──
     output = io.BytesIO()
     prs.save(output)
     output.seek(0)
 
-    return output.read(), log, pdf_idx
+    log.append(f"INFO | Complete: {replaced}/8 dashboard images replaced successfully.")
+    return output.read(), log, replaced
 
 
-# ── Generate Section ──
-if pdf_file and pptx_available:
-    st.markdown('<p class="section-label">Step 2 &mdash; Validation & Generation</p>', unsafe_allow_html=True)
+# ── Resolve which PPTX template to use ──
+resolved_pptx = None
+if uploaded_template is not None:
+    resolved_pptx = "uploaded"
+elif pptx_available_locally:
+    resolved_pptx = "local"
 
-    # Preview metrics
+
+# ══════════════════════════════════════════════════════════════
+# GENERATE SECTION
+# ══════════════════════════════════════════════════════════════
+if pdf_file and resolved_pptx:
+    st.markdown('<p class="section-label">Step 2 &mdash; Validation &amp; Generation</p>', unsafe_allow_html=True)
+
     pdf_file.seek(0)
     try:
         preview_pdf = fitz.open(stream=pdf_file.read(), filetype="pdf")
@@ -369,16 +432,42 @@ if pdf_file and pptx_available:
     with m1:
         st.metric("PDF Pages Detected", pdf_page_count)
     with m2:
-        st.metric("Target Slides", "8 (Slides 3–10)")
+        st.metric("Target Slides", "4 (3, 6, 7, 10)")
     with m3:
-        st.metric("Total Image Swaps", "13")
+        st.metric("Image Swaps", "8")
+
+    with st.expander("PDF to PPT Mapping (what goes where)", expanded=False):
+        st.markdown("""
+| PDF Page | Content | PPT Slide | Target |
+|:---:|---|:---:|---|
+| ~~1~~ | *Landing/Filters* | *Skip* | *Not used* |
+| **2** | SR SLA Performance | **Slide 3** | Left image |
+| **3** | SR Ticket Trend | **Slide 3** | Right image |
+| ~~4~~ | *SR Ageing Trend* | *Skip* | *Native PPT chart* |
+| ~~5~~ | *SR Root Cause Table* | *Skip* | *Native PPT table* |
+| **6** | SR Category % | **Slide 6** | Left image |
+| **7** | SR Module List | **Slide 6** | Right image |
+| **8** | INC Response SLA | **Slide 7** | Top-left image |
+| **9** | INC Resolution SLA | **Slide 7** | Bottom-left image |
+| **10** | INC Ticket Trend | **Slide 7** | Right image |
+| ~~11~~ | *INC Ageing Trend* | *Skip* | *Native PPT chart* |
+| ~~12~~ | *INC Root Cause Table* | *Skip* | *Native PPT table* |
+| **13** | INC Category % | **Slide 10** | Full-width image |
+| ~~14~~ | *INC Module List* | *Skip* | *No target* |
+        """)
+
+    if pdf_page_count != "?" and pdf_page_count < 13:
+        st.warning(
+            f"Expected at least 13 pages in the PDF, but found {pdf_page_count}. "
+            "Some dashboard images may not be replaced."
+        )
 
     st.markdown("")
 
     if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
         with st.spinner("Extracting visuals and building the presentation..."):
             try:
-                if 'uploaded_template' in dir() and uploaded_template is not None:
+                if uploaded_template is not None:
                     template_bytes = uploaded_template.read()
                 else:
                     with open(TEMPLATE_PATH, "rb") as f:
@@ -389,35 +478,48 @@ if pdf_file and pptx_available:
                     template_bytes
                 )
 
-                st.success(f"Presentation built successfully — {img_count} slide images replaced automagically.")
+                if img_count == 8:
+                    st.success(f"Perfect — all {img_count}/8 dashboard images replaced successfully.")
+                elif img_count > 0:
+                    st.warning(f"Partial success — {img_count}/8 images replaced. Check the build log.")
+                else:
+                    st.error("No images were replaced. Check your PDF and PPTX template.")
 
-                with st.expander("Build Log", expanded=False):
+                with st.expander("Build Log", expanded=(img_count < 8)):
                     for msg in build_logs:
                         if msg.startswith("WARN"):
                             st.warning(msg)
-                        else:
+                        elif msg.startswith("  OK"):
                             st.text(msg)
+                        else:
+                            st.info(msg)
 
-                st.markdown("")
-                st.markdown('<p class="section-label">Step 3 &mdash; Download</p>', unsafe_allow_html=True)
+                if img_count > 0:
+                    st.markdown("")
+                    st.markdown('<p class="section-label">Step 3 &mdash; Download</p>', unsafe_allow_html=True)
 
-                st.info(
-                    "Please verify the summary text on Slides 4 and 8 manually "
-                    "(e.g., ticket counts and ageing numbers) as these metrics require manual update.",
-                    icon="ℹ️"
-                )
+                    st.info(
+                        "**Manual edits still required on Slides 4 and 8:**\n"
+                        "- Update the ageing chart data (native PPT chart)\n"
+                        "- Update the summary bullet text (ticket counts and ageing numbers)\n\n"
+                        "**Slides 5 and 9** have native tables — update row values manually if needed.",
+                        icon="ℹ️"
+                    )
 
-                st.download_button(
-                    label="Download Final Report (.pptx)",
-                    data=out_bytes,
-                    file_name=f"Monthly_Report_{sel_month}_{sel_year}.pptx",
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    use_container_width=True
-                )
+                    st.download_button(
+                        label="Download Final Report (.pptx)",
+                        data=out_bytes,
+                        file_name=f"Monthly_Report_{sel_month}_{sel_year}.pptx",
+                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        use_container_width=True
+                    )
 
             except Exception as e:
                 st.error(f"An error occurred during generation: {e}")
                 st.code(traceback.format_exc(), language="text")
+
+elif not resolved_pptx and pdf_file:
+    st.warning("No PowerPoint template available. Please upload a PPTX template in the sidebar.")
 
 else:
     st.markdown("""
@@ -434,4 +536,3 @@ else:
         </p>
     </div>
     """, unsafe_allow_html=True)
-
