@@ -255,6 +255,42 @@ def _auto_crop_bottom(png_bytes, margin=20, threshold=245):
     return out.getvalue()
 
 
+def _get_image_size(png_bytes):
+    """Return (width_px, height_px) of a PNG image."""
+    from PIL import Image
+    with Image.open(io.BytesIO(png_bytes)) as img:
+        return img.size
+
+
+def _calc_fit_rect(img_w, img_h, box_left, box_top, box_w, box_h):
+    """
+    Fit image inside bounding box preserving aspect ratio, centred.
+    Used for CHART and TABLE replacements (slides 4, 5, 8, 9).
+    All box_* values are in EMU; img_w/img_h are pixels (ratio only matters).
+    Returns (left, top, width, height) all in EMU.
+    """
+    scale = min(box_w / img_w, box_h / img_h)
+    new_w = int(img_w * scale)
+    new_h = int(img_h * scale)
+    offset_x = (box_w - new_w) // 2
+    offset_y = (box_h - new_h) // 2
+    return box_left + offset_x, box_top + offset_y, new_w, new_h
+
+
+def _calc_list_rect(img_w, img_h, box_left, box_top, box_w):
+    """
+    Width-constrained placement for variable-length module lists (slides 6, 10).
+    Locks to the bounding box width and lets height follow the actual
+    (already auto-cropped) image content.
+    Used so that a month with 5 modules is short and one with 20 is tall,
+    with no stretching either way.
+    Returns (left, top, width, height) all in EMU.
+    """
+    scale = box_w / img_w
+    new_h = int(img_h * scale)
+    return box_left, box_top, box_w, new_h
+
+
 def _extract_month_values(page_text):
     """
     Extract (month_abbr, numeric_value) pairs from fitz text.
@@ -656,11 +692,29 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
                 log.append(f"WARN | Delete failed: {ex}")
 
         for entry, left, top, width, height, _ in jobs:
-            pp, label = entry[1], entry[4]
-            slide.shapes.add_picture(io.BytesIO(pdf_images[pp]), left, top, width, height)
-            b = (_emu_to_inches(left), _emu_to_inches(top),
-                 _emu_to_inches(width), _emu_to_inches(height))
-            log.append(f"  OK | Slide {entry[0]+1}: '{label}' <- PDF p{pp} "
+            pp, label, strat = entry[1], entry[4], entry[2]
+            img_bytes = pdf_images[pp]
+
+            # -- Smart placement based on strategy --
+            if strat in ("CHART", "TABLE"):
+                # Aspect-ratio fit, centred inside the bounding box.
+                # Prevents stretching when chart/table box dimensions differ
+                # from the PDF page content's natural proportions.
+                iw, ih = _get_image_size(img_bytes)
+                ins_l, ins_t, ins_w, ins_h = _calc_fit_rect(iw, ih, left, top, width, height)
+            elif strat == "POS":
+                # Width-constrained: use full box width, height follows the
+                # already-cropped image. Bulletproof for variable-length lists.
+                iw, ih = _get_image_size(img_bytes)
+                ins_l, ins_t, ins_w, ins_h = _calc_list_rect(iw, ih, left, top, width)
+            else:
+                # BBOX: template has been manually adjusted; use exact box.
+                ins_l, ins_t, ins_w, ins_h = left, top, width, height
+
+            slide.shapes.add_picture(io.BytesIO(img_bytes), ins_l, ins_t, ins_w, ins_h)
+            b = (_emu_to_inches(ins_l), _emu_to_inches(ins_t),
+                 _emu_to_inches(ins_w), _emu_to_inches(ins_h))
+            log.append(f"  OK | Slide {entry[0]+1}: '{label}' [{strat}] <- PDF p{pp} "
                        f"(L={b[0]:.2f} T={b[1]:.2f} W={b[2]:.2f} H={b[3]:.2f})")
             replaced += 1
 
