@@ -1,3 +1,4 @@
+# coding: utf-8
 import streamlit as st
 import io
 import traceback
@@ -20,14 +21,14 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ── Page Config ──
+# -- Page Config --
 st.set_page_config(
     page_title="Monthly Report | PETRONAS",
     page_icon=os.path.join(BASE_DIR, "PETRONAS_LOGO_SQUARE.png"),
     layout="wide",
 )
 
-# ── Branding Helpers ──
+# -- Branding Helpers --
 def _image_to_data_uri(path, mime_type):
     try:
         with open(os.path.join(BASE_DIR, path), 'rb') as f:
@@ -40,7 +41,7 @@ _logo_square_uri = _image_to_data_uri("PETRONAS_LOGO_SQUARE.png", "image/png")
 _logo_sidebar_uri = _image_to_data_uri("PETRONAS_LOGO_HORIZONTAL.svg", "image/svg+xml")
 
 
-# ── Premium Corporate CSS ──
+# -- Premium Corporate CSS --
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -159,7 +160,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Sidebar ──
+# -- Sidebar --
 with st.sidebar:
     st.markdown(f"""
 <div style="text-align:center; padding:8px 0 20px 0;">
@@ -180,7 +181,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
-    st.markdown("<a href='#' target='_blank' class='genie-link'>Power BI PDF Export ↗</a>", unsafe_allow_html=True)
+    st.markdown("<a href='#' target='_blank' class='genie-link'>Power BI PDF Export</a>", unsafe_allow_html=True)
     pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], label_visibility="collapsed")
 
     TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
@@ -199,7 +200,7 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
-# ── Header Banner ──
+# -- Header Banner --
 st.markdown(f"""
 <style>
 .banner-title {{ color: #FFFFFF !important; text-transform: uppercase !important; font-weight: 800 !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.3) !important; margin: 0 !important; line-height: 1.1 !important; white-space: nowrap; font-size: clamp(1.2rem, 3.5vw, 1.8rem) !important; letter-spacing: 0.1px; }}
@@ -209,21 +210,20 @@ st.markdown(f"""
 <img src="{_logo_square_uri}" style="height: 80px; flex-shrink: 0; filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(-1px 1px 0 white);" />
 <div style="min-width: 0;">
 <h1 class="banner-title">Monthly PPTX Automation</h1>
-<p class="banner-subtitle">Power BI dashboard export to corporate PowerPoint deck — zero-touch pipeline.</p>
+<p class="banner-subtitle">Power BI dashboard export to corporate PowerPoint deck - zero-touch pipeline.</p>
 </div>
 </div>
 """, unsafe_allow_html=True)
 
-
-# ── Dependency Check ──
+# -- Dependency Check --
 if not PPTX_AVAILABLE:
     st.error("Required libraries (python-pptx, PyMuPDF) are not installed. Please run: pip install -r requirements.txt")
     st.stop()
 
 
-# ══════════════════════════════════════════════════════════════
+# ==============================================================
 # HELPER FUNCTIONS
-# ══════════════════════════════════════════════════════════════
+# ==============================================================
 
 def _emu_to_inches(emu):
     """PowerPoint uses English Metric Units: 1 inch = 914400 EMU."""
@@ -355,7 +355,7 @@ def update_summary_bullets(prs, sel_month, sel_year,
                             sr_trend_vals, sr_ageing_vals,
                             inc_trend_vals, inc_ageing_vals):
     """
-    Update summary bullets on Slides 4 & 8.
+    Update summary bullets on Slides 4 and 8.
     SAFETY: Only modifies paragraphs inside text frames that
     contain a 'Summary' heading. Title text frames are NEVER touched.
     """
@@ -368,7 +368,7 @@ def update_summary_bullets(prs, sel_month, sel_year,
         prev, curr, diff, direction = result
         if direction == "remained unchanged":
             return f"Ticket logged {direction} at {curr} in {sel_month} {sel_year}"
-        return f"Ticket logged {direction} by {diff} in {sel_month} {sel_year} ({prev} \u2192 {curr})"
+        return f"Ticket logged {direction} by {diff} in {sel_month} {sel_year} ({prev} to {curr})"
 
     def make_ageing_bullet(vals):
         result = _compute_change(vals)
@@ -399,7 +399,7 @@ def update_summary_bullets(prs, sel_month, sel_year,
                 continue
             tf = shape.text_frame
 
-            # ── SAFETY: Only touch text frames containing "Summary" ──
+            # -- SAFETY: Only touch text frames containing "Summary" --
             has_summary = any(
                 'summary' in "".join(r.text for r in p.runs).strip().lower()
                 for p in tf.paragraphs
@@ -428,31 +428,31 @@ def update_summary_bullets(prs, sel_month, sel_year,
                     ageing_done = True
 
         if not ticket_done:
-            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ticket — {'no data' if not ticket_vals else 'no match'}")
+            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ticket - {'no data' if not ticket_vals else 'no match'}")
         if not ageing_done:
-            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ageing — {'no data' if not ageing_vals else 'no match'}")
+            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ageing - {'no data' if not ageing_vals else 'no match'}")
 
     return changes
 
 
-# ══════════════════════════════════════════════════════════════
-# PROCESSING ENGINE v3 — HANDLES PICTURE, CHART, AND TABLE
-# ══════════════════════════════════════════════════════════════
+# ==============================================================
+# PROCESSING ENGINE v3 - HANDLES PICTURE, CHART, AND TABLE
+# ==============================================================
 def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     """
     Full automation engine.
 
     Strategy per entry:
-      BBOX  → Euclidean distance match to known picture coordinates
-      CHART → Find & delete native PPT chart, insert image at same position
-      TABLE → Find & delete native PPT table, insert image at same position
-      POS   → Sort pictures by left position, pick Nth
+      BBOX  - Euclidean distance match to known picture coordinates
+      CHART - Find and delete native PPT chart, insert image at same position
+      TABLE - Find and delete native PPT table, insert image at same position
+      POS   - Sort pictures by left position, pick Nth
 
     Returns: (pptx_bytes, log_list, replaced_count, pdf_images_dict)
     """
     from collections import defaultdict
 
-    # ── Phase 1: Extract PDF page images ──
+    # -- Phase 1: Extract PDF page images --
     pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
     pdf_images = {}
     for pn in range(len(pdf)):
@@ -461,7 +461,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
         pdf_images[pn + 1] = pix.tobytes("png")
     log = [f"INFO | PDF loaded: {len(pdf)} pages at 300 DPI"]
 
-    # ── Phase 2: Extract trend data ──
+    # -- Phase 2: Extract trend data --
     raw = {}
     for pn, key in [(3, "sr_trend"), (4, "sr_ageing"), (10, "inc_trend"), (11, "inc_ageing")]:
         if pn <= len(pdf):
@@ -469,37 +469,36 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     sr_trend  = _extract_month_values(raw.get("sr_trend",  ""))
     sr_ageing = _extract_month_values(raw.get("sr_ageing", ""))
     inc_trend = _extract_month_values(raw.get("inc_trend", ""))
-    inc_ageing= _extract_month_values(raw.get("inc_ageing",""))
+    inc_ageing = _extract_month_values(raw.get("inc_ageing", ""))
 
     # Detailed logging for verification
-    for label, vals, key in [
-        ("SR Trend (p3)",   sr_trend,  "sr_trend"),
-        ("SR Ageing (p4)",  sr_ageing, "sr_ageing"),
-        ("INC Trend (p10)", inc_trend, "inc_trend"),
-        ("INC Ageing (p11)",inc_ageing,"inc_ageing"),
+    for lbl, vals, key in [
+        ("SR Trend (p3)",    sr_trend,  "sr_trend"),
+        ("SR Ageing (p4)",   sr_ageing, "sr_ageing"),
+        ("INC Trend (p10)",  inc_trend, "inc_trend"),
+        ("INC Ageing (p11)", inc_ageing, "inc_ageing"),
     ]:
         if vals:
             pairs = ", ".join(f"{m}={int(v)}" for m, v in vals)
-            log.append(f"INFO | {label}: {pairs}")
+            log.append(f"INFO | {lbl}: {pairs}")
         else:
-            # Show raw text snippet for debugging
             snippet = raw.get(key, "")[:200].replace('\n', ' | ')
-            log.append(f"INFO | {label}: NO DATA EXTRACTED. Raw text: '{snippet}...'")
+            log.append(f"INFO | {lbl}: NO DATA EXTRACTED. Raw text: '{snippet}...'")
 
-    # ── Phase 3: Auto-crop module list pages ──
+    # -- Phase 3: Auto-crop module list pages --
     for pg in (7, 14):
         if pg in pdf_images:
             old = len(pdf_images[pg])
             pdf_images[pg] = _auto_crop_bottom(pdf_images[pg])
             nw = len(pdf_images[pg])
             if nw < old:
-                log.append(f"INFO | PDF p{pg}: cropped ({old//1024}KB \u2192 {nw//1024}KB)")
+                log.append(f"INFO | PDF p{pg}: cropped ({old//1024}KB -> {nw//1024}KB)")
 
-    # ── Phase 4: Open PPTX ──
+    # -- Phase 4: Open PPTX --
     prs = Presentation(io.BytesIO(pptx_bytes))
     log.append(f"INFO | PPTX: {len(prs.slides)} slides")
 
-    # ── Phase 5: Replacement map ──
+    # -- Phase 5: Replacement map --
     # (slide_idx_0, pdf_page, strategy, hint, label)
     MAP = [
         (2,  2, "BBOX", (0.314, 2.276, 3.782, 1.200), "SR SLA Performance"),
@@ -521,7 +520,6 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     LOGO_H   = 0.6
     replaced  = 0
 
-    # Group by slide for safe batch processing
     groups = defaultdict(list)
     for e in MAP:
         groups[e[0]].append(e)
@@ -581,7 +579,6 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
                     except:
                         pass
                 if not target:
-                    # Fallback: largest non-text, non-picture, non-logo shape
                     ba = 0
                     for sh in slide.shapes:
                         try:
@@ -651,7 +648,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
             if target:
                 jobs.append((entry, target.left, target.top, target.width, target.height, target))
 
-        # Execute: delete all old shapes first, then insert new images
+        # Delete old shapes first, then insert new images
         for _, _, _, _, _, sh in jobs:
             try:
                 sh._element.getparent().remove(sh._element)
@@ -667,18 +664,18 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
                        f"(L={b[0]:.2f} T={b[1]:.2f} W={b[2]:.2f} H={b[3]:.2f})")
             replaced += 1
 
-    # ── Phase 6: Date replacement ──
+    # -- Phase 6: Date replacement --
     log.append("INFO | Updating dates...")
     dc = update_dates_in_pptx(prs, sel_month, str(sel_year))
     log.extend(dc)
     log.append(f"INFO | {len(dc)} date updates.")
 
-    # ── Phase 7: Summary bullets (SAFE) ──
-    log.append("INFO | Updating summary on slides 4 & 8...")
+    # -- Phase 7: Summary bullets (SAFE) --
+    log.append("INFO | Updating summary on slides 4 and 8...")
     sc = update_summary_bullets(prs, sel_month, sel_year, sr_trend, sr_ageing, inc_trend, inc_ageing)
     log.extend(sc)
 
-    # ── Phase 8: Save ──
+    # -- Phase 8: Save --
     out = io.BytesIO()
     prs.save(out)
     out.seek(0)
@@ -686,7 +683,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     return out.read(), log, replaced, pdf_images
 
 
-# ── Resolve PPTX template ──
+# -- Resolve PPTX template --
 resolved_pptx = None
 if uploaded_template is not None:
     resolved_pptx = "uploaded"
@@ -694,11 +691,11 @@ elif pptx_available_locally:
     resolved_pptx = "local"
 
 
-# ══════════════════════════════════════════════════════════════
+# ==============================================================
 # GENERATE SECTION
-# ══════════════════════════════════════════════════════════════
+# ==============================================================
 if pdf_file and resolved_pptx:
-    st.markdown('<p class="section-label">Step 2 &mdash; Validation &amp; Generation</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-label">Step 2 - Validation and Generation</p>', unsafe_allow_html=True)
 
     pdf_file.seek(0)
     try:
@@ -712,45 +709,44 @@ if pdf_file and resolved_pptx:
     with m1:
         st.metric("PDF Pages Detected", pdf_page_count)
     with m2:
-        st.metric("Target Slides", "8 (Slides 3\u201310)")
+        st.metric("Target Slides", "8 (Slides 3-10)")
     with m3:
         st.metric("Image Swaps", "13")
 
-    with st.expander("PDF \u2192 PPT Mapping", expanded=False):
+    with st.expander("PDF to PPT Mapping", expanded=False):
         st.markdown("""
-| PDF | Content | \u2192 Slide | How | Notes |
+| PDF | Content | Slide | Method | Notes |
 |:---:|---|:---:|---|---|
-| ~~1~~ | *Landing* | *Skip* | \u2014 | \u2014 |
+| 1 | Landing | *Skip* | - | - |
 | **2** | SR SLA | **3** | BBOX match | Left picture |
 | **3** | SR Trend | **3** | BBOX match | Right picture |
-| **4** | SR Ageing | **4** | **Delete chart** | Replaces native histogram |
-| **5** | SR Root Cause | **5** | **Delete table** | Replaces native table |
+| **4** | SR Ageing | **4** | Delete chart | Replaces native histogram |
+| **5** | SR Root Cause | **5** | Delete table | Replaces native table |
 | **6** | SR Category % | **6** | BBOX match | Left picture |
-| **7** | SR Module List \u2702\ufe0f | **6** | BBOX match | Right picture (auto-cropped) |
+| **7** | SR Module List | **6** | BBOX match | Right picture (auto-cropped) |
 | **8** | INC Response SLA | **7** | BBOX match | Top-left picture |
 | **9** | INC Resolution SLA | **7** | BBOX match | Bottom-left picture |
 | **10** | INC Trend | **7** | BBOX match | Right picture |
-| **11** | INC Ageing | **8** | **Delete chart** | Replaces native histogram |
-| **12** | INC Root Cause | **9** | **Delete table** | Replaces native table |
+| **11** | INC Ageing | **8** | Delete chart | Replaces native histogram |
+| **12** | INC Root Cause | **9** | Delete table | Replaces native table |
 | **13** | INC Category % | **10** | Position sort | Left picture |
-| **14** | INC Module List \u2702\ufe0f | **10** | Position sort | Right picture (auto-cropped) |
+| **14** | INC Module List | **10** | Position sort | Right picture (auto-cropped) |
         """)
         st.info(
-            "**Auto-features:**\n"
-            "- \u2702\ufe0f Module lists (pages 7 & 14) auto-cropped\n"
-            "- \ud83d\udcc5 Dates updated across all slides\n"
-            "- \ud83d\udcca Summary bullets on Slides 4 & 8 auto-computed\n"
-            "- \ud83d\udd12 Logo protected \u00b7 Title text never touched",
-            icon="\u2728"
+            "**Automated features:**\n"
+            "- Module lists (pages 7 and 14) are auto-cropped to remove whitespace\n"
+            "- Dates are updated across all slides\n"
+            "- Summary bullets on Slides 4 and 8 are auto-computed from extracted chart data\n"
+            "- Corporate logo is protected and title text is never modified"
         )
 
     if pdf_page_count != "?" and pdf_page_count < 14:
-        st.warning(f"\u26a0\ufe0f Expected 14 pages, found {pdf_page_count}. Some images may be missing.")
+        st.warning(f"Expected 14 pages but found {pdf_page_count}. Some images may be missing.")
 
     st.markdown("")
 
     if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
-        with st.spinner("Extracting visuals, replacing charts/tables, updating text..."):
+        with st.spinner("Extracting visuals, replacing charts and tables, updating text..."):
             try:
                 if uploaded_template is not None:
                     template_bytes = uploaded_template.read()
@@ -763,11 +759,11 @@ if pdf_file and resolved_pptx:
                 )
 
                 if img_count == 13:
-                    st.success(f"\u2705 Perfect \u2014 all {img_count}/13 images replaced + text updated.")
+                    st.success(f"Complete - all {img_count}/13 images replaced and text updated.")
                 elif img_count > 0:
-                    st.warning(f"\u26a0\ufe0f Partial \u2014 {img_count}/13 images. Check log.")
+                    st.warning(f"Partial - {img_count}/13 images replaced. Review the build log.")
                 else:
-                    st.error("\u274c No images replaced. Check your files.")
+                    st.error("No images were replaced. Please check your input files.")
 
                 with st.expander("Build Log", expanded=(img_count < 13)):
                     for msg in build_logs:
@@ -778,44 +774,43 @@ if pdf_file and resolved_pptx:
                         else:
                             st.info(msg)
 
-                # ── Preview ──
+                # -- Preview --
                 if img_count > 0 and pdf_imgs:
                     st.markdown("")
-                    st.markdown('<p class="section-label">Preview \u2014 Images Placed Per Slide</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="section-label">Preview - Images Placed Per Slide</p>', unsafe_allow_html=True)
                     PREVIEW = [
-                        ("Slide 3 \u2014 SR SLA + Trend",              [2, 3]),
-                        ("Slide 4 \u2014 SR Ageing (chart replaced)",   [4]),
-                        ("Slide 5 \u2014 SR Root Cause (table replaced)",[5]),
-                        ("Slide 6 \u2014 SR Category + Module List",    [6, 7]),
-                        ("Slide 7 \u2014 INC SLA + Trend",             [8, 9, 10]),
-                        ("Slide 8 \u2014 INC Ageing (chart replaced)",  [11]),
-                        ("Slide 9 \u2014 INC Root Cause (table replaced)",[12]),
-                        ("Slide 10 \u2014 INC Category + Module List",  [13, 14]),
+                        ("Slide 3 - SR SLA and Trend",               [2, 3]),
+                        ("Slide 4 - SR Ageing (chart replaced)",      [4]),
+                        ("Slide 5 - SR Root Cause (table replaced)",  [5]),
+                        ("Slide 6 - SR Category and Module List",     [6, 7]),
+                        ("Slide 7 - INC SLA and Trend",              [8, 9, 10]),
+                        ("Slide 8 - INC Ageing (chart replaced)",     [11]),
+                        ("Slide 9 - INC Root Cause (table replaced)", [12]),
+                        ("Slide 10 - INC Category and Module List",   [13, 14]),
                     ]
                     for title, pages in PREVIEW:
                         avail = [p for p in pages if p in pdf_imgs]
                         if not avail:
                             continue
-                        with st.expander(f"\ud83d\uddbc\ufe0f {title}", expanded=False):
+                        with st.expander(title, expanded=False):
                             cols = st.columns(len(avail))
                             for col, pg in zip(cols, avail):
                                 with col:
                                     st.caption(f"PDF Page {pg}")
                                     st.image(pdf_imgs[pg], use_container_width=True)
 
-                # ── Download ──
+                # -- Download --
                 if img_count > 0:
                     st.markdown("")
-                    st.markdown('<p class="section-label">Step 3 &mdash; Download</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="section-label">Step 3 - Download</p>', unsafe_allow_html=True)
                     st.info(
-                        "\ud83d\udcdd **What was auto-updated:**\n"
-                        "- All dashboard images (13 replacements)\n"
-                        "- Charts on Slides 4 & 8 replaced with PDF images\n"
-                        "- Tables on Slides 5 & 9 replaced with PDF images\n"
-                        "- Dates across all slides\n"
-                        "- Summary bullets on Slides 4 & 8 (if data extractable)\n\n"
-                        "**Review** summary text on Slides 4 & 8 if build log shows warnings.",
-                        icon="\u2139\ufe0f"
+                        "**What was automatically updated:**\n"
+                        "- All 13 dashboard images replaced\n"
+                        "- Charts on Slides 4 and 8 replaced with PDF images\n"
+                        "- Tables on Slides 5 and 9 replaced with PDF images\n"
+                        "- Dates updated across all slides\n"
+                        "- Summary bullets on Slides 4 and 8 computed from chart data (if extractable)\n\n"
+                        "Review summary text on Slides 4 and 8 if the build log shows warnings."
                     )
                     st.download_button(
                         label="Download Final Report (.pptx)",
@@ -830,7 +825,7 @@ if pdf_file and resolved_pptx:
                 st.code(traceback.format_exc(), language="text")
 
 elif not resolved_pptx and pdf_file:
-    st.warning("\u26a0\ufe0f No PPTX template. Upload one in the sidebar.")
+    st.warning("No PPTX template found. Please upload one in the sidebar.")
 
 else:
     st.markdown("""
