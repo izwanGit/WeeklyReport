@@ -58,7 +58,7 @@ datas += copy_metadata('altair')
 datas += copy_metadata('click')
 datas += copy_metadata('packaging')
 datas += copy_metadata('pyarrow')
-datas += copy_metadata('PIL')   # Pillow
+datas += copy_metadata('pillow')   # Pillow uses 'pillow' in pip
 
 # ── Hidden imports ─────────────────────────────────────────────
 hiddenimports = [
