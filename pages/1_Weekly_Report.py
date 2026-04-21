@@ -22,12 +22,14 @@ except ImportError:
 # Configuration & Constants
 # ----------------------------------------------------
 if getattr(sys, 'frozen', False):
-    BASE_DIR = sys._MEIPASS
+    BASE_DIR = sys._MEIPASS                               # read-only bundle (assets)
+    EXE_DIR  = os.path.dirname(sys.executable)            # writable dir next to .exe
 else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    EXE_DIR  = BASE_DIR
 
-HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
-TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
+HISTORY_FILE = os.path.join(EXE_DIR,  "history.json")    # must be writable
+TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")  # read from bundle
 
 # ----------------------------------------------------
 # Helper Functions

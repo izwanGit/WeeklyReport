@@ -214,6 +214,16 @@ with st.sidebar:
     st.markdown("<a href='#' target='_blank' class='genie-link'>Power BI PDF Export ↗</a>", unsafe_allow_html=True)
     pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], label_visibility="collapsed")
 
+    # PPTX Fallback: if template.pptx not found, let user upload it
+    TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
+    pptx_available_locally = os.path.exists(TEMPLATE_PATH)
+    uploaded_template = None
+    if not pptx_available_locally:
+        st.warning("⚠️ template.pptx not found in app folder.")
+        uploaded_template = st.file_uploader("Upload PPTX Template", type=['pptx'])
+    else:
+        st.success("✅ template.pptx detected.")
+
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -243,9 +253,7 @@ if not PPTX_AVAILABLE:
     st.stop()
 
 
-TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
-pptx_available = os.path.exists(TEMPLATE_PATH)
-
+# Redundant logic removed. TEMPLATE_PATH and uploaded_template are handled in the sidebar.
 
 # ── Processing Engine ──
 def process_monthly_report(pdf_bytes, pptx_bytes):
@@ -370,8 +378,11 @@ if pdf_file and pptx_available:
     if st.button("Generate Monthly Report", use_container_width=True, type="primary"):
         with st.spinner("Extracting visuals and building the presentation..."):
             try:
-                with open(TEMPLATE_PATH, "rb") as f:
-                    template_bytes = f.read()
+                if 'uploaded_template' in dir() and uploaded_template is not None:
+                    template_bytes = uploaded_template.read()
+                else:
+                    with open(TEMPLATE_PATH, "rb") as f:
+                        template_bytes = f.read()
 
                 out_bytes, build_logs, img_count = process_monthly_report(
                     pdf_file.read(),

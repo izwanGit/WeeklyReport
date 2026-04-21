@@ -1,3 +1,10 @@
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+fileWatcherType = "none"
+
 [theme]
 primaryColor = "#00B1A9"
 backgroundColor = "#F8FAFC"
