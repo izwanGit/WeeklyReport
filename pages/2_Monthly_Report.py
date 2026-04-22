@@ -181,7 +181,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: -10px;'></div>", unsafe_allow_html=True)
     st.markdown("### Data Upload")
-    st.markdown("<a href='#' target='_blank' class='genie-link'>Power BI PDF Export</a>", unsafe_allow_html=True)
+    st.markdown("<a href='https://app.powerbi.com/groups/81a248dd-b149-45b3-9af2-2f0206f1df7b/reports/6b253891-d1d6-4570-b6fb-ef0e57214ee5/f5dbf7be18699d9dedd8?experience=power-bi' target='_blank' class='genie-link'>Power BI PDF Export ↗</a>", unsafe_allow_html=True)
     pdf_file = st.file_uploader("Power BI PDF Export", type=['pdf'], label_visibility="collapsed")
 
     TEMPLATE_PATH = os.path.join(BASE_DIR, "template.pptx")
@@ -265,7 +265,7 @@ def _get_image_size(png_bytes):
 def _calc_fit_rect(img_w, img_h, box_left, box_top, box_w, box_h):
     """
     Fit image inside bounding box preserving aspect ratio, centred.
-    Used for CHART and TABLE replacements (slides 4, 5, 8, 9).
+    Used for CHART replacements (slides 4, 8).
     All box_* values are in EMU; img_w/img_h are pixels (ratio only matters).
     Returns (left, top, width, height) all in EMU.
     """
@@ -293,24 +293,31 @@ def _calc_list_rect(img_w, img_h, box_left, box_top, box_w):
 
 def _extract_month_values_spatial(page):
     """
-    Extract (month_abbr, numeric_value) pairs using spatial text analysis.
-    Uses fitz page object (not raw text) to get text blocks with X/Y positions.
-    Groups data labels that are vertically aligned with month axis labels.
-    Returns list sorted chronologically, or [] on failure.
+    Extract (month_label, numeric_value) pairs from chart using spatial analysis.
+
+    IMPORTANT RULE:
+    - Values are returned in LEFT -> RIGHT order exactly as they appear on chart.
+    - This allows summary logic to always use:
+        values[-1] = latest (rightmost)
+        values[-2] = previous (immediately beside latest)
+
+    Handles labels like:
+      - Feb 2026
+      - Feb 26
+      - Feb '26
+      - Feb 26'
     """
-    MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    MON_PAT = re.compile(
-        r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b',
+    DATE_PAT = re.compile(
+        r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        r'\s+(?:\d{4}|\'?\d{2}\'?)$',
         re.IGNORECASE
     )
 
     try:
         blocks = page.get_text("dict")["blocks"]
-    except:
+    except Exception:
         return []
 
-    # Collect all text spans with their positions
     spans = []
     for block in blocks:
         if "lines" not in block:
@@ -320,110 +327,174 @@ def _extract_month_values_spatial(page):
                 text = span["text"].strip()
                 if not text:
                     continue
-                bbox = span["bbox"]  # (x0, y0, x1, y1)
-                cx = (bbox[0] + bbox[2]) / 2  # center x
-                cy = (bbox[1] + bbox[3]) / 2  # center y
-                spans.append((text, cx, cy, bbox))
+                x0, y0, x1, y1 = span["bbox"]
+                spans.append({
+                    "text": text,
+                    "x0": x0,
+                    "x1": x1,
+                    "y0": y0,
+                    "y1": y1,
+                    "cx": (x0 + x1) / 2,
+                    "cy": (y0 + y1) / 2
+                })
 
-    # Find month labels (typically on the X-axis, near the bottom)
+    if not spans:
+        return []
+
+    # ----------------------------------------------------------
+    # Step 1: find month/year labels on x-axis
+    # ----------------------------------------------------------
     month_spans = []
-    for text, cx, cy, bbox in spans:
-        m = MON_PAT.match(text)
-        if m:
-            month_spans.append((m.group(1)[:3].capitalize(), cx, cy))
+    for sp in spans:
+        txt = _clean_cell_text(sp["text"])
+        if DATE_PAT.match(txt):
+            month_spans.append({
+                "label": txt,
+                "cx": sp["cx"],
+                "cy": sp["cy"],
+                "x0": sp["x0"],
+                "x1": sp["x1"]
+            })
 
     if not month_spans:
         return []
 
-    # Month labels are usually at X-axis (highest Y values among month spans)
-    # Sort by Y descending to find the axis row
-    month_spans_sorted = sorted(month_spans, key=lambda x: x[2], reverse=True)
-    # Use the Y level of the first month as reference (they should be on same row)
-    axis_y = month_spans_sorted[0][2]
-    # Keep only months near the axis Y (within 20pt tolerance)
-    axis_months = [(m, cx, cy) for m, cx, cy in month_spans if abs(cy - axis_y) < 20]
+    # Group labels by y-row; choose the lowest row with the most month labels
+    rows = []
+    Y_TOL = 14
 
-    if not axis_months:
+    for ms in sorted(month_spans, key=lambda s: s["cy"]):
+        placed = False
+        for grp in rows:
+            if abs(ms["cy"] - grp["y"]) <= Y_TOL:
+                grp["items"].append(ms)
+                grp["y"] = sum(i["cy"] for i in grp["items"]) / len(grp["items"])
+                placed = True
+                break
+        if not placed:
+            rows.append({"y": ms["cy"], "items": [ms]})
+
+    # Best row = most labels, then lower on page (larger y)
+    rows.sort(key=lambda g: (len(g["items"]), g["y"]), reverse=True)
+    axis_months = sorted(rows[0]["items"], key=lambda s: s["cx"])
+
+    if len(axis_months) < 2:
         return []
 
-    # Find numeric values - look for numbers ABOVE each month's X position
-    # Data labels in bar/line charts sit above the data point, which is
-    # vertically above the axis label
-    found = {}
-    for mon, mcx, mcy in axis_months:
-        if mon in found:
-            continue
-        # Look for numbers vertically above this month label (same X zone, lower Y)
+    # ----------------------------------------------------------
+    # Step 2: extract number nearest above each month label
+    # ----------------------------------------------------------
+    # Estimate x tolerance from spacing between months
+    gaps = []
+    for i in range(1, len(axis_months)):
+        gaps.append(axis_months[i]["cx"] - axis_months[i - 1]["cx"])
+
+    if gaps:
+        avg_gap = sum(gaps) / len(gaps)
+        x_tol = max(28, min(90, avg_gap * 0.45))
+    else:
+        x_tol = 40
+
+    results = []
+
+    for m in axis_months:
         best_val = None
-        best_dist = float('inf')
-        for text, cx, cy, bbox in spans:
-            # Must be above the month label (smaller Y) and in same X zone
-            if cy >= mcy:
+        best_score = None
+
+        for sp in spans:
+            txt = _clean_cell_text(sp["text"])
+
+            # skip month labels themselves
+            if DATE_PAT.match(txt):
                 continue
-            x_dist = abs(cx - mcx)
-            if x_dist > 40:  # too far horizontally
-                continue
-            # Try to parse as number
-            clean = text.replace(',', '').replace('%', '').strip()
-            nm = re.match(r'^-?(\d+(?:\.\d+)?)$', clean)
+
+            # only numbers
+            clean = txt.replace(",", "").replace("%", "").strip()
+            nm = re.fullmatch(r'-?(\d+(?:\.\d+)?)', clean)
             if not nm:
                 continue
+
             val = float(nm.group(1))
-            # Prefer the value closest to the axis (highest Y that's still above)
-            dist = mcy - cy
-            if dist < best_dist:
-                best_dist = dist
+
+            # must be above the month label
+            if sp["cy"] >= m["cy"] - 2:
+                continue
+
+            x_dist = abs(sp["cx"] - m["cx"])
+            if x_dist > x_tol:
+                continue
+
+            # prefer number closest vertically above the month label
+            vertical_dist = m["cy"] - sp["cy"]
+
+            # soft filter: ignore values too far up (often axis ticks)
+            if vertical_dist > 220:
+                continue
+
+            score = (vertical_dist, x_dist)
+
+            if best_score is None or score < best_score:
+                best_score = score
                 best_val = val
 
         if best_val is not None:
-            found[mon] = best_val
+            results.append((m["label"], best_val))
 
-    return [(mon, found[mon]) for mon in MONTHS_ORDER if mon in found]
+    # IMPORTANT: return exactly in left-to-right chart order
+    return results
 
 
 def _extract_month_values_text(page_text):
     """
-    Fallback: Extract (month_abbr, numeric_value) pairs from raw text lines.
-    Handles Power BI date formats: "Jan 2026", "Jan 26'", "Jan '26", "Jan 26".
+    Fallback text extractor.
+
+    IMPORTANT:
+    - Returns values in order of appearance from the PDF text,
+      not Jan..Dec hard-coded order.
+    - This keeps alignment with chart left -> right order as much as possible.
     """
-    MONTHS_ORDER = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    MON_PAT = r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
     DATE_PAT = re.compile(
-        rf"^{MON_PAT}\s+(?:'?\d{{2}}'?|\d{{4}})$", re.IGNORECASE
+        r'^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        r'\s+(?:\d{4}|\'?\d{2}\'?)$',
+        re.IGNORECASE
     )
 
-    lines = [l.strip() for l in page_text.split('\n') if l.strip()]
-    found = {}
+    lines = [_clean_cell_text(l) for l in page_text.split('\n') if _clean_cell_text(l)]
+    found = []
+    used_labels = set()
 
-    # Pass 1: value AFTER month label
     for i, line in enumerate(lines):
-        m = DATE_PAT.match(line)
-        if m:
-            mon = m.group(1)[:3].capitalize()
-            for j in range(i + 1, min(i + 6, len(lines))):
-                nm = re.match(r'^(\d+(?:,\d+)*(?:\.\d+)?)\s*$', lines[j])
+        if not DATE_PAT.match(line):
+            continue
+
+        label = line
+        if label in used_labels:
+            continue
+
+        best_val = None
+
+        # Prefer number AFTER label
+        for j in range(i + 1, min(i + 6, len(lines))):
+            clean = lines[j].replace(",", "").replace("%", "").strip()
+            nm = re.fullmatch(r'-?(\d+(?:\.\d+)?)', clean)
+            if nm:
+                best_val = float(nm.group(1))
+                break
+
+        # If not found, try BEFORE label
+        if best_val is None:
+            for j in range(i - 1, max(i - 6, -1), -1):
+                clean = lines[j].replace(",", "").replace("%", "").strip()
+                nm = re.fullmatch(r'-?(\d+(?:\.\d+)?)', clean)
                 if nm:
-                    val = float(nm.group(1).replace(',', ''))
-                    if mon not in found:
-                        found[mon] = val
+                    best_val = float(nm.group(1))
                     break
 
-    # Pass 2: value BEFORE month label
-    if not found:
-        for i, line in enumerate(lines):
-            m = DATE_PAT.match(line)
-            if m:
-                mon = m.group(1)[:3].capitalize()
-                for j in range(i - 1, max(i - 6, -1), -1):
-                    nm = re.match(r'^(\d+(?:,\d+)*(?:\.\d+)?)\s*$', lines[j])
-                    if nm:
-                        val = float(nm.group(1).replace(',', ''))
-                        if mon not in found:
-                            found[mon] = val
-                        break
+        if best_val is not None:
+            found.append((label, best_val))
+            used_labels.add(label)
 
-    return [(mon, found[mon]) for mon in MONTHS_ORDER if mon in found]
+    return found
 
 
 def _extract_with_fallback(pdf, page_num, key, log):
@@ -441,6 +512,11 @@ def _extract_with_fallback(pdf, page_num, key, log):
     vals = _extract_month_values_spatial(page)
     if vals:
         log.append(f"INFO | {key}: Spatial extraction OK ({len(vals)} points)")
+        if len(vals) >= 2:
+            log.append(
+                f"INFO | {key}: latest comparison pair = "
+                f"{vals[-2][0]}={int(round(vals[-2][1]))} -> {vals[-1][0]}={int(round(vals[-1][1]))}"
+            )
         return vals
 
     # Strategy 2: Text-based fallback
@@ -448,6 +524,11 @@ def _extract_with_fallback(pdf, page_num, key, log):
     vals = _extract_month_values_text(raw_text)
     if vals:
         log.append(f"INFO | {key}: Text fallback OK ({len(vals)} points)")
+        if len(vals) >= 2:
+            log.append(
+                f"INFO | {key}: latest comparison pair = "
+                f"{vals[-2][0]}={int(round(vals[-2][1]))} -> {vals[-1][0]}={int(round(vals[-1][1]))}"
+            )
         return vals
 
     # Nothing worked - dump raw text for debugging
@@ -455,6 +536,388 @@ def _extract_with_fallback(pdf, page_num, key, log):
     log.append(f"INFO | {key}: NO DATA. Raw: '{snippet}...'")
     return []
 
+
+# ==============================================================
+# TABLE EXTRACTION HELPERS (FIXED)
+# ==============================================================
+
+PLACEHOLDER_VALUES = {"", "-", "—", "□", "☐", "☑", "■"}
+
+def _clean_cell_text(text):
+    """Normalize whitespace and strip filler characters."""
+    if text is None:
+        return ""
+    text = re.sub(r"\s+", " ", str(text)).strip()
+    return text
+
+def _is_placeholder_value(text):
+    text = _clean_cell_text(text)
+    return text in PLACEHOLDER_VALUES
+
+def _is_integer_text(text):
+    text = _clean_cell_text(text).replace(",", "")
+    return bool(re.fullmatch(r"\d+", text))
+
+def _row_has_real_content(category, root_cause, action_plan, total_tickets):
+    """
+    Accept only rows that have real business data.
+    A valid row should have at least:
+      - a meaningful category, OR
+      - a meaningful root cause, OR
+      - a numeric ticket count
+    """
+    category = _clean_cell_text(category)
+    root_cause = _clean_cell_text(root_cause)
+    action_plan = _clean_cell_text(action_plan)
+    total_tickets = _clean_cell_text(total_tickets)
+
+    has_category = category and not _is_placeholder_value(category)
+    has_root = root_cause and not _is_placeholder_value(root_cause)
+    has_total = _is_integer_text(total_tickets)
+
+    return has_category or has_root or has_total
+
+
+def _extract_root_cause_table(pdf, page_num, label, log):
+    """
+    Extract Root Cause table from PDF page.
+
+    Expected PPT layout:
+    Month | [blank header / Product Categorization Tier 3 values] |
+    Root Cause | Action Plans | Total Tickets
+    """
+    MONTH_PAT = re.compile(
+        r'(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|'
+        r'Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'
+        r'\s+\d{4}', re.IGNORECASE
+    )
+
+    if page_num > len(pdf):
+        log.append(f"WARN | {label} table: page {page_num} not in PDF")
+        return []
+
+    page = pdf.load_page(page_num - 1)
+    page_w = page.rect.width
+
+    try:
+        blocks = page.get_text("dict")["blocks"]
+    except Exception as e:
+        log.append(f"WARN | {label} table: failed to get text dict ({e})")
+        return []
+
+    # Collect all spans with positions
+    spans = []
+    for block in blocks:
+        if "lines" not in block:
+            continue
+        for line in block["lines"]:
+            for span in line["spans"]:
+                text = span["text"].strip()
+                if not text:
+                    continue
+                x0, y0, x1, y1 = span["bbox"]
+                spans.append({
+                    "text": text,
+                    "x0": x0,
+                    "x1": x1,
+                    "cx": (x0 + x1) / 2,
+                    "cy": (y0 + y1) / 2
+                })
+
+    if not spans:
+        log.append(f"WARN | {label} table: no spans found")
+        return []
+
+    # Group spans into rows by Y
+    rows_by_y = []
+    sorted_spans = sorted(spans, key=lambda s: s["cy"])
+    current_row = []
+    current_y = None
+    Y_TOL = 8
+
+    for sp in sorted_spans:
+        if current_y is None:
+            current_row = [sp]
+            current_y = sp["cy"]
+        elif abs(sp["cy"] - current_y) <= Y_TOL:
+            current_row.append(sp)
+        else:
+            current_row.sort(key=lambda s: s["x0"])
+            rows_by_y.append((current_y, current_row))
+            current_row = [sp]
+            current_y = sp["cy"]
+
+    if current_row:
+        current_row.sort(key=lambda s: s["x0"])
+        rows_by_y.append((current_y, current_row))
+
+    # Find header row
+    header_y = None
+    header_row = None
+    for cy, row in rows_by_y:
+        row_text = " ".join(s["text"] for s in row).lower()
+        if "root cause" in row_text and "action" in row_text and "total" in row_text:
+            header_y = cy
+            header_row = row
+            break
+
+    if header_y is None:
+        log.append(f"WARN | {label} table: header row not found")
+        return []
+
+    # Find month text
+    month_text = ""
+    for sp in spans:
+        m = MONTH_PAT.search(sp["text"])
+        if m:
+            month_text = m.group(0)
+            break
+
+    # ==========================================================
+    # Derive 5 body columns:
+    # 0 = Month
+    # 1 = Product Categorization Tier 3 (blank header in PPT)
+    # 2 = Root Cause
+    # 3 = Action Plans
+    # 4 = Total Tickets
+    # ==========================================================
+    positions = {}
+    for sp in header_row:
+        t = sp["text"].lower()
+        xf0 = sp["x0"] / page_w
+        xf1 = sp["x1"] / page_w
+
+        if "month" in t:
+            positions["month_x0"] = xf0
+            positions["month_x1"] = xf1
+        elif "root" in t or "cause" in t:
+            positions["root_x0"] = xf0
+            positions["root_x1"] = xf1
+        elif "action" in t:
+            positions["action_x0"] = xf0
+            positions["action_x1"] = xf1
+        elif "total" in t or "ticket" in t:
+            positions["total_x0"] = xf0
+            positions["total_x1"] = xf1
+
+    # Conservative fallback boundaries
+    month_end = positions.get("month_x1", 0.12)
+    root_start = positions.get("root_x0", 0.26)
+    action_start = positions.get("action_x0", 0.62)
+    total_start = positions.get("total_x0", 0.88)
+
+    # Ensure sane ordering
+    if root_start <= month_end:
+        root_start = max(month_end + 0.10, 0.26)
+    if action_start <= root_start:
+        action_start = max(root_start + 0.20, 0.62)
+    if total_start <= action_start:
+        total_start = max(action_start + 0.15, 0.88)
+
+    # 5 columns:
+    # month | tier3 | root cause | action | total
+    col_bounds = [0.00, month_end, root_start, action_start, total_start, 1.01]
+    log.append(f"INFO | {label} col bounds: {[round(x, 3) for x in col_bounds]}")
+
+    # Collect candidate rows below header
+    candidate_rows = []
+    for cy, row in rows_by_y:
+        if cy <= header_y + 5:
+            continue
+
+        row_texts = [_clean_cell_text(s["text"]) for s in row]
+        non_month_texts = [t for t in row_texts if t and not MONTH_PAT.search(t)]
+
+        if not non_month_texts:
+            continue  # Skip month-only row
+
+        candidate_rows.append((cy, row))
+
+    if not candidate_rows:
+        log.append(f"WARN | {label} table: no candidate rows below header")
+        return []
+
+    # Parse each candidate row into columns
+    results = []
+
+    for cy, row in candidate_rows:
+        cols = ["", "", "", "", ""]
+
+        for sp in row:
+            txt = _clean_cell_text(sp["text"])
+            if not txt:
+                continue
+            if MONTH_PAT.search(txt):
+                continue
+
+            # Use center X for better placement when text is centered in cells
+            x_frac = sp["cx"] / page_w
+
+            for col_idx in range(5):
+                if col_bounds[col_idx] <= x_frac < col_bounds[col_idx + 1]:
+                    cols[col_idx] += (" " if cols[col_idx] else "") + txt
+                    break
+
+        cols = [_clean_cell_text(c) for c in cols]
+
+        # Find rightmost integer as total tickets
+        total = ""
+        for sp in sorted(row, key=lambda s: s["x0"], reverse=True):
+            clean = _clean_cell_text(sp["text"]).replace(",", "")
+            if re.fullmatch(r"\d+", clean):
+                total = clean
+                break
+
+        product_tier_3 = cols[1]
+        root_cause = cols[2]
+        action_plan = cols[3]
+        total_tickets = total if total else cols[4]
+
+        # Remove placeholders
+        if _is_placeholder_value(product_tier_3):
+            product_tier_3 = ""
+        if _is_placeholder_value(root_cause):
+            root_cause = ""
+        if _is_placeholder_value(action_plan):
+            action_plan = ""
+        if _is_placeholder_value(total_tickets):
+            total_tickets = ""
+
+        # Fallback: derive Product Categorization Tier 3 from Root Cause if needed
+        # Example: "Issue Related to Core HR" -> "Core HR"
+        if not product_tier_3 and root_cause:
+            m = re.search(r'Issue\s+Related\s+to\s+(.+)$', root_cause, re.IGNORECASE)
+            if m:
+                product_tier_3 = m.group(1).strip().lstrip("-").strip()
+
+        # Optional: normalize root cause to start with "- "
+        if root_cause and not root_cause.startswith("-"):
+            root_cause = f"- {root_cause}"
+
+        if not _row_has_real_content(product_tier_3, root_cause, action_plan, total_tickets):
+            log.append(
+                f"INFO | {label} skipped phantom row at y={cy:.1f}: "
+                f"tier3='{product_tier_3}' rc='{root_cause}' ap='{action_plan}' total='{total_tickets}'"
+            )
+            continue
+
+        if not action_plan:
+            action_plan = "To identify action plan to reduce tickets"
+
+        row_result = {
+            "month": month_text,
+            "product_tier_3": product_tier_3,
+            "root_cause": root_cause,
+            "action_plan": action_plan,
+            "total_tickets": total_tickets,
+            "_y": cy
+        }
+
+        results.append(row_result)
+
+        log.append(
+            f"INFO | {label} row kept: "
+            f"tier3='{product_tier_3}' | rc='{root_cause}' | "
+            f"ap='{action_plan}' | tickets='{total_tickets}'"
+        )
+
+    # Keep only top 3 real rows
+    results.sort(key=lambda r: r["_y"])
+    results = results[:3]
+
+    for r in results:
+        r.pop("_y", None)
+
+    if not results:
+        log.append(f"WARN | {label} table: no valid rows extracted after filtering")
+    else:
+        log.append(f"INFO | {label} table: extracted {len(results)} valid rows")
+
+    return results
+
+
+def _fill_pptx_table(pptx_shape, data_rows, label, sel_month, sel_year, log):
+    """
+    Fill existing PPTX table with extracted data. Preserves formatting.
+    IMPORTANT:
+    - Column 0 = Month
+    - Column 1 = Product Categorization Tier 3 values (header intentionally left blank)
+    - Column 2 = Root Cause
+    - Column 3 = Action Plans
+    - Column 4 = Total Tickets
+    """
+    def _set_cell(cell, text):
+        tf = cell.text_frame
+
+        if not tf.paragraphs:
+            tf.add_paragraph()
+
+        for para in tf.paragraphs:
+            for run in para.runs:
+                run.text = ""
+
+        if tf.paragraphs and tf.paragraphs[0].runs:
+            tf.paragraphs[0].runs[0].text = str(text)
+        else:
+            run = tf.paragraphs[0].add_run()
+            run.text = str(text)
+
+    tbl = pptx_shape.table
+    num_rows = len(tbl.rows)
+    num_cols = len(tbl.columns)
+    log.append(f"INFO | {label} PPTX table: {num_rows} rows x {num_cols} cols")
+
+    month_label = f"{sel_month} {sel_year}"
+
+    # Clear body rows only (leave header row untouched)
+    for r in range(1, min(num_rows, 4)):
+        for c in range(num_cols):
+            try:
+                _set_cell(tbl.cell(r, c), "")
+            except Exception as e:
+                log.append(f"WARN | {label} clear cell ({r},{c}) failed: {e}")
+
+    # Write extracted rows
+    for i, row_data in enumerate(data_rows[:3]):
+        pptx_row = i + 1
+        if pptx_row >= num_rows:
+            log.append(f"WARN | {label} table: insufficient PPT rows")
+            continue
+
+        try:
+            # Month only on first row (merged-look effect)
+            if i == 0 and num_cols > 0:
+                _set_cell(tbl.cell(pptx_row, 0), month_label)
+
+            # Column 1 body = Product Categorization Tier 3
+            # Header remains whatever is already in template (blank)
+            if num_cols > 1:
+                _set_cell(tbl.cell(pptx_row, 1), row_data.get("product_tier_3", ""))
+
+            if num_cols > 2:
+                _set_cell(tbl.cell(pptx_row, 2), row_data.get("root_cause", ""))
+
+            if num_cols > 3:
+                _set_cell(tbl.cell(pptx_row, 3), row_data.get("action_plan", ""))
+
+            if num_cols > 4:
+                _set_cell(tbl.cell(pptx_row, 4), row_data.get("total_tickets", ""))
+
+            log.append(
+                f"  TABLE | {label} row {pptx_row}: "
+                f"tier3='{row_data.get('product_tier_3','')}' | "
+                f"root='{row_data.get('root_cause','')}' | "
+                f"action='{row_data.get('action_plan','')}' | "
+                f"total='{row_data.get('total_tickets','')}'"
+            )
+
+        except Exception as e:
+            log.append(f"WARN | {label} table row {pptx_row} error: {e}")
+
+
+# ==============================================================
+# OTHER UTILITIES (UNCHANGED)
+# ==============================================================
 
 def _replace_in_para(para, pattern, replacement, flags=re.IGNORECASE):
     """Replace text matching pattern in a paragraph, keeping first run's formatting."""
@@ -622,8 +1085,8 @@ def _make_smart_ageing_bullet(vals, sel_month, sel_year):
 
 
 def update_summary_bullets(prs, sel_month, sel_year,
-                            sr_trend_vals, sr_ageing_vals,
-                            inc_trend_vals, inc_ageing_vals):
+                           sr_trend_vals, sr_ageing_vals,
+                           inc_trend_vals, inc_ageing_vals):
     """
     Update summary bullets on Slides 4 and 8 with smart analysis.
     SAFETY: Only modifies paragraphs inside text frames that
@@ -710,6 +1173,9 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     inc_trend = _extract_with_fallback(pdf, 10, "inc_trend", log)
     inc_ageing = _extract_with_fallback(pdf, 11, "inc_ageing", log)
 
+    sr_table_data  = _extract_root_cause_table(pdf, 5,  "SR",  log)
+    inc_table_data = _extract_root_cause_table(pdf, 12, "INC", log)
+
     # Detailed logging for verification
     for lbl, vals in [
         ("SR Trend (p3)",    sr_trend),
@@ -734,26 +1200,38 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     prs = Presentation(io.BytesIO(pptx_bytes))
     log.append(f"INFO | PPTX: {len(prs.slides)} slides")
 
+    LOGO_TOP = 0.5
+    LOGO_H   = 0.6
+
+    if len(prs.slides) > 9:
+        slide = prs.slides[9]
+        for sh in slide.shapes:
+            try:
+                t = _emu_to_inches(sh.top)
+                h = _emu_to_inches(sh.height)
+                is_logo = t < LOGO_TOP and h < LOGO_H
+                log.append(f"DEBUG | Slide10 shape: type={sh.shape_type} name='{sh.name}' "
+                           f"L={_emu_to_inches(sh.left):.2f} T={t:.2f} "
+                           f"W={_emu_to_inches(sh.width):.2f} H={h:.2f} logo_filtered={is_logo}")
+            except Exception as ex:
+                log.append(f"DEBUG | Slide10 shape error: {ex}")
+
     # -- Phase 5: Replacement map --
     # (slide_idx_0, pdf_page, strategy, hint, label)
     MAP = [
         (2,  2, "BBOX", (0.314, 2.276, 3.782, 1.200), "SR SLA Performance"),
         (2,  3, "BBOX", (4.570, 2.276, 8.307, 3.286), "SR Ticket Trend"),
         (3,  4, "CHART", None, "SR Ageing Trend"),
-        (4,  5, "TABLE", None, "SR Root Cause Table"),
         (5,  6, "BBOX", (0.488, 2.641, 6.533, 2.449), "SR Category Distribution"),
-        (5,  7, "BBOX", (7.346, 1.448, 3.477, 5.459), "SR Module Ticket List"),
+        (5,  7, "BBOX_LIST", (7.346, 1.448, 3.477, 5.459), "SR Module Ticket List"),
         (6,  8, "BBOX", (0.404, 2.406, 3.240, 1.313), "INC Response SLA"),
         (6,  9, "BBOX", (0.315, 4.294, 3.417, 1.365), "INC Resolution SLA"),
         (6, 10, "BBOX", (3.932, 2.406, 9.124, 3.567), "INC Ticket Trend"),
         (7, 11, "CHART", None, "INC Ageing Trend"),
-        (8, 12, "TABLE", None, "INC Root Cause Table"),
-        (9, 13, "POS", 0, "INC Category Distribution"),
-        (9, 14, "POS", 1, "INC Module Ticket List"),
+        (9, 13, "BBOX", (0.860, 2.650, 6.090, 2.520), "INC Category Distribution"),
+        (9, 14, "BBOX_LIST", (7.560, 2.650, 5.000, 2.520), "INC Module Ticket List"),
     ]
 
-    LOGO_TOP = 0.5
-    LOGO_H   = 0.6
     replaced  = 0
 
     groups = defaultdict(list)
@@ -788,7 +1266,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
 
             target = None
 
-            if strat == "BBOX":
+            if strat in ("BBOX", "BBOX_LIST"):
                 tl, tt, tw, th = hint
                 best, bdist = None, float('inf')
                 for sh in pics:
@@ -836,6 +1314,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
                     log.append(f"WARN | Slide {si+1}: No CHART for '{label}'")
 
             elif strat == "TABLE":
+                # Find the native PPTX table shape
                 for sh in slide.shapes:
                     try:
                         if sh.has_table:
@@ -852,34 +1331,36 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
                         except:
                             pass
                 if not target:
-                    ba = 0
-                    for sh in slide.shapes:
-                        try:
-                            st = sh.shape_type
-                        except:
-                            continue
-                        if st == MSO_SHAPE_TYPE.PICTURE or st == 17:
-                            continue
-                        ti = _emu_to_inches(sh.top)
-                        hi = _emu_to_inches(sh.height)
-                        if ti < LOGO_TOP and hi < LOGO_H:
-                            continue
-                        if _emu_to_inches(sh.width) < 1.0 or hi < 0.5:
-                            continue
-                        a = sh.width * sh.height
-                        if a > ba:
-                            ba, target = a, sh
-                if not target:
-                    log.append(f"WARN | Slide {si+1}: No TABLE for '{label}'")
+                    log.append(f"WARN | Slide{si+1}: No TABLE for '{label}'")
 
             elif strat == "POS":
-                avail = sorted([s for s in pics if id(s) not in used], key=lambda s: s.left)
+                # Collect ALL non-logo shapes (not just PICTURE type),
+                # since split placeholders may have a different shape_type
+                all_non_logo = []
+                for sh in slide.shapes:
+                    try:
+                        if _emu_to_inches(sh.top) < LOGO_TOP and _emu_to_inches(sh.height) < LOGO_H:
+                            continue
+                        # Skip text-only shapes
+                        if hasattr(sh, 'text_frame') and not hasattr(sh, 'image'):
+                            try:
+                                _ = sh.shape_type
+                                if sh.shape_type in (MSO_SHAPE_TYPE.TEXT_BOX,):
+                                    continue
+                            except:
+                                pass
+                        all_non_logo.append(sh)
+                    except:
+                        continue
+                
+                avail = sorted([s for s in all_non_logo if id(s) not in used], key=lambda s: s.left)
                 idx = hint
                 if idx < len(avail):
                     target = avail[idx]
                     used.add(id(target))
+                    log.append(f"INFO | Slide {si+1}: POS#{idx} -> shape type={target.shape_type} name='{target.name}'")
                 else:
-                    log.append(f"WARN | Slide {si+1}: Only {len(avail)} pics, need #{idx} for '{label}'")
+                    log.append(f"WARN | Slide {si+1}: Only {len(avail)} shapes, need #{idx} for '{label}'")
 
             if target:
                 jobs.append((entry, target.left, target.top, target.width, target.height, target))
@@ -897,18 +1378,12 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
 
             # -- Smart placement based on strategy --
             if strat in ("CHART", "TABLE"):
-                # Aspect-ratio fit, centred inside the bounding box.
-                # Prevents stretching when chart/table box dimensions differ
-                # from the PDF page content's natural proportions.
                 iw, ih = _get_image_size(img_bytes)
                 ins_l, ins_t, ins_w, ins_h = _calc_fit_rect(iw, ih, left, top, width, height)
-            elif strat == "POS":
-                # Width-constrained: use full box width, height follows the
-                # already-cropped image. Bulletproof for variable-length lists.
+            elif strat == "BBOX_LIST":
                 iw, ih = _get_image_size(img_bytes)
                 ins_l, ins_t, ins_w, ins_h = _calc_list_rect(iw, ih, left, top, width)
             else:
-                # BBOX: template has been manually adjusted; use exact box.
                 ins_l, ins_t, ins_w, ins_h = left, top, width, height
 
             slide.shapes.add_picture(io.BytesIO(img_bytes), ins_l, ins_t, ins_w, ins_h)
@@ -917,6 +1392,47 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
             log.append(f"  OK | Slide {entry[0]+1}: '{label}' [{strat}] <- PDF p{pp} "
                        f"(L={b[0]:.2f} T={b[1]:.2f} W={b[2]:.2f} H={b[3]:.2f})")
             replaced += 1
+
+    # -- Phase 5b: Fill native PPTX tables with extracted data --
+    log.append("INFO | Filling native PPTX tables...")
+
+    # SR table on Slide 5 (index 4)
+    if sr_table_data and len(prs.slides) > 4:
+        slide5 = prs.slides[4]
+        sr_tbl_shape = None
+        for sh in slide5.shapes:
+            try:
+                if sh.has_table:
+                    sr_tbl_shape = sh
+                    break
+            except:
+                pass
+        if sr_tbl_shape:
+            _fill_pptx_table(sr_tbl_shape, sr_table_data, "SR", sel_month, sel_year, log)
+            log.append("INFO | SR table filled successfully.")
+        else:
+            log.append("WARN | SR table shape not found on Slide 5.")
+    else:
+        log.append("WARN | SR table: no extracted data or slide missing.")
+
+    # INC table on Slide 9 (index 8)
+    if inc_table_data and len(prs.slides) > 8:
+        slide9 = prs.slides[8]
+        inc_tbl_shape = None
+        for sh in slide9.shapes:
+            try:
+                if sh.has_table:
+                    inc_tbl_shape = sh
+                    break
+            except:
+                pass
+        if inc_tbl_shape:
+            _fill_pptx_table(inc_tbl_shape, inc_table_data, "INC", sel_month, sel_year, log)
+            log.append("INFO | INC table filled successfully.")
+        else:
+            log.append("WARN | INC table shape not found on Slide 9.")
+    else:
+        log.append("WARN | INC table: no extracted data or slide missing.")
 
     # -- Phase 6: Date replacement --
     log.append("INFO | Updating dates...")
@@ -933,7 +1449,7 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     out = io.BytesIO()
     prs.save(out)
     out.seek(0)
-    log.append(f"INFO | Done: {replaced}/13 images replaced.")
+    log.append(f"INFO | Done: {replaced}/11 images replaced.")
     return out.read(), log, replaced, pdf_images
 
 
@@ -965,7 +1481,7 @@ if pdf_file and resolved_pptx:
     with m2:
         st.metric("Target Slides", "8 (Slides 3-10)")
     with m3:
-        st.metric("Image Swaps", "13")
+        st.metric("Image Swaps", "11")
 
     with st.expander("PDF to PPT Mapping", expanded=False):
         st.markdown("""
@@ -975,20 +1491,21 @@ if pdf_file and resolved_pptx:
 | **2** | SR SLA | **3** | BBOX match | Left picture |
 | **3** | SR Trend | **3** | BBOX match | Right picture |
 | **4** | SR Ageing | **4** | Delete chart | Replaces native histogram |
-| **5** | SR Root Cause | **5** | Delete table | Replaces native table |
+| **5** | SR Root Cause | **5** | Native Table | Populates cells natively |
 | **6** | SR Category % | **6** | BBOX match | Left picture |
 | **7** | SR Module List | **6** | BBOX match | Right picture (auto-cropped) |
 | **8** | INC Response SLA | **7** | BBOX match | Top-left picture |
 | **9** | INC Resolution SLA | **7** | BBOX match | Bottom-left picture |
 | **10** | INC Trend | **7** | BBOX match | Right picture |
 | **11** | INC Ageing | **8** | Delete chart | Replaces native histogram |
-| **12** | INC Root Cause | **9** | Delete table | Replaces native table |
-| **13** | INC Category % | **10** | Position sort | Left picture |
-| **14** | INC Module List | **10** | Position sort | Right picture (auto-cropped) |
+| **12** | INC Root Cause | **9** | Native Table | Populates cells natively |
+| **13** | INC Category % | **10** | BBOX match | Left picture |
+| **14** | INC Module List | **10** | BBOX match | Right picture (auto-cropped) |
         """)
         st.info(
             "**Automated features:**\n"
             "- Module lists (pages 7 and 14) are auto-cropped to remove whitespace\n"
+            "- Root Cause tables (pages 5 and 12) are mapped natively into PowerPoint tables\n"
             "- Dates are updated across all slides\n"
             "- Summary bullets on Slides 4 and 8 are auto-computed from extracted chart data\n"
             "- Corporate logo is protected and title text is never modified"
@@ -1012,18 +1529,18 @@ if pdf_file and resolved_pptx:
                     pdf_file.read(), template_bytes, sel_month, int(sel_year)
                 )
 
-                if img_count == 13:
-                    st.success(f"Complete - all {img_count}/13 images replaced and text updated.")
+                if img_count == 11:
+                    st.success(f"Complete - all {img_count}/11 images replaced and text updated.")
                 elif img_count > 0:
-                    st.warning(f"Partial - {img_count}/13 images replaced. Review the build log.")
+                    st.warning(f"Partial - {img_count}/11 images replaced. Review the build log.")
                 else:
                     st.error("No images were replaced. Please check your input files.")
 
-                with st.expander("Build Log", expanded=(img_count < 13)):
+                with st.expander("Build Log", expanded=(img_count < 11)):
                     for msg in build_logs:
                         if "WARN" in msg:
                             st.warning(msg)
-                        elif msg.startswith("  OK") or msg.startswith("  DATE") or msg.startswith("  SUMM"):
+                        elif msg.startswith("  OK") or msg.startswith("  DATE") or msg.startswith("  SUMM") or msg.startswith("  TABLE"):
                             st.text(msg)
                         else:
                             st.info(msg)
@@ -1035,11 +1552,11 @@ if pdf_file and resolved_pptx:
                     PREVIEW = [
                         ("Slide 3 - SR SLA and Trend",               [2, 3]),
                         ("Slide 4 - SR Ageing (chart replaced)",      [4]),
-                        ("Slide 5 - SR Root Cause (table replaced)",  [5]),
+                        ("Slide 5 - SR Root Cause (table updated)",   [5]),
                         ("Slide 6 - SR Category and Module List",     [6, 7]),
                         ("Slide 7 - INC SLA and Trend",              [8, 9, 10]),
                         ("Slide 8 - INC Ageing (chart replaced)",     [11]),
-                        ("Slide 9 - INC Root Cause (table replaced)", [12]),
+                        ("Slide 9 - INC Root Cause (table updated)",  [12]),
                         ("Slide 10 - INC Category and Module List",   [13, 14]),
                     ]
                     for title, pages in PREVIEW:
@@ -1059,9 +1576,9 @@ if pdf_file and resolved_pptx:
                     st.markdown('<p class="section-label">Step 3 - Download</p>', unsafe_allow_html=True)
                     st.info(
                         "**What was automatically updated:**\n"
-                        "- All 13 dashboard images replaced\n"
+                        "- All 11 dashboard images replaced\n"
                         "- Charts on Slides 4 and 8 replaced with PDF images\n"
-                        "- Tables on Slides 5 and 9 replaced with PDF images\n"
+                        "- Tables on Slides 5 and 9 populated natively with PDF data\n"
                         "- Dates updated across all slides\n"
                         "- Summary bullets on Slides 4 and 8 computed from chart data (if extractable)\n\n"
                         "Review summary text on Slides 4 and 8 if the build log shows warnings."
