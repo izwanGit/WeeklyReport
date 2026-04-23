@@ -497,6 +497,42 @@ def _extract_month_values_text(page_text):
     return found
 
 
+def _normalize_chart_order(vals):
+    """
+    Enforce LEFT → RIGHT chronological order before summary logic.
+    Sorts by (year, month_number) so that:
+      values[-1] = rightmost / latest month
+      values[-2] = month immediately before it
+    This fixes the root cause where PDF text extraction returns
+    months in arbitrary order (e.g. Apr before Feb).
+    """
+    if not vals or len(vals) < 2:
+        return vals
+
+    MONTH_INDEX = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
+        'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
+        'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+    }
+
+    def _key(item):
+        label, _ = item
+        parts = label.lower().replace("'", "").split()
+        if len(parts) >= 2:
+            m = MONTH_INDEX.get(parts[0][:3], 0)
+            try:
+                y = int(parts[1])
+                # Handle 2-digit years (e.g. "26" -> 2026)
+                if y < 100:
+                    y += 2000
+            except ValueError:
+                y = 0
+            return (y, m)
+        return (0, 0)
+
+    return sorted(vals, key=_key)
+
+
 def _extract_with_fallback(pdf, page_num, key, log):
     """
     Try spatial extraction first, fall back to text-based.
@@ -916,8 +952,150 @@ def _fill_pptx_table(pptx_shape, data_rows, label, sel_month, sel_year, log):
 
 
 # ==============================================================
-# OTHER UTILITIES (UNCHANGED)
+# DATE AND SUMMARY UPDATE HELPERS (NEW & PATCHED)
 # ==============================================================
+
+def _shape_text(shape):
+    """Return full text from a shape text frame."""
+    if not hasattr(shape, "text_frame"):
+        return ""
+    parts = []
+    for p in shape.text_frame.paragraphs:
+        txt = "".join(r.text for r in p.runs).strip()
+        if txt:
+            parts.append(txt)
+    return "\n".join(parts).strip()
+
+
+def _set_paragraph_text(para, text):
+    """Replace paragraph text while preserving paragraph formatting/bullets."""
+    if not para.runs:
+        para.add_run()
+    para.runs[0].text = str(text)
+    for r in para.runs[1:]:
+        r.text = ""
+
+
+def _find_summary_title_shape(slide):
+    """
+    Find the text shape that is the 'Summary' heading.
+    Prefers exact match, then short text containing summary.
+    """
+    candidates = []
+
+    for sh in slide.shapes:
+        if not hasattr(sh, "text_frame"):
+            continue
+
+        txt = _shape_text(sh).strip().lower()
+        if not txt:
+            continue
+
+        if txt == "summary":
+            candidates.append((0, sh.top, sh.left, sh))
+        elif "summary" in txt and len(txt) <= 30:
+            candidates.append((1, sh.top, sh.left, sh))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda x: (x[0], x[1], x[2]))
+    return candidates[0][3]
+
+
+def _find_summary_body_shape(slide, summary_shape):
+    """
+    Find the textbox most likely to contain the summary bullets.
+    Assumption: it is below the Summary heading and roughly left-aligned with it.
+    """
+    if summary_shape is None:
+        return None
+
+    candidates = []
+    MAX_LEFT_DIFF = 3 * 914400   # 3 inches in EMU
+    MAX_TOP_GAP   = 4 * 914400   # 4 inches in EMU
+
+    for sh in slide.shapes:
+        if sh == summary_shape:
+            continue
+        if not hasattr(sh, "text_frame"):
+            continue
+
+        txt = _shape_text(sh).strip()
+        if not txt:
+            continue
+
+        # Must be below the summary title
+        if sh.top <= summary_shape.top:
+            continue
+
+        top_gap = sh.top - summary_shape.top
+        left_diff = abs(sh.left - summary_shape.left)
+
+        if top_gap > MAX_TOP_GAP:
+            continue
+
+        # Prefer textboxes roughly aligned under Summary
+        candidates.append((top_gap, left_diff, sh.top, sh.left, sh))
+
+    if not candidates:
+        return None
+
+    # Nearest below, then closest horizontal alignment
+    candidates.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+    return candidates[0][4]
+
+
+def _get_meaningful_paragraphs(tf):
+    """
+    Return non-empty paragraphs excluding the title 'Summary'.
+    """
+    paras = []
+    for p in tf.paragraphs:
+        txt = "".join(r.text for r in p.runs).strip()
+        if not txt:
+            continue
+        if txt.lower() == "summary":
+            continue
+        paras.append(p)
+    return paras
+
+
+def _parse_month_label(label):
+    MONTH_INDEX = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
+        'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
+        'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+    }
+    parts = label.lower().replace("'", "").split()
+    if len(parts) < 2:
+        return None
+
+    mon = MONTH_INDEX.get(parts[0][:3])
+    if not mon:
+        return None
+
+    try:
+        year = int(parts[1])
+        if year < 100:
+            year += 2000
+    except ValueError:
+        return None
+
+    return year, mon
+
+
+def _month_diff(label_a, label_b):
+    """
+    Returns number of months from a -> b
+    Example: Mar 2026 -> Apr 2026 = 1
+    """
+    a = _parse_month_label(label_a)
+    b = _parse_month_label(label_b)
+    if not a or not b:
+        return None
+    return (b[0] - a[0]) * 12 + (b[1] - a[1])
+
 
 def _replace_in_para(para, pattern, replacement, flags=re.IGNORECASE):
     """Replace text matching pattern in a paragraph, keeping first run's formatting."""
@@ -934,7 +1112,11 @@ def _replace_in_para(para, pattern, replacement, flags=re.IGNORECASE):
 
 
 def update_dates_in_pptx(prs, new_month, new_year):
-    """Replace month/year date references across ALL slides."""
+    """
+    Replace month/year date references across ALL slides.
+    PATCHED: Option B - Safely avoids touching summary body textboxes so 
+    template placeholders are preserved for the summary engine.
+    """
     MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     MONTH_ABBREVS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -942,8 +1124,16 @@ def update_dates_in_pptx(prs, new_month, new_year):
     all_months = sorted(MONTH_NAMES + MONTH_ABBREVS, key=len, reverse=True)
     month_pat = '|'.join(re.escape(m) for m in all_months)
     changes = []
+    
     for slide_num, slide in enumerate(prs.slides):
+        # Identify the summary body on this slide to skip it
+        summary_title = _find_summary_title_shape(slide)
+        summary_body = _find_summary_body_shape(slide, summary_title) if summary_title else None
+
         for shape in slide.shapes:
+            if summary_body and shape == summary_body:
+                continue # Skip summary bullets
+
             if not hasattr(shape, "text_frame"):
                 continue
             for para in shape.text_frame.paragraphs:
@@ -958,14 +1148,23 @@ def update_dates_in_pptx(prs, new_month, new_year):
 
 def _analyze_trend(values):
     """
-    Deep trend analysis over available data points.
+    STRICT rule:
+    Compare ONLY last two points IF they are adjacent months.
     Returns dict with: direction, diff, pct_change, streak, trend_desc, is_peak, is_trough
     """
-    if len(values) < 2:
+    if not values or len(values) < 2:
         return None
 
-    curr = int(round(values[-1][1]))
-    prev = int(round(values[-2][1]))
+    prev_label, prev_val = values[-2]
+    curr_label, curr_val = values[-1]
+
+    # Must be adjacent months (e.g. Mar -> Apr)
+    gap = _month_diff(prev_label, curr_label)
+    if gap != 1:
+        return None
+
+    curr = int(round(curr_val))
+    prev = int(round(prev_val))
     diff = abs(curr - prev)
     direction = "increased" if curr > prev else "decreased" if curr < prev else "unchanged"
 
@@ -1088,9 +1287,11 @@ def update_summary_bullets(prs, sel_month, sel_year,
                            sr_trend_vals, sr_ageing_vals,
                            inc_trend_vals, inc_ageing_vals):
     """
-    Update summary bullets on Slides 4 and 8 with smart analysis.
-    SAFETY: Only modifies paragraphs inside text frames that
-    contain a 'Summary' heading. Title text frames are NEVER touched.
+    Update summary bullets on Slides 4 and 8.
+    FIXED:
+    - Finds the 'Summary' title textbox
+    - Finds the actual body textbox below it
+    - Replaces the first 2 bullet paragraphs directly
     """
     changes = []
 
@@ -1101,50 +1302,48 @@ def update_summary_bullets(prs, sel_month, sel_year,
 
     for slide_idx, ticket_vals, ageing_vals, label in CONFIG:
         if slide_idx >= len(prs.slides):
+            changes.append(f"  SUMM | Slide {slide_idx+1}: slide missing")
             continue
+
         slide = prs.slides[slide_idx]
+
         ticket_bullet = _make_smart_ticket_bullet(ticket_vals, sel_month, sel_year)
         ageing_bullet = _make_smart_ageing_bullet(ageing_vals, sel_month, sel_year)
-        ticket_done = False
-        ageing_done = False
 
-        for shape in slide.shapes:
-            if not hasattr(shape, "text_frame"):
-                continue
-            tf = shape.text_frame
+        summary_title = _find_summary_title_shape(slide)
+        if not summary_title:
+            changes.append(f"  SUMM | Slide {slide_idx+1}: Summary title not found")
+            continue
 
-            # -- SAFETY: Only touch text frames containing "Summary" --
-            has_summary = any(
-                'summary' in "".join(r.text for r in p.runs).strip().lower()
-                for p in tf.paragraphs
-            )
-            if not has_summary:
-                continue
+        summary_body = _find_summary_body_shape(slide, summary_title)
+        if not summary_body:
+            changes.append(f"  SUMM | Slide {slide_idx+1}: Summary body textbox not found")
+            continue
 
-            for para in tf.paragraphs:
-                if not para.runs:
-                    continue
-                pt = "".join(r.text for r in para.runs)
-                ptl = pt.lower()
-                if 'summary' in ptl and len(ptl) < 20:
-                    continue
-                if not ticket_done and ticket_bullet and 'ticket' in ptl:
-                    para.runs[0].text = ticket_bullet
-                    for r in para.runs[1:]:
-                        r.text = ""
-                    changes.append(f"  SUMM | Slide {slide_idx+1}: '{ticket_bullet}'")
-                    ticket_done = True
-                elif not ageing_done and ageing_bullet and ('ageing' in ptl or 'aging' in ptl):
-                    para.runs[0].text = ageing_bullet
-                    for r in para.runs[1:]:
-                        r.text = ""
-                    changes.append(f"  SUMM | Slide {slide_idx+1}: '{ageing_bullet}'")
-                    ageing_done = True
+        tf = summary_body.text_frame
+        paras = _get_meaningful_paragraphs(tf)
 
-        if not ticket_done:
-            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ticket - {'no data' if not ticket_vals else 'no match'}")
-        if not ageing_done:
-            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ageing - {'no data' if not ageing_vals else 'no match'}")
+        # If template has fewer than 2 meaningful paragraphs, create them
+        while len(paras) < 2:
+            new_p = tf.add_paragraph()
+            paras.append(new_p)
+
+        # Replace first two meaningful paragraphs
+        if ticket_bullet:
+            _set_paragraph_text(paras[0], ticket_bullet)
+            changes.append(f"  SUMM | Slide {slide_idx+1}: '{ticket_bullet}'")
+        else:
+            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ticket - no valid trend data (check missing/non-adjacent months)")
+
+        if ageing_bullet:
+            _set_paragraph_text(paras[1], ageing_bullet)
+            changes.append(f"  SUMM | Slide {slide_idx+1}: '{ageing_bullet}'")
+        else:
+            changes.append(f"  SUMM | Slide {slide_idx+1}: {label} ageing - no valid trend data (check missing/non-adjacent months)")
+
+        # Clear any extra old paragraphs beyond the first 2 meaningful ones
+        for p in paras[2:]:
+            _set_paragraph_text(p, "")
 
     return changes
 
@@ -1168,13 +1367,19 @@ def process_monthly_report(pdf_bytes, pptx_bytes, sel_month, sel_year):
     log = [f"INFO | PDF loaded: {len(pdf)} pages at 300 DPI"]
 
     # -- Phase 2: Extract trend data (Smart Spatial Extraction) --
-    sr_trend  = _extract_with_fallback(pdf, 3, "sr_trend", log)
-    sr_ageing = _extract_with_fallback(pdf, 4, "sr_ageing", log)
-    inc_trend = _extract_with_fallback(pdf, 10, "inc_trend", log)
-    inc_ageing = _extract_with_fallback(pdf, 11, "inc_ageing", log)
+    sr_trend  = _normalize_chart_order(_extract_with_fallback(pdf, 3, "sr_trend", log))
+    sr_ageing = _normalize_chart_order(_extract_with_fallback(pdf, 4, "sr_ageing", log))
+    inc_trend = _normalize_chart_order(_extract_with_fallback(pdf, 10, "inc_trend", log))
+    inc_ageing = _normalize_chart_order(_extract_with_fallback(pdf, 11, "inc_ageing", log))
 
     sr_table_data  = _extract_root_cause_table(pdf, 5,  "SR",  log)
     inc_table_data = _extract_root_cause_table(pdf, 12, "INC", log)
+
+    # Debug: show final chronological order after normalization
+    for key, vals in [("sr_trend", sr_trend), ("sr_ageing", sr_ageing),
+                       ("inc_trend", inc_trend), ("inc_ageing", inc_ageing)]:
+        if vals:
+            log.append(f"DEBUG | FINAL ORDER ({key}): {[(m, int(v)) for m, v in vals]}")
 
     # Detailed logging for verification
     for lbl, vals in [
