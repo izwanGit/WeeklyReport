@@ -107,30 +107,59 @@ def get_browser_cookies() -> dict:
     if sys.platform == "win32":
         try:
             import shutil, sqlite3
-            edge_cookie_path = os.path.join(
+            user_data_path = os.path.join(
                 os.environ.get("LOCALAPPDATA", ""),
-                "Microsoft", "Edge", "User Data", "Default", "Cookies",
+                "Microsoft", "Edge", "User Data"
             )
-            if os.path.exists(edge_cookie_path):
-                diag_lines.append("🔄 Attempting manual Edge cookie DB copy…")
-                tmp_copy = os.path.join(tempfile.gettempdir(), "_wr_edge_cookies_copy")
-                shutil.copy2(edge_cookie_path, tmp_copy)
-                conn = sqlite3.connect(tmp_copy)
-                cursor = conn.execute(
-                    "SELECT name, value FROM cookies WHERE host_key LIKE ?",
-                    (f"%{MYGENIE_DOMAIN}%",),
-                )
-                cookies = {row[0]: row[1] for row in cursor.fetchall()}
-                conn.close()
-                os.remove(tmp_copy)
-                if cookies:
-                    diag_lines.append(f"✅ Manual fallback: got {len(cookies)} cookie(s)")
-                    st.session_state['_cookie_diag'] = "\n".join(diag_lines)
-                    return cookies
-                else:
-                    diag_lines.append("⚠️ Manual fallback: 0 cookies found for domain")
-            else:
-                diag_lines.append(f"⚠️ Edge cookie DB not found at: {edge_cookie_path}")
+            
+            # Common profile folder names
+            profiles = ["Default", "Profile 1", "Profile 2", "Profile 3", "Profile 4"]
+            found_any = False
+            
+            for profile in profiles:
+                edge_cookie_path = os.path.join(user_data_path, profile, "Network", "Cookies")
+                # Also try the older path (older Edge versions)
+                if not os.path.exists(edge_cookie_path):
+                    edge_cookie_path = os.path.join(user_data_path, profile, "Cookies")
+                
+                if os.path.exists(edge_cookie_path):
+                    found_any = True
+                    diag_lines.append(f"🔄 Found Edge DB in '{profile}'. Copying…")
+                    tmp_copy = os.path.join(tempfile.gettempdir(), f"_wr_edge_{profile}_cookies")
+                    
+                    try:
+                        shutil.copy2(edge_cookie_path, tmp_copy)
+                        conn = sqlite3.connect(tmp_copy)
+                        # Modern Chromium stores encrypted values in 'encrypted_value'
+                        # but some older ones or specific setups might still use 'value'
+                        cursor = conn.execute(
+                            "SELECT name, value, encrypted_value FROM cookies WHERE host_key LIKE ?",
+                            (f"%{MYGENIE_DOMAIN}%",),
+                        )
+                        rows = cursor.fetchall()
+                        conn.close()
+                        os.remove(tmp_copy)
+                        
+                        if rows:
+                            # Note: We aren't decrypting here yet, just checking if we can see them.
+                            # Usually if they are encrypted, 'value' is empty.
+                            cookies = {}
+                            for r in rows:
+                                name_str, val_str, enc_val = r
+                                cookies[name_str] = val_str if val_str else "[Encrypted]"
+                            
+                            diag_lines.append(f"✅ '{profile}': Found {len(cookies)} cookies (Decryption pending if encrypted)")
+                            if any(v != "[Encrypted]" for v in cookies.values()):
+                                st.session_state['_cookie_diag'] = "\n".join(diag_lines)
+                                return {k: v for k, v in cookies.items() if v != "[Encrypted]"}
+                        else:
+                            diag_lines.append(f"ℹ️ '{profile}': No cookies for {MYGENIE_DOMAIN}")
+                    except Exception as e:
+                        diag_lines.append(f"⚠️ '{profile}' copy error: {e}")
+            
+            if not found_any:
+                diag_lines.append(f"⚠️ No Edge cookie files found in standard profiles at: {user_data_path}")
+                
         except Exception as e:
             diag_lines.append(f"⚠️ Manual fallback error: {type(e).__name__}: {e}")
 
