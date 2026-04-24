@@ -66,31 +66,76 @@ MYGENIE_DOMAIN = "mygenieplus-ir1.onbmc.com"
 # ----------------------------------------------------
 def get_browser_cookies() -> dict:
     """
-    Silently reads MyGenie session cookies from the user's local Edge or
-    Chrome browser profile.  Returns a plain dict ready for requests.
-    Falls back to an empty dict if browser_cookie3 is not installed or
-    the browser profile cannot be read.
+    Reads MyGenie session cookies from the user's local Edge or Chrome
+    browser profile.  Returns a plain dict ready for requests.
+    Falls back to an empty dict and stores diagnostic info in
+    st.session_state['_cookie_diag'] for display in the sidebar.
     """
+    diag_lines = []
+
+    # --- Step 0: Can we even import it? ---
     try:
-        import browser_cookie3  # pip install browser-cookie3
+        import browser_cookie3
+        diag_lines.append(f"✅ browser-cookie3 v{getattr(browser_cookie3, '__version__', '?')} imported")
+    except ImportError as e:
+        st.session_state['_cookie_diag'] = f"❌ ImportError: {e}"
+        return {}
 
-        cookiejar = None
+    # --- Step 1: Try each browser loader ---
+    loaders = [
+        ("Edge",   browser_cookie3.edge),
+        ("Chrome", browser_cookie3.chrome),
+    ]
 
-        # Try Edge first (most common on PETRONAS machines), then Chrome
-        for loader in (browser_cookie3.edge, browser_cookie3.chrome):
-            try:
-                cookiejar = loader(domain_name=MYGENIE_DOMAIN)
-                cookies = {c.name: c.value for c in cookiejar}
+    for name, loader in loaders:
+        try:
+            cj = loader(domain_name=MYGENIE_DOMAIN)
+            cookies = {c.name: c.value for c in cj}
+            diag_lines.append(f"✅ {name}: got {len(cookies)} cookie(s)")
+            if cookies:
+                st.session_state['_cookie_diag'] = "\n".join(diag_lines)
+                return cookies
+        except PermissionError as e:
+            diag_lines.append(
+                f"⚠️ {name} PermissionError — browser may be running. "
+                f"Try closing {name} and retry. ({e})"
+            )
+        except Exception as e:
+            diag_lines.append(f"⚠️ {name} error: {type(e).__name__}: {e}")
+
+    # --- Step 2: Manual fallback — copy Edge cookie DB to temp dir ---
+    if sys.platform == "win32":
+        try:
+            import shutil, sqlite3
+            edge_cookie_path = os.path.join(
+                os.environ.get("LOCALAPPDATA", ""),
+                "Microsoft", "Edge", "User Data", "Default", "Cookies",
+            )
+            if os.path.exists(edge_cookie_path):
+                diag_lines.append("🔄 Attempting manual Edge cookie DB copy…")
+                tmp_copy = os.path.join(tempfile.gettempdir(), "_wr_edge_cookies_copy")
+                shutil.copy2(edge_cookie_path, tmp_copy)
+                conn = sqlite3.connect(tmp_copy)
+                cursor = conn.execute(
+                    "SELECT name, value FROM cookies WHERE host_key LIKE ?",
+                    (f"%{MYGENIE_DOMAIN}%",),
+                )
+                cookies = {row[0]: row[1] for row in cursor.fetchall()}
+                conn.close()
+                os.remove(tmp_copy)
                 if cookies:
+                    diag_lines.append(f"✅ Manual fallback: got {len(cookies)} cookie(s)")
+                    st.session_state['_cookie_diag'] = "\n".join(diag_lines)
                     return cookies
-            except Exception:
-                continue
+                else:
+                    diag_lines.append("⚠️ Manual fallback: 0 cookies found for domain")
+            else:
+                diag_lines.append(f"⚠️ Edge cookie DB not found at: {edge_cookie_path}")
+        except Exception as e:
+            diag_lines.append(f"⚠️ Manual fallback error: {type(e).__name__}: {e}")
 
-        return {}
-    except ImportError:
-        return {}
-    except Exception:
-        return {}
+    st.session_state['_cookie_diag'] = "\n".join(diag_lines)
+    return {}
 
 
 def _year_start_ms() -> int:
@@ -434,11 +479,11 @@ with st.sidebar:
     elif cookie_ok:
         st.caption("⚠️ Session found but API returned no data. Enter counts manually.")
     else:
-        st.caption(
-            "⚠️ Could not read browser cookies. "
-            "Make sure you are logged into MyGenie in Edge/Chrome, "
-            "and that `browser-cookie3` is installed (`pip install browser-cookie3`)."
-        )
+        st.caption("⚠️ Could not read browser cookies. Enter counts manually.")
+        diag = st.session_state.get('_cookie_diag', '')
+        if diag:
+            with st.expander("🔍 Cookie Diagnostics", expanded=True):
+                st.code(diag, language="text")
 
     c1, c2 = st.columns(2)
     with c1:
