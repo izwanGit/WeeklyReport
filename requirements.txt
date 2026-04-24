@@ -7,3 +7,4 @@ pyinstaller>=6.0.0
 pymupdf>=1.23.0
 python-pptx>=0.6.21
 Pillow>=10.0.0
+browser-cookie3>=0.19.1
