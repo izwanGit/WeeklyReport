@@ -106,32 +106,54 @@ def get_browser_cookies() -> dict:
     # --- Step 2: Manual fallback — copy Edge cookie DB to temp dir ---
     if sys.platform == "win32":
         try:
-            import shutil, sqlite3
-            user_data_path = os.path.join(
-                os.environ.get("LOCALAPPDATA", ""),
-                "Microsoft", "Edge", "User Data"
-            )
+            import shutil, sqlite3, base64, json
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+            try:
+                import win32crypt
+            except ImportError:
+                diag_lines.append("⚠️ Manual fallback: pywin32 not found, decryption will fail.")
+                win32crypt = None
+
+            user_data_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "Edge", "User Data")
             
+            # --- Get the Encryption Key from 'Local State' ---
+            local_state_path = os.path.join(user_data_path, "Local State")
+            master_key = None
+            if os.path.exists(local_state_path) and win32crypt:
+                with open(local_state_path, "r", encoding="utf-8") as f:
+                    local_state = json.load(f)
+                    encrypted_key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
+                    # Remove 'DPAPI' prefix
+                    encrypted_key = encrypted_key[5:]
+                    master_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+
+            def decrypt_cookie(encrypted_val, key):
+                try:
+                    if not encrypted_val or not key: return ""
+                    # v10/v11/v20 starts with prefix
+                    nonce = encrypted_val[3:15]
+                    payload = encrypted_val[15:]
+                    aesgcm = AESGCM(key)
+                    return aesgcm.decrypt(nonce, payload, None).decode("utf-8")
+                except: return ""
+
             # Common profile folder names
             profiles = ["Default", "Profile 1", "Profile 2", "Profile 3", "Profile 4"]
             found_any = False
             
             for profile in profiles:
                 edge_cookie_path = os.path.join(user_data_path, profile, "Network", "Cookies")
-                # Also try the older path (older Edge versions)
                 if not os.path.exists(edge_cookie_path):
                     edge_cookie_path = os.path.join(user_data_path, profile, "Cookies")
                 
                 if os.path.exists(edge_cookie_path):
                     found_any = True
-                    diag_lines.append(f"🔄 Found Edge DB in '{profile}'. Copying…")
-                    tmp_copy = os.path.join(tempfile.gettempdir(), f"_wr_edge_{profile}_cookies")
+                    diag_lines.append(f"🔄 Edge '{profile}': Processing…")
+                    tmp_copy = os.path.join(tempfile.gettempdir(), f"_wr_edge_{profile}_db")
                     
                     try:
                         shutil.copy2(edge_cookie_path, tmp_copy)
                         conn = sqlite3.connect(tmp_copy)
-                        # Modern Chromium stores encrypted values in 'encrypted_value'
-                        # but some older ones or specific setups might still use 'value'
                         cursor = conn.execute(
                             "SELECT name, value, encrypted_value FROM cookies WHERE host_key LIKE ?",
                             (f"%{MYGENIE_DOMAIN}%",),
@@ -140,25 +162,26 @@ def get_browser_cookies() -> dict:
                         conn.close()
                         os.remove(tmp_copy)
                         
-                        if rows:
-                            # Note: We aren't decrypting here yet, just checking if we can see them.
-                            # Usually if they are encrypted, 'value' is empty.
-                            cookies = {}
-                            for r in rows:
-                                name_str, val_str, enc_val = r
-                                cookies[name_str] = val_str if val_str else "[Encrypted]"
-                            
-                            diag_lines.append(f"✅ '{profile}': Found {len(cookies)} cookies (Decryption pending if encrypted)")
-                            if any(v != "[Encrypted]" for v in cookies.values()):
-                                st.session_state['_cookie_diag'] = "\n".join(diag_lines)
-                                return {k: v for k, v in cookies.items() if v != "[Encrypted]"}
+                        cookies = {}
+                        for r in rows:
+                            name_str, val_str, enc_val = r
+                            if not val_str and enc_val and master_key:
+                                decrypted = decrypt_cookie(enc_val, master_key)
+                                if decrypted: cookies[name_str] = decrypted
+                            elif val_str:
+                                cookies[name_str] = val_str
+                        
+                        if cookies:
+                            diag_lines.append(f"✅ Edge '{profile}': Extracted {len(cookies)} cookies")
+                            st.session_state['_cookie_diag'] = "\n".join(diag_lines)
+                            return cookies
                         else:
-                            diag_lines.append(f"ℹ️ '{profile}': No cookies for {MYGENIE_DOMAIN}")
+                            diag_lines.append(f"ℹ️ Edge '{profile}': Found 0 cookies for domain")
                     except Exception as e:
-                        diag_lines.append(f"⚠️ '{profile}' copy error: {e}")
+                        diag_lines.append(f"⚠️ Edge '{profile}' error: {e}")
             
             if not found_any:
-                diag_lines.append(f"⚠️ No Edge cookie files found in standard profiles at: {user_data_path}")
+                diag_lines.append(f"⚠️ Edge User Data not found at: {user_data_path}")
                 
         except Exception as e:
             diag_lines.append(f"⚠️ Manual fallback error: {type(e).__name__}: {e}")
