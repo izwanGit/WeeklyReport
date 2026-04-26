@@ -442,6 +442,12 @@ st.markdown("""
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     .stDeployButton, [data-testid="stDeployButton"], [data-testid="stAppDeployButton"] { display: none !important; }
+    .genie-link {
+        font-size: 0.85rem; font-weight: 500;
+        color: #31333F !important; text-decoration: none !important;
+        transition: all 0.2s ease !important; cursor: pointer !important;
+    }
+    .genie-link:hover { color: #00B1A9 !important; text-decoration: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -497,8 +503,8 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("Auto Sync Data", use_container_width=True):
-        with st.spinner("Syncing live counts..."):
+    if st.button("Fetch Live MyGenie Counts", use_container_width=True, help="Click to securely fetch the latest real-time open ticket counts directly from your MyGenie browser session."):
+        with st.spinner("Fetching live counts..."):
             live_cookies = get_browser_cookies()
             if live_cookies:
                 st.session_state.auto_wo = fetch_open_wo(live_cookies)
