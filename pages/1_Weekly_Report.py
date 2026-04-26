@@ -503,7 +503,7 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("Fetch Live MyGenie Counts", use_container_width=True, help="Click to securely fetch the latest real-time open ticket counts directly from your MyGenie browser session."):
+    if st.button("Sync Live Tickets", use_container_width=True):
         with st.spinner("Fetching live counts..."):
             live_cookies = get_browser_cookies()
             if live_cookies:
@@ -523,6 +523,13 @@ with st.sidebar:
                 else:
                     st.session_state.sync_status = "Please click Extension button first"
                 st.session_state.sync_error = True
+
+    st.markdown(
+        "<div style='text-align: center; margin-top: -10px; margin-bottom: 12px; font-size: 0.75rem; color: #94A3B8; font-weight: 500;'>"
+        "Pulls real-time counts from your active browser session."
+        "</div>", 
+        unsafe_allow_html=True
+    )
 
     if st.session_state.sync_status:
         if st.session_state.sync_error:
