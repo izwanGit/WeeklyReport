@@ -14,6 +14,7 @@ datas += [
     ('template.html',                    '.'),
     ('Report_Hub.py',                    '.'),
     ('pages',                            'pages'),
+    ('MyGenie_Cookie_Bridge',            'MyGenie_Cookie_Bridge'),
     ('icon_transparent.ico',             '.'),
     ('PETRONAS_LOGO_SQUARE.png',         '.'),
     ('PETRONAS_LOGO_HORIZONTAL.svg',     '.'),
