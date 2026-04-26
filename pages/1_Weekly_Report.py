@@ -61,132 +61,101 @@ DASHBOARD_HEADERS = {
 
 MYGENIE_DOMAIN = "mygenieplus-ir1.onbmc.com"
 
+COOKIE_BRIDGE_URL = "http://localhost:17731"
+
 # ----------------------------------------------------
-# Auto Cookie Reader (browser-cookie3)
+# Auto Cookie Reader (Cookie Bridge & browser-cookie3)
 # ----------------------------------------------------
 def get_browser_cookies() -> dict:
     """
-    Reads MyGenie session cookies from the user's local Edge or Chrome
-    browser profile.  Returns a plain dict ready for requests.
-    Falls back to an empty dict and stores diagnostic info in
-    st.session_state['_cookie_diag'] for display in the sidebar.
+    Priority order:
+      1. Local Cookie Bridge receiver (extension → localhost server)
+      2. browser-cookie3 direct read (original method, fallback)
+    Returns a plain dict of cookies, or {} on failure.
     """
     diag_lines = []
 
-    # --- Step 0: Can we even import it? ---
+    # ----------------------------------------------------------------
+    # METHOD 1: Cookie Bridge (extension sends cookies to local server)
+    # ----------------------------------------------------------------
+    try:
+        resp = requests.get(
+            f"{COOKIE_BRIDGE_URL}/get",
+            timeout=2,
+        )
+        if resp.status_code == 200:
+            data       = resp.json()
+            cookies    = data.get("cookies", {})
+            saved_at   = data.get("saved_at", "unknown time")
+            age        = data.get("age_seconds", 0)
+
+            if cookies:
+                age_str = (
+                    f"{age // 3600}h {(age % 3600) // 60}m ago"
+                    if age > 3600
+                    else f"{age // 60}m ago"
+                    if age > 60
+                    else f"{age}s ago"
+                )
+                st.session_state['_cookie_source'] = f"extension ({age_str})"
+                st.session_state['_cookie_diag']   = (
+                    f"✅ Cookie Bridge: {len(cookies)} cookie(s) received via extension\n"
+                    f"   Saved: {saved_at}"
+                )
+                return cookies
+            else:
+                diag_lines.append("⚠️ Cookie Bridge: server running but no cookies cached yet.")
+        elif resp.status_code == 404:
+            diag_lines.append(
+                "ℹ️ Cookie Bridge: server running but no cookies yet — "
+                "click the extension button in Edge toolbar."
+            )
+        else:
+            diag_lines.append(f"⚠️ Cookie Bridge: unexpected status {resp.status_code}")
+
+    except requests.exceptions.ConnectionError:
+        diag_lines.append(
+            "ℹ️ Cookie Bridge not running. "
+            "Start cookie_receiver.py for the best experience."
+        )
+    except Exception as e:
+        diag_lines.append(f"⚠️ Cookie Bridge error: {e}")
+
+    # ----------------------------------------------------------------
+    # METHOD 2: browser-cookie3 (original fallback)
+    # ----------------------------------------------------------------
     try:
         import browser_cookie3
-        diag_lines.append(f"✅ browser-cookie3 v{getattr(browser_cookie3, '__version__', '?')} imported")
-    except ImportError as e:
-        st.session_state['_cookie_diag'] = f"❌ ImportError: {e}"
-        return {}
+        diag_lines.append(f"🔄 Trying browser-cookie3 fallback…")
 
-    # --- Step 1: Try each browser loader ---
-    loaders = [
-        ("Edge",   browser_cookie3.edge),
-        ("Chrome", browser_cookie3.chrome),
-    ]
-
-    for name, loader in loaders:
-        try:
-            cj = loader(domain_name=MYGENIE_DOMAIN)
-            cookies = {c.name: c.value for c in cj}
-            diag_lines.append(f"✅ {name}: got {len(cookies)} cookie(s)")
-            if cookies:
-                st.session_state['_cookie_diag'] = "\n".join(diag_lines)
-                return cookies
-        except PermissionError as e:
-            diag_lines.append(
-                f"⚠️ {name} PermissionError — browser may be running. "
-                f"Try closing {name} and retry. ({e})"
-            )
-        except Exception as e:
-            diag_lines.append(f"⚠️ {name} error: {type(e).__name__}: {e}")
-
-    # --- Step 2: Manual fallback — copy Edge cookie DB to temp dir ---
-    if sys.platform == "win32":
-        try:
-            import shutil, sqlite3, base64, json
-            from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        loaders = [
+            ("Edge",   browser_cookie3.edge),
+            ("Chrome", browser_cookie3.chrome),
+        ]
+        for name, loader in loaders:
             try:
-                import win32crypt
-            except ImportError:
-                diag_lines.append("⚠️ Manual fallback: pywin32 not found, decryption will fail.")
-                win32crypt = None
+                cj      = loader(domain_name=MYGENIE_DOMAIN)
+                cookies = {c.name: c.value for c in cj}
+                if cookies:
+                    diag_lines.append(f"✅ {name}: got {len(cookies)} cookie(s) via browser-cookie3")
+                    st.session_state['_cookie_source'] = f"browser-cookie3 ({name})"
+                    st.session_state['_cookie_diag']   = "\n".join(diag_lines)
+                    return cookies
+                else:
+                    diag_lines.append(f"ℹ️ {name}: 0 cookies found for domain")
+            except PermissionError as e:
+                diag_lines.append(f"⚠️ {name} locked (browser running): {e}")
+            except Exception as e:
+                diag_lines.append(f"⚠️ {name}: {type(e).__name__}: {e}")
 
-            user_data_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "Edge", "User Data")
-            
-            # --- Get the Encryption Key from 'Local State' ---
-            local_state_path = os.path.join(user_data_path, "Local State")
-            master_key = None
-            if os.path.exists(local_state_path) and win32crypt:
-                with open(local_state_path, "r", encoding="utf-8") as f:
-                    local_state = json.load(f)
-                    encrypted_key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
-                    # Remove 'DPAPI' prefix
-                    encrypted_key = encrypted_key[5:]
-                    master_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+    except ImportError:
+        diag_lines.append("⚠️ browser-cookie3 not installed (pip install browser-cookie3)")
 
-            def decrypt_cookie(encrypted_val, key):
-                try:
-                    if not encrypted_val or not key: return ""
-                    # v10/v11/v20 starts with prefix
-                    nonce = encrypted_val[3:15]
-                    payload = encrypted_val[15:]
-                    aesgcm = AESGCM(key)
-                    return aesgcm.decrypt(nonce, payload, None).decode("utf-8")
-                except: return ""
-
-            # Common profile folder names
-            profiles = ["Default", "Profile 1", "Profile 2", "Profile 3", "Profile 4"]
-            found_any = False
-            
-            for profile in profiles:
-                edge_cookie_path = os.path.join(user_data_path, profile, "Network", "Cookies")
-                if not os.path.exists(edge_cookie_path):
-                    edge_cookie_path = os.path.join(user_data_path, profile, "Cookies")
-                
-                if os.path.exists(edge_cookie_path):
-                    found_any = True
-                    diag_lines.append(f"🔄 Edge '{profile}': Processing…")
-                    tmp_copy = os.path.join(tempfile.gettempdir(), f"_wr_edge_{profile}_db")
-                    
-                    try:
-                        shutil.copy2(edge_cookie_path, tmp_copy)
-                        conn = sqlite3.connect(tmp_copy)
-                        cursor = conn.execute(
-                            "SELECT name, value, encrypted_value FROM cookies WHERE host_key LIKE ?",
-                            (f"%{MYGENIE_DOMAIN}%",),
-                        )
-                        rows = cursor.fetchall()
-                        conn.close()
-                        os.remove(tmp_copy)
-                        
-                        cookies = {}
-                        for r in rows:
-                            name_str, val_str, enc_val = r
-                            if not val_str and enc_val and master_key:
-                                decrypted = decrypt_cookie(enc_val, master_key)
-                                if decrypted: cookies[name_str] = decrypted
-                            elif val_str:
-                                cookies[name_str] = val_str
-                        
-                        if cookies:
-                            diag_lines.append(f"✅ Edge '{profile}': Extracted {len(cookies)} cookies")
-                            st.session_state['_cookie_diag'] = "\n".join(diag_lines)
-                            return cookies
-                        else:
-                            diag_lines.append(f"ℹ️ Edge '{profile}': Found 0 cookies for domain")
-                    except Exception as e:
-                        diag_lines.append(f"⚠️ Edge '{profile}' error: {e}")
-            
-            if not found_any:
-                diag_lines.append(f"⚠️ Edge User Data not found at: {user_data_path}")
-                
-        except Exception as e:
-            diag_lines.append(f"⚠️ Manual fallback error: {type(e).__name__}: {e}")
-
-    st.session_state['_cookie_diag'] = "\n".join(diag_lines)
+    # ----------------------------------------------------------------
+    # All methods failed
+    # ----------------------------------------------------------------
+    st.session_state['_cookie_source'] = None
+    st.session_state['_cookie_diag']   = "\n".join(diag_lines)
     return {}
 
 
@@ -526,15 +495,43 @@ with st.sidebar:
         auto_inc     = fetch_open_inc(live_cookies) if cookie_ok else None
 
     # Show cookie status once, above the number inputs
+    cookie_source = st.session_state.get('_cookie_source')
+
     if cookie_ok and (auto_wo is not None or auto_inc is not None):
-        st.caption("🔑 Browser session detected — counts auto-filled.")
+        if cookie_source and "extension" in cookie_source:
+            st.success(f"🔗 Connected via Extension — counts auto-filled.")
+        else:
+            st.caption(f"🔑 Browser session detected — counts auto-filled.")
+
     elif cookie_ok:
         st.caption("⚠️ Session found but API returned no data. Enter counts manually.")
+
     else:
-        st.caption("⚠️ Could not read browser cookies. Enter counts manually.")
+        # Check if the bridge server is running but just needs the button click
+        bridge_needs_click = st.session_state.get('_cookie_diag', '').startswith('ℹ️ Cookie Bridge: server running')
+        bridge_not_running = 'Cookie Bridge not running' in st.session_state.get('_cookie_diag', '')
+
+        if bridge_needs_click:
+            st.info(
+                "🔗 Cookie Bridge is running!\n\n"
+                "Click the **teal extension icon** in your Edge toolbar, "
+                "then click **'Send Session to Report App'**.",
+                icon="👆"
+            )
+        elif bridge_not_running:
+            st.warning("⚠️ Could not auto-read cookies.")
+            with st.expander("How to fix", expanded=True):
+                st.markdown(
+                    "**Option A (Recommended):**\n"
+                    "Run `cookie_receiver.py` then click the Edge extension.\n\n"
+                    "**Option B:** Enter counts manually below."
+                )
+        else:
+            st.caption("⚠️ Could not read browser cookies. Enter counts manually.")
+
         diag = st.session_state.get('_cookie_diag', '')
         if diag:
-            with st.expander("🔍 Cookie Diagnostics", expanded=True):
+            with st.expander("🔍 Diagnostics", expanded=False):
                 st.code(diag, language="text")
 
     c1, c2 = st.columns(2)

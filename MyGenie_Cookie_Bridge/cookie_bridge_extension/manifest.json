@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "MyGenie Cookie Bridge",
+  "version": "1.0",
+  "description": "Sends MyGenie session cookies to the local Weekly Report app.",
+  "permissions": [
+    "cookies",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://mygenieplus-ir1.onbmc.com/*",
+    "http://localhost/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "icon16.png",
+      "48":  "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16":  "icon16.png",
+    "48":  "icon48.png",
+    "128": "icon128.png"
+  }
+}
