@@ -59,6 +59,12 @@ async function sendCookies() {
   }
 }
 
+// Bind the button click (inline onclick is blocked by extension CSP)
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('sendBtn');
+  if (btn) btn.addEventListener('click', sendCookies);
+});
+
 // Auto-check on popup open: ping the receiver to see if app is running
 window.addEventListener("load", async () => {
   try {
