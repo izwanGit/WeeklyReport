@@ -417,7 +417,14 @@ st.markdown("""
         font-weight: 600 !important; transition: all 0.2s ease !important;
         box-shadow: 0 4px 10px rgba(0, 177, 169, 0.3) !important;
         padding: 0.6rem 1.4rem !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
     }
+    .stButton > button::before {
+        content: ""; display: inline-block; width: 16px; height: 16px;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
+        background-size: contain; background-repeat: no-repeat; margin-right: 8px; margin-top: 1px;
+    }
+    .stButton > button p { margin: 0 !important; display: flex !important; align-items: center !important; }
     .stButton > button:hover, .stDownloadButton > button:hover {
         background: linear-gradient(135deg, #009C95, #007A75) !important;
         transform: translateY(-2px) !important;
@@ -513,7 +520,7 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("⟳ Sync Live Data", use_container_width=True):
+    if st.button("Sync Live Data", use_container_width=True):
         with st.spinner("Fetching live counts..."):
             live_cookies = get_browser_cookies()
             if live_cookies:
