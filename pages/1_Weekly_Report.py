@@ -513,7 +513,7 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("Sync Live Data", use_container_width=True):
+    if st.button("⟳ Sync Live Data", use_container_width=True):
         with st.spinner("Fetching live counts..."):
             live_cookies = get_browser_cookies()
             if live_cookies:
