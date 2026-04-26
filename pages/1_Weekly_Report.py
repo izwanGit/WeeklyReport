@@ -524,15 +524,24 @@ with st.sidebar:
         with st.spinner("Fetching live counts..."):
             live_cookies = get_browser_cookies()
             if live_cookies:
-                st.session_state.auto_wo = fetch_open_wo(live_cookies)
-                st.session_state.auto_inc = fetch_open_inc(live_cookies)
+                wo_res = fetch_open_wo(live_cookies)
+                inc_res = fetch_open_inc(live_cookies)
                 
-                src = st.session_state.get('_cookie_source', '')
-                if "extension" in src:
-                    st.session_state.sync_status = "Connected via Extension"
+                if wo_res is None and inc_res is None:
+                    st.session_state.sync_status = "Session found, but API returned no data (Stale cookies or server error?)"
+                    st.session_state.sync_error = True
                 else:
-                    st.session_state.sync_status = "Connected via Local Browser"
-                st.session_state.sync_error = False
+                    if wo_res is not None:
+                        st.session_state.auto_wo = wo_res
+                    if inc_res is not None:
+                        st.session_state.auto_inc = inc_res
+                    
+                    src = st.session_state.get('_cookie_source', '')
+                    if "extension" in src:
+                        st.session_state.sync_status = "Connected via Extension"
+                    else:
+                        st.session_state.sync_status = "Connected via Local Browser"
+                    st.session_state.sync_error = False
             else:
                 diag = st.session_state.get('_cookie_diag', '')
                 if 'Cookie Bridge not running' in diag:
