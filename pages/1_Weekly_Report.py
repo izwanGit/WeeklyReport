@@ -99,34 +99,34 @@ def get_browser_cookies() -> dict:
                 )
                 st.session_state['_cookie_source'] = f"extension ({age_str})"
                 st.session_state['_cookie_diag']   = (
-                    f"✅ Cookie Bridge: {len(cookies)} cookie(s) received via extension\n"
+                    f"[Success] Cookie Bridge: {len(cookies)} cookie(s) received via extension\n"
                     f"   Saved: {saved_at}"
                 )
                 return cookies
             else:
-                diag_lines.append("⚠️ Cookie Bridge: server running but no cookies cached yet.")
+                diag_lines.append("[Warning] Cookie Bridge: server running but no cookies cached yet.")
         elif resp.status_code == 404:
             diag_lines.append(
-                "ℹ️ Cookie Bridge: server running but no cookies yet — "
+                "[Info] Cookie Bridge: server running but no cookies yet — "
                 "click the extension button in Edge toolbar."
             )
         else:
-            diag_lines.append(f"⚠️ Cookie Bridge: unexpected status {resp.status_code}")
+            diag_lines.append(f"[Warning] Cookie Bridge: unexpected status {resp.status_code}")
 
     except requests.exceptions.ConnectionError:
         diag_lines.append(
-            "ℹ️ Cookie Bridge not running. "
+            "[Info] Cookie Bridge not running. "
             "Start cookie_receiver.py for the best experience."
         )
     except Exception as e:
-        diag_lines.append(f"⚠️ Cookie Bridge error: {e}")
+        diag_lines.append(f"[Warning] Cookie Bridge error: {e}")
 
     # ----------------------------------------------------------------
     # METHOD 2: browser-cookie3 (original fallback)
     # ----------------------------------------------------------------
     try:
         import browser_cookie3
-        diag_lines.append(f"🔄 Trying browser-cookie3 fallback…")
+        diag_lines.append(f"[Status] Trying browser-cookie3 fallback…")
 
         loaders = [
             ("Edge",   browser_cookie3.edge),
@@ -137,19 +137,19 @@ def get_browser_cookies() -> dict:
                 cj      = loader(domain_name=MYGENIE_DOMAIN)
                 cookies = {c.name: c.value for c in cj}
                 if cookies:
-                    diag_lines.append(f"✅ {name}: got {len(cookies)} cookie(s) via browser-cookie3")
+                    diag_lines.append(f"[Success] {name}: got {len(cookies)} cookie(s) via browser-cookie3")
                     st.session_state['_cookie_source'] = f"browser-cookie3 ({name})"
                     st.session_state['_cookie_diag']   = "\n".join(diag_lines)
                     return cookies
                 else:
-                    diag_lines.append(f"ℹ️ {name}: 0 cookies found for domain")
+                    diag_lines.append(f"[Info] {name}: 0 cookies found for domain")
             except PermissionError as e:
-                diag_lines.append(f"⚠️ {name} locked (browser running): {e}")
+                diag_lines.append(f"[Warning] {name} locked (browser running): {e}")
             except Exception as e:
-                diag_lines.append(f"⚠️ {name}: {type(e).__name__}: {e}")
+                diag_lines.append(f"[Warning] {name}: {type(e).__name__}: {e}")
 
     except ImportError:
-        diag_lines.append("⚠️ browser-cookie3 not installed (pip install browser-cookie3)")
+        diag_lines.append("[Warning] browser-cookie3 not installed (pip install browser-cookie3)")
 
     # ----------------------------------------------------------------
     # All methods failed
@@ -484,103 +484,80 @@ with st.sidebar:
 """, unsafe_allow_html=True)
 
     # --------------------------------------------------
-    # Auto-read cookies from Edge/Chrome, then fetch live counts
+    # Open Ticket Counts (with optional Auto Sync)
     # --------------------------------------------------
     st.markdown("### Open Ticket Counts")
 
-    with st.spinner("Reading browser session & fetching live counts…"):
-        live_cookies = get_browser_cookies()
-        cookie_ok    = bool(live_cookies)
-        auto_wo      = fetch_open_wo(live_cookies)  if cookie_ok else None
-        auto_inc     = fetch_open_inc(live_cookies) if cookie_ok else None
+    if "auto_wo" not in st.session_state:
+        st.session_state.auto_wo = None
+    if "auto_inc" not in st.session_state:
+        st.session_state.auto_inc = None
+    if "sync_status" not in st.session_state:
+        st.session_state.sync_status = None
+    if "sync_error" not in st.session_state:
+        st.session_state.sync_error = False
 
-    # Show cookie status once, above the number inputs
-    cookie_source = st.session_state.get('_cookie_source')
+    if st.button("Auto Sync Data", use_container_width=True):
+        with st.spinner("Syncing live counts..."):
+            live_cookies = get_browser_cookies()
+            if live_cookies:
+                st.session_state.auto_wo = fetch_open_wo(live_cookies)
+                st.session_state.auto_inc = fetch_open_inc(live_cookies)
+                
+                src = st.session_state.get('_cookie_source', '')
+                if "extension" in src:
+                    st.session_state.sync_status = "Connected via Extension"
+                else:
+                    st.session_state.sync_status = "Connected via Local Browser"
+                st.session_state.sync_error = False
+            else:
+                diag = st.session_state.get('_cookie_diag', '')
+                if 'Cookie Bridge not running' in diag:
+                    st.session_state.sync_status = "Background server not running"
+                else:
+                    st.session_state.sync_status = "Please click Extension button first"
+                st.session_state.sync_error = True
 
-    if cookie_ok and (auto_wo is not None or auto_inc is not None):
-        if cookie_source and "extension" in cookie_source:
-            st.success(f"🔗 Connected via Extension — counts auto-filled.")
+    if st.session_state.sync_status:
+        if st.session_state.sync_error:
+            st.error(f"Sync Failed: {st.session_state.sync_status}")
+            with st.expander("Diagnostics", expanded=False):
+                st.code(st.session_state.get('_cookie_diag', ''), language="text")
         else:
-            st.caption(f"🔑 Browser session detected — counts auto-filled.")
-
-    elif cookie_ok:
-        st.caption("⚠️ Session found but API returned no data. Enter counts manually.")
-
-    else:
-        # Check if the bridge server is running but just needs the button click
-        bridge_needs_click = st.session_state.get('_cookie_diag', '').startswith('ℹ️ Cookie Bridge: server running')
-        bridge_not_running = 'Cookie Bridge not running' in st.session_state.get('_cookie_diag', '')
-
-        if bridge_needs_click:
-            st.info(
-                "🔗 Cookie Bridge is running!\n\n"
-                "Click the **teal extension icon** in your Edge toolbar, "
-                "then click **'Send Session to Report App'**.",
-                icon="👆"
-            )
-        elif bridge_not_running:
-            st.warning("⚠️ Could not auto-read cookies.")
-            with st.expander("How to fix", expanded=True):
-                st.markdown(
-                    "**Option A (Recommended):**\n"
-                    "Run `cookie_receiver.py` then click the Edge extension.\n\n"
-                    "**Option B:** Enter counts manually below."
-                )
-        else:
-            st.caption("⚠️ Could not read browser cookies. Enter counts manually.")
-
-        diag = st.session_state.get('_cookie_diag', '')
-        if diag:
-            with st.expander("🔍 Diagnostics", expanded=False):
-                st.code(diag, language="text")
+            st.success(st.session_state.sync_status)
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(
-            "<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/aegyhutg26kn4a/f350ff42-68d2-5195-bce1-6a86eeaf6336' "
-            "target='_blank' style='font-size:0.85rem;font-weight:500;color:#31333F;text-decoration:none;'>Open WO ↗</a>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/aegyhutg26kn4a/f350ff42-68d2-5195-bce1-6a86eeaf6336?orgId=204007533&var-ASORG=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-assignee=All&var-Status=All' target='_blank' class='genie-link'>Open WO ↗</a>", unsafe_allow_html=True)
         sr_open_wo = st.number_input(
             "Open WO",
             min_value=0,
-            value=auto_wo if auto_wo is not None else 1,
+            value=st.session_state.auto_wo if st.session_state.auto_wo is not None else 1,
             step=1,
-            label_visibility="collapsed",
+            help="Total open Work Order ticket count (e.g. 215)",
+            label_visibility="collapsed"
         )
-        if auto_wo is not None:
-            st.caption(f"✅ Live: {auto_wo}")
-        else:
-            st.caption("Enter manually")
-
     with c2:
-        st.markdown(
-            "<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/beg9bk10a07i8e/39afb7b' "
-            "target='_blank' style='font-size:0.85rem;font-weight:500;color:#31333F;text-decoration:none;'>Open INC ↗</a>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/beg9bk10a07i8e/39afb7b?orgId=204007533&var-Assigned_Support_Org=All&var-AssignedGroup=MYCAREERX%20SUPPORT&var-Assignee=All&var-SLA=All' target='_blank' class='genie-link'>Open INC ↗</a>", unsafe_allow_html=True)
         inc_open_input = st.number_input(
             "Open INC",
             min_value=0,
-            value=auto_inc if auto_inc is not None else 1,
+            value=st.session_state.auto_inc if st.session_state.auto_inc is not None else 1,
             step=1,
-            label_visibility="collapsed",
+            help="Total open Incident ticket count (e.g. 7)",
+            label_visibility="collapsed"
         )
-        if auto_inc is not None:
-            st.caption(f"✅ Live: {auto_inc}")
-        else:
-            st.caption("Enter manually")
 
-    st.markdown("<div style='margin-top:-20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
     st.markdown("### Report Settings")
-    report_date     = st.date_input("Report Date", datetime.date.today())
+    report_date = st.date_input("Report Date", datetime.date.today())
     report_date_str = report_date.strftime("%d %B %Y")
-
+    
     # --------------------------------------------------
-    # SharePoint auto-sync detection
+    # Data Source (with auto SharePoint detection)
     # --------------------------------------------------
-    st.markdown("<div style='margin-top:-20px;'></div>", unsafe_allow_html=True)
-    st.markdown("### Data Source")
+    st.markdown("<div style='margin-top: -25px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Data Upload")
 
     user_profile    = os.environ.get('USERPROFILE', '')
     default_inc_path = os.path.join(
@@ -599,20 +576,14 @@ with st.sidebar:
     sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
-        st.success("🟢 Live SharePoint Sync Active")
+        st.success("Live SharePoint Sync Active")
         st.caption("Auto-using synced data. Upload below to override.")
-    else:
-        st.warning("🔴 SharePoint Sync Not Detected")
-        with st.expander("Sync Path Info", expanded=False):
-            st.markdown(
-                "To use auto-sync, ensure you have clicked **'Sync'** or "
-                "**'Add shortcut to OneDrive'** on the SAPServices SharePoint folders."
-            )
-            st.code(default_sr_path, language="text")
 
-    st.markdown("<div style='margin-bottom:5px;'>Upload Manually (Optional):</div>", unsafe_allow_html=True)
-    uploaded_sr_wo = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo")
-    uploaded_inc   = st.file_uploader("Incident Excel",  type=['xlsx', 'xls'], key="inc")
+    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
+    uploaded_sr_wo = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo", label_visibility="collapsed")
+    
+    st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ddxo5d7th1gqob/incident-ageing-raw-data?orgId=204007533&var-Assignee_Login=All&var-Assigned_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All&var-enableOverridesForExcel=true' target='_blank' class='genie-link'>Incident Excel ↗</a>", unsafe_allow_html=True)
+    uploaded_inc = st.file_uploader("Incident Excel", type=['xlsx', 'xls'], key="inc", label_visibility="collapsed")
 
     final_sr_wo_file = uploaded_sr_wo if uploaded_sr_wo else (default_sr_path if sync_active else None)
     final_inc_file   = uploaded_inc   if uploaded_inc   else (default_inc_path if sync_active else None)
