@@ -37,7 +37,7 @@ def petronas_alert(message: str, type: str = "info", icon: str = "info"):
     border_color, bg_color = colors.get(type, colors["info"])
     icon_svg = _get_svg_icon(icon_name, border_color)
     icon_html = f"<span style='margin-right: 10px; flex-shrink: 0; display: flex; align-items: center;'>{icon_svg}</span>" if icon_svg else ""
-    html = f'''<div style="background-color: {bg_color}; border-left: 4px solid {border_color}; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; font-family: sans-serif; color: #1E293B; display: flex; align-items: center;">{icon_html}<div>{message}</div></div>'''
+    html = f'''<div style="background-color: {bg_color}; border-left: 3px solid {border_color}; padding: 8px 12px; border-radius: 4px; margin-bottom: 8px; font-family: sans-serif; font-size: 0.82rem; color: #1E293B; display: flex; align-items: center; line-height: 1.4;">{icon_html}<div>{message}</div></div>'''
     st.markdown(html, unsafe_allow_html=True)
 
 import pandas as pd
@@ -155,28 +155,27 @@ def show_cookie_modal():
     col1, col2 = st.columns(2)
     if col1.button("Sync Data", use_container_width=True, type="primary"):
         if raw_cookie.strip():
-            with st.spinner("Fetching live counts..."):
-                parsed = parse_raw_cookie(raw_cookie)
-                wo_res = fetch_open_wo(parsed)
-                inc_res = fetch_open_inc(parsed)
-                
-                if wo_res is None and inc_res is None:
-                    st.session_state.sync_status = "Invalid cookie or session expired."
-                    st.session_state.sync_error = True
-                else:
-                    if wo_res is not None:
-                        st.session_state.auto_wo = wo_res
-                    if inc_res is not None:
-                        st.session_state.auto_inc = inc_res
-                    
-                    save_cached_cookie(raw_cookie.strip())
-                    st.session_state.sync_status = "Data Synced Successfully!"
-                    st.session_state.sync_error = False
-                    st.session_state.master_sync_clicked = True
-                    st.rerun()
+            parsed = parse_raw_cookie(raw_cookie)
+            wo_res = fetch_open_wo(parsed)
+            inc_res = fetch_open_inc(parsed)
+
+            if wo_res is None and inc_res is None:
+                st.session_state.sync_status = "Invalid cookie or session expired."
+                st.session_state.sync_error = True
+            else:
+                if wo_res is not None:
+                    st.session_state.auto_wo = wo_res
+                if inc_res is not None:
+                    st.session_state.auto_inc = inc_res
+
+                save_cached_cookie(raw_cookie.strip())
+                st.session_state.sync_status = "Data Synced Successfully!"
+                st.session_state.sync_error = False
+                st.session_state.master_sync_clicked = True
+                st.rerun()
         else:
             petronas_alert("Please paste the cookie string first.", type="error")
-            
+
     if col2.button("Cancel", use_container_width=True):
         st.rerun()
 
