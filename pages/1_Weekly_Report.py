@@ -403,12 +403,130 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
     return found, missing
 
 
-def add_update_details_sheet(workbook_path: str, report_date: datetime.date):
+
+# ── Excel Department Filter & Cover Page Constants ───────────────────────────
+DEPT_FILTER   = "MYCAREERSUPPORT"
+DEPT_COL_KEYS = [
+    "assignment group", "assigned group", "support group",
+    "work group", "resolver group", "group name", "department", "team",
+]
+
+
+def _find_dept_col(headers: list):
+    """Return 1-based index of the dept/assignment-group column, or None."""
+    for i, h in enumerate(headers, start=1):
+        if h and any(k in str(h).lower() for k in DEPT_COL_KEYS):
+            return i
+    return None
+
+
+def _filter_sheet_by_dept(ws, dept: str = DEPT_FILTER) -> int:
     """
-    Duplicate the WO Ageing sheet in the workbook as 'Update Details'
-    keeping only the required columns.
+    Delete every data row whose dept column does NOT contain `dept`.
+    Returns the count of remaining data rows (header excluded).
     """
-    from openpyxl import load_workbook
+    headers = [cell.value for cell in ws[1]]
+    dept_col = _find_dept_col(headers)
+    if dept_col is None:
+        return max(0, ws.max_row - 1)
+
+    to_delete = []
+    for row in ws.iter_rows(min_row=2):
+        val = str(row[dept_col - 1].value or "").strip().upper()
+        if dept.upper() not in val:
+            to_delete.append(row[0].row)
+
+    for row_num in reversed(to_delete):
+        ws.delete_rows(row_num)
+
+    return max(0, ws.max_row - 1)
+
+
+def _count_ageing_gt(ws, threshold: int) -> int:
+    """
+    Count data rows where the ageing-days column value > threshold.
+    Searches header for a column containing 'ageing' and 'day'.
+    """
+    headers = [cell.value for cell in ws[1]]
+    ageing_col = None
+    for i, h in enumerate(headers, start=1):
+        if h and "ageing" in str(h).lower() and "day" in str(h).lower():
+            ageing_col = i
+            break
+    if ageing_col is None:
+        return 0
+
+    count = 0
+    for row in ws.iter_rows(min_row=2):
+        try:
+            val = float(row[ageing_col - 1].value or 0)
+            if val > threshold:
+                count += 1
+        except (TypeError, ValueError):
+            pass
+    return count
+
+
+def _make_cover_sheet(ws, title_text: str, count: int):
+    """
+    Wipe the sheet and rebuild it as a full-page PETRONAS cover with:
+      - Gigantic teal title block
+      - Enormous number below it
+    """
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    # ── 1. Wipe merged cells ──────────────────────────────────────
+    for rng in list(ws.merged_cells.ranges):
+        ws.unmerge_cells(str(rng))
+
+    # ── 2. Delete all rows ────────────────────────────────────────
+    if ws.max_row:
+        ws.delete_rows(1, ws.max_row)
+
+    COLS = 14  # A to N — wide canvas
+
+    # ── 3. Column widths ──────────────────────────────────────────
+    for c in range(1, COLS + 1):
+        ws.column_dimensions[get_column_letter(c)].width = 16
+
+    # ── 4. Title block: rows 1–8 ──────────────────────────────────
+    TITLE_END = 8
+    for r in range(1, TITLE_END + 1):
+        ws.row_dimensions[r].height = 65
+
+    ws.merge_cells(
+        start_row=1, start_column=1, end_row=TITLE_END, end_column=COLS
+    )
+    t = ws.cell(row=1, column=1)
+    t.value = title_text
+    t.font      = Font(name="Calibri", bold=True, size=72, color="FFFFFF")
+    t.fill      = PatternFill("solid", fgColor="00B1A9")
+    t.alignment = Alignment(
+        horizontal="center", vertical="center", wrap_text=True
+    )
+
+    # ── 5. Number block: rows 9–26 ────────────────────────────────
+    NUM_START, NUM_END = TITLE_END + 1, 26
+    for r in range(NUM_START, NUM_END + 1):
+        ws.row_dimensions[r].height = 110
+
+    ws.merge_cells(
+        start_row=NUM_START, start_column=1, end_row=NUM_END, end_column=COLS
+    )
+    n = ws.cell(row=NUM_START, column=1)
+    n.value     = count
+    n.font      = Font(name="Calibri", bold=True, size=320, color="00B1A9")
+    n.alignment = Alignment(horizontal="center", vertical="center")
+
+
+def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.date):
+    """
+    Duplicate the WO Ageing sheet as 'Update Details', keep only
+    required columns, filter by MYCAREERSUPPORT, and insert
+    'Update as of DD Mmm' as the leftmost column.
+    """
+    from openpyxl.styles import Font, PatternFill, Alignment
 
     KEEP_COLS = {
         "Service Request Ageing Days",
@@ -420,56 +538,142 @@ def add_update_details_sheet(workbook_path: str, report_date: datetime.date):
         "Work Order Assignee",
     }
 
-    wb = load_workbook(workbook_path)
-
-    # Find the WO Ageing sheet (last sheet or by name containing 'work order')
-    wo_sheet_name = wb.sheetnames[-1]
-    for name in wb.sheetnames:
-        if "work order" in name.lower() and "ageing" in name.lower():
-            wo_sheet_name = name
-            break
-
     wo_ws = wb[wo_sheet_name]
 
-    # Build set of column indices (1-based) to keep
+    # Determine which column indices (1-based) to keep
     headers = [cell.value for cell in wo_ws[1]]
     keep_indices = set()
     for i, h in enumerate(headers, start=1):
         if h is None:
             continue
         h_str = str(h)
-        # Dynamic "Status as of DD Mon" column
-        if h_str.lower().startswith("status as of"):
-            keep_indices.add(i)
-        elif h_str in KEEP_COLS:
+        if h_str.lower().startswith("status as of") or h_str in KEEP_COLS:
             keep_indices.add(i)
 
-    # Remove old "Update Details" if exists
+    # Remove old copy if exists
     if "Update Details" in wb.sheetnames:
         del wb["Update Details"]
 
-    # Copy the WO sheet
+    # Copy sheet
     new_ws = wb.copy_worksheet(wo_ws)
     new_ws.title = "Update Details"
 
-    # Delete columns NOT in keep_indices (right to left to preserve indices)
+    # Delete unwanted columns (right to left)
     max_col = new_ws.max_column
     for col_idx in range(max_col, 0, -1):
         if col_idx not in keep_indices:
             new_ws.delete_cols(col_idx)
 
+    # Filter by MYCAREERSUPPORT
+    _filter_sheet_by_dept(new_ws)
+
+    # Insert 'Update as of DD Mmm' as column A
+    new_ws.insert_cols(1)
+    col_header = f"Update as of {report_date.strftime('%d %b')}"
+    hdr_cell = new_ws.cell(row=1, column=1)
+    hdr_cell.value = col_header
+    hdr_cell.font  = Font(name="Calibri", bold=True, color="FFFFFF")
+    hdr_cell.fill  = PatternFill("solid", fgColor="00B1A9")
+    hdr_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Leave data cells blank (for manual fill)
+
+
+def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
+    """
+    Full processing of the SR & WO workbook:
+      - Filter all data sheets by MYCAREERSUPPORT
+      - Rebuild sheet 1 cover: Total Service Request
+      - Rebuild sheet 2 cover: Service Request Ageing > 30 Days
+      - Add filtered 'Update Details' sheet with Update as of column
+    """
+    from openpyxl import load_workbook
+
+    wb = load_workbook(workbook_path)
+    sheet_names = wb.sheetnames
+
+    # Identify the primary WO data sheet (last sheet or named 'work order ageing')
+    wo_data_name = sheet_names[-1]
+    for name in sheet_names:
+        if "work order" in name.lower() and "ageing" in name.lower():
+            wo_data_name = name
+
+    # ── Filter all data sheets (skip first two cover sheets) ──────
+    data_sheets = sheet_names[2:]
+    for sname in data_sheets:
+        _filter_sheet_by_dept(wb[sname])
+
+    # ── Get counts from the primary WO data sheet ─────────────────
+    wo_ws      = wb[wo_data_name]
+    total_sr   = max(0, wo_ws.max_row - 1)
+    sr_gt_30   = _count_ageing_gt(wo_ws, 30)
+
+    # ── Rebuild cover sheets ──────────────────────────────────────
+    if len(sheet_names) >= 1:
+        _make_cover_sheet(wb[sheet_names[0]], "Total Service Request", total_sr)
+    if len(sheet_names) >= 2:
+        _make_cover_sheet(
+            wb[sheet_names[1]], "Service Request Ageing > 30 Days", sr_gt_30
+        )
+
+    # ── Build Update Details sheet ────────────────────────────────
+    _build_update_details_sheet(wb, wo_data_name, report_date)
+
     wb.save(workbook_path)
 
 
-def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_inc_file) -> tuple:
+def process_inc_workbook(workbook_path: str, report_date: datetime.date):
     """
-    Copy/rename the SR&WO and INC Excel files to OneDrive Weekly Report folder.
+    Full processing of the INC workbook:
+      - Filter all data sheets by MYCAREERSUPPORT
+      - Rebuild sheet 1 cover: Total Ageing Incident
+      - Rebuild sheet 2 cover: Total Ageing Incident > 30 Days
+    """
+    from openpyxl import load_workbook
+
+    wb = load_workbook(workbook_path)
+    sheet_names = wb.sheetnames
+
+    # ── Filter all data sheets (skip first two cover sheets) ──────
+    data_sheets = sheet_names[2:]
+    for sname in data_sheets:
+        _filter_sheet_by_dept(wb[sname])
+
+    # ── Get counts from the primary INC data sheet ────────────────
+    inc_data_name = sheet_names[-1]
+    for name in sheet_names:
+        if "incident" in name.lower() and "raw" in name.lower():
+            inc_data_name = name
+            break
+
+    inc_ws      = wb[inc_data_name]
+    total_inc   = max(0, inc_ws.max_row - 1)
+    inc_gt_30   = _count_ageing_gt(inc_ws, 30)
+
+    # ── Rebuild cover sheets ──────────────────────────────────────
+    if len(sheet_names) >= 1:
+        _make_cover_sheet(wb[sheet_names[0]], "Total Ageing Incident", total_inc)
+    if len(sheet_names) >= 2:
+        _make_cover_sheet(
+            wb[sheet_names[1]], "Total Ageing Incident > 30 Days", inc_gt_30
+        )
+
+    wb.save(workbook_path)
+
+
+def save_excels_to_onedrive(
+    report_date: datetime.date, final_sr_wo_file, final_inc_file
+) -> tuple:
+    """
+    Copy/rename the SR&WO and INC Excel files to OneDrive Weekly Report folder,
+    then process both workbooks (filter, cover pages, Update Details sheet).
     Returns (sr_wo_dest_path, inc_dest_path).
     """
     import shutil
-    user_profile = os.environ.get('USERPROFILE', '')
-    date_folder  = report_date.strftime('%d %B')   # e.g. "27 April"
-    date_suffix  = report_date.strftime('%d%b')    # e.g. "27Apr"
+
+    user_profile = os.environ.get("USERPROFILE", "")
+    date_folder  = report_date.strftime("%d %B")   # e.g. "27 April"
+    date_suffix  = report_date.strftime("%d%b")    # e.g. "27Apr"
 
     target_dir = os.path.join(
         user_profile, "OneDrive - PETRONAS", "Weekly Report", date_folder
@@ -478,31 +682,31 @@ def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_
 
     sr_wo_dest = os.path.join(
         target_dir,
-        f"Service Request & Work Order Ageing Raw Data Preview_{date_suffix}.xlsx"
+        f"Service Request & Work Order Ageing Raw Data Preview_{date_suffix}.xlsx",
     )
     inc_dest = os.path.join(
         target_dir,
-        f"Incident Ageing Raw Data Preview_{date_suffix}.xlsx"
+        f"Incident Ageing Raw Data Preview_{date_suffix}.xlsx",
     )
 
-    # Save SR & WO file
+    # ── Write SR & WO file ────────────────────────────────────────
     if isinstance(final_sr_wo_file, str):
         shutil.copy2(final_sr_wo_file, sr_wo_dest)
     else:
-        with open(sr_wo_dest, 'wb') as f:
+        with open(sr_wo_dest, "wb") as f:
             f.write(final_sr_wo_file.getvalue())
+    process_sr_wo_workbook(sr_wo_dest, report_date)
 
-    # Add the "Update Details" sheet to the SR & WO workbook
-    add_update_details_sheet(sr_wo_dest, report_date)
-
-    # Save INC file
+    # ── Write INC file ────────────────────────────────────────────
     if isinstance(final_inc_file, str):
         shutil.copy2(final_inc_file, inc_dest)
     else:
-        with open(inc_dest, 'wb') as f:
+        with open(inc_dest, "wb") as f:
             f.write(final_inc_file.getvalue())
+    process_inc_workbook(inc_dest, report_date)
 
     return sr_wo_dest, inc_dest
+
 
 
 def push_to_outlook(html_body, subject="Weekly SR & Incident Update", to_emails=None, cc=OUTLOOK_CC, attachments=None):
