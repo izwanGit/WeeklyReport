@@ -402,6 +402,65 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
             missing.append(name)
     return found, missing
 
+
+def add_update_details_sheet(workbook_path: str, report_date: datetime.date):
+    """
+    Duplicate the WO Ageing sheet in the workbook as 'Update Details'
+    keeping only the required columns.
+    """
+    from openpyxl import load_workbook
+
+    KEEP_COLS = {
+        "Service Request Ageing Days",
+        "Work Order ID",
+        "Work Order Summary",
+        "Customer Full Name (Service Request)",
+        "Work Order Status",
+        "Work Order Status Reason",
+        "Work Order Assignee",
+    }
+
+    wb = load_workbook(workbook_path)
+
+    # Find the WO Ageing sheet (last sheet or by name containing 'work order')
+    wo_sheet_name = wb.sheetnames[-1]
+    for name in wb.sheetnames:
+        if "work order" in name.lower() and "ageing" in name.lower():
+            wo_sheet_name = name
+            break
+
+    wo_ws = wb[wo_sheet_name]
+
+    # Build set of column indices (1-based) to keep
+    headers = [cell.value for cell in wo_ws[1]]
+    keep_indices = set()
+    for i, h in enumerate(headers, start=1):
+        if h is None:
+            continue
+        h_str = str(h)
+        # Dynamic "Status as of DD Mon" column
+        if h_str.lower().startswith("status as of"):
+            keep_indices.add(i)
+        elif h_str in KEEP_COLS:
+            keep_indices.add(i)
+
+    # Remove old "Update Details" if exists
+    if "Update Details" in wb.sheetnames:
+        del wb["Update Details"]
+
+    # Copy the WO sheet
+    new_ws = wb.copy_worksheet(wo_ws)
+    new_ws.title = "Update Details"
+
+    # Delete columns NOT in keep_indices (right to left to preserve indices)
+    max_col = new_ws.max_column
+    for col_idx in range(max_col, 0, -1):
+        if col_idx not in keep_indices:
+            new_ws.delete_cols(col_idx)
+
+    wb.save(workbook_path)
+
+
 def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_inc_file) -> tuple:
     """
     Copy/rename the SR&WO and INC Excel files to OneDrive Weekly Report folder.
@@ -432,6 +491,9 @@ def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_
     else:
         with open(sr_wo_dest, 'wb') as f:
             f.write(final_sr_wo_file.getvalue())
+
+    # Add the "Update Details" sheet to the SR & WO workbook
+    add_update_details_sheet(sr_wo_dest, report_date)
 
     # Save INC file
     if isinstance(final_inc_file, str):
