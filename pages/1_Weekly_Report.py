@@ -9,89 +9,37 @@ def petronas_alert(message: str, type: str = "info", icon: str = None):
         "error": ("rgb(118,63,152)", "rgba(118,63,152,0.15)"),    # Purple
         "blue": ("rgb(32,65,154)", "rgba(32,65,154,0.15)")        # Blue
     }
+    
     border_color, bg_color = colors.get(type, colors["info"])
-    icon_html = f"<span style='margin-right: 8px; font-size: 1.1em;'>{icon}</span>" if icon else ""
+    
+    # SVG Icons
+    svgs = {
+        "success": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>''',
+        "info": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>''',
+        "warning": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>''',
+        "error": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'''
+    }
+    
+    # Use SVG based on type if an icon was requested (we ignore the actual emoji passed in the string)
+    icon_html = ""
+    if icon:
+        svg_code = svgs.get(type, svgs["info"])
+        icon_html = f"<span style='margin-right: 12px; display: flex; align-items: center; color: {border_color};'>{svg_code}</span>"
+        
     html = f'''<div style="background-color: {bg_color}; border-left: 4px solid {border_color}; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; font-family: sans-serif; color: #1E293B; display: flex; align-items: center;">{icon_html}<div>{message}</div></div>'''
     st.markdown(html, unsafe_allow_html=True)
 
-import pandas as pd
-import json
-import os
-import datetime
-import time
-import requests
-from jinja2 import Environment, FileSystemLoader
-import sys
-import tempfile
-import base64
-import traceback
-import io
 
-# Conditional import for win32com
-try:
-    if sys.platform == 'win32':
-        import win32com.client as win32
-    else:
-        win32 = None
-except ImportError:
-    win32 = None
 
-# ----------------------------------------------------
-# Configuration & Constants
-# ----------------------------------------------------
-if getattr(sys, 'frozen', False):
-    BASE_DIR = sys._MEIPASS
-    EXE_DIR  = os.path.dirname(sys.executable)
-else:
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    EXE_DIR  = BASE_DIR
-
-HISTORY_FILE  = os.path.join(EXE_DIR,  "history.json")
-TEMPLATE_FILE = os.path.join(BASE_DIR, "template.html")
-
-# ----------------------------------------------------
-# Dashboard Auto-Fetch Configuration
-# ----------------------------------------------------
-DASHBOARD_URL = (
-    "https://mygenieplus-ir1.onbmc.com/dashboards/api/datasources/proxy"
-    "/uid/Uf8LY07Vk/api/arsys/v1.0/report/arsqlquery"
-)
-
-DASHBOARD_HEADERS = {
-    "accept":             "application/json, text/plain, */*",
-    "content-type":       "application/json",
-    "x-ar-client-type":  "4021",
-    "x-ds-authorization": "IMS-JWT JWT PLACEHOLDER",
-    "x-grafana-device-id": "c038f697c5ec05209addd40a9fbf77bb",
-    "x-grafana-org-id":  "204007533",
-    "x-requested-by":    "undefined",
-    "origin":  "https://mygenieplus-ir1.onbmc.com",
-    "referer": "https://mygenieplus-ir1.onbmc.com/",
-    "user-agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
-    ),
-}
-
-MYGENIE_DOMAIN = "mygenieplus-ir1.onbmc.com"
-
-COOKIE_BRIDGE_URL = "http://localhost:17731"
-
-# ----------------------------------------------------
-# Auto Cookie Reader (Cookie Bridge & browser-cookie3)
-# ----------------------------------------------------
 def parse_raw_cookie(raw_string: str) -> dict:
     """Parses a raw HTTP Cookie header string into a dictionary."""
     cookies = {}
     if not raw_string:
         return cookies
-        
     for item in raw_string.split(";"):
         if "=" in item:
             k, v = item.strip().split("=", 1)
             cookies[k] = v
-            
     return cookies
 
 def load_cached_cookie():
@@ -107,7 +55,6 @@ def save_cached_cookie(cookie_str):
             f.write(cookie_str)
     except Exception:
         pass
-
 
 @st.dialog("Manual Data Sync")
 def show_cookie_modal():
@@ -127,7 +74,7 @@ def show_cookie_modal():
     raw_cookie = st.text_area("Paste 'Cookie' String Here:", height=100)
     
     col1, col2 = st.columns(2)
-    if col1.button("✅ Secure Sync Data", use_container_width=True, type="primary"):
+    if col1.button("Secure Sync Data", use_container_width=True, type="primary"):
         if raw_cookie.strip():
             with st.spinner("Fetching live counts..."):
                 parsed = parse_raw_cookie(raw_cookie)
@@ -149,11 +96,10 @@ def show_cookie_modal():
                     st.session_state.master_sync_clicked = True
                     st.rerun()
         else:
-            petronas_alert("Please paste the cookie string first.", type="error", icon="🚨")
+            petronas_alert("Please paste the cookie string first.", type="error", icon="icon")
             
     if col2.button("Cancel", use_container_width=True):
         st.rerun()
-
 
 def _year_start_ms() -> int:
     """Unix-ms for Jan 1 of the current year."""
@@ -321,7 +267,7 @@ def load_history():
             with open(HISTORY_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            petronas_alert(f"Error reading history file: {e}", type="error", icon="🚨")
+            petronas_alert(f"Error reading history file: {e}", type="error", icon="icon")
             return []
     return []
 
@@ -332,13 +278,13 @@ def save_history(history):
             json.dump(history, f, indent=4)
         return True
     except Exception as e:
-        petronas_alert(f"Error saving history file: {e}", type="error", icon="🚨")
+        petronas_alert(f"Error saving history file: {e}", type="error", icon="icon")
         return False
 
 
 def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
     if sys.platform != 'win32' or win32 is None:
-        petronas_alert("Outlook integration is only supported on Windows machines with pywin32 installed.", type="error", icon="🚨")
+        petronas_alert("Outlook integration is only supported on Windows machines with pywin32 installed.", type="error", icon="icon")
         return False
     try:
         import pythoncom
@@ -350,7 +296,7 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
         mail.Display(True)
         return True
     except Exception as e:
-        petronas_alert(f"Failed to open Outlook draft: {str(e)}", type="error", icon="🚨")
+        petronas_alert(f"Failed to open Outlook draft: {str(e)}", type="error", icon="icon")
         return False
     finally:
         try:
@@ -414,11 +360,6 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0, 177, 169, 0.3) !important;
         padding: 0.6rem 1.4rem !important;
         display: flex !important; align-items: center !important; justify-content: center !important;
-    }
-    .stButton > button p::before {
-        content: ""; display: inline-block; width: 16px; height: 16px;
-        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E");
-        background-size: contain; background-repeat: no-repeat; margin-right: 8px; margin-top: 1px;
     }
     .stButton > button p { margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
     .stButton > button:hover, .stDownloadButton > button:hover {
@@ -544,9 +485,9 @@ with st.sidebar:
 
     if st.session_state.sync_status:
         if st.session_state.sync_error:
-            petronas_alert(f"Sync Failed: {st.session_state.sync_status}", type="error", icon="🚨")
+            petronas_alert(f"Sync Failed: {st.session_state.sync_status}", type="error", icon="icon")
         else:
-            petronas_alert(f"{st.session_state.sync_status}", type="success", icon="✅")
+            petronas_alert(f"{st.session_state.sync_status}", type="success", icon="icon")
 
     c1, c2 = st.columns(2)
     with c1:
@@ -600,7 +541,7 @@ with st.sidebar:
         sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
-        petronas_alert("Local Excel files detected in OneDrive folder.", type="info", icon="ℹ️")
+        petronas_alert("Local Excel files detected in OneDrive folder.", type="info", icon="icon")
         st.caption("These will be used automatically. Upload below to override.")
 
     st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
@@ -629,7 +570,7 @@ if final_sr_wo_file and final_inc_file:
                         f"**Permission Denied!** The {name_label} file is currently locked.<br><br>"
                         f"1. Close Microsoft Excel if you have this file open.<br>"
                         f"2. Ensure OneDrive sync is not paused.<br><br>"
-                        f"**Locked File:** <code>{file_or_path}</code>", type="error", icon="🚨"
+                        f"**Locked File:** <code>{file_or_path}</code>", type="error", icon="icon"
                     )
                     st.stop()
             else:
@@ -661,16 +602,16 @@ if final_sr_wo_file and final_inc_file:
         status_msg  = "**Data Source:** "
         status_msg += "Live SharePoint Sync\n" if isinstance(final_sr_wo_file, str) else "Manual Upload\n"
         status_msg += f"Detected → SR: `{sr_sheet_name}`, WO: `{wo_sheet_name}`, INC: `{inc_sheet_name}`"
-        petronas_alert(status_msg, type="info", icon="ℹ️")
+        petronas_alert(status_msg, type="info", icon="icon")
 
         if sr_sheet_name is None:
-            petronas_alert("Could not locate a valid Service Request sheet.", type="error", icon="🚨")
+            petronas_alert("Could not locate a valid Service Request sheet.", type="error", icon="icon")
             st.stop()
         if wo_sheet_name is None:
-            petronas_alert("Work Order detail sheet not found — detail tables will be empty.", type="warning", icon="⚠️")
+            petronas_alert("Work Order detail sheet not found — detail tables will be empty.", type="warning", icon="icon")
             df_wo_raw = pd.DataFrame()
         if inc_sheet_name is None:
-            petronas_alert("Could not locate a valid Incident sheet.", type="error", icon="🚨")
+            petronas_alert("Could not locate a valid Incident sheet.", type="error", icon="icon")
             st.stop()
 
         # --- SR Metric Calculations ---
@@ -679,7 +620,7 @@ if final_sr_wo_file and final_inc_file:
         if sr_assign_grp_col:
             df_sr = df_sr[df_sr[sr_assign_grp_col].astype(str).str.strip().str.upper() == "MYCAREERX SUPPORT"]
         else:
-            petronas_alert(f"Filter Skipped: Could not find 'Work Order Assignee Group'. Columns: {', '.join(df_sr.columns.astype(str))}", type="warning", icon="⚠️")
+            petronas_alert(f"Filter Skipped: Could not find 'Work Order Assignee Group'. Columns: {', '.join(df_sr.columns.astype(str))}", type="warning", icon="icon")
 
         sr_ageing_col = find_col(df_sr, "Service Request Ageing Days")
         sr_status_col = find_col(df_sr, "Service Request Status")
@@ -747,7 +688,7 @@ if final_sr_wo_file and final_inc_file:
         if inc_assign_grp_col:
             df_inc = df_inc[df_inc[inc_assign_grp_col].astype(str).str.strip().str.upper() == "MYCAREERX SUPPORT"]
         else:
-            petronas_alert(f"Filter Skipped: Could not find 'Assignee Group'. Columns: {', '.join(df_inc.columns.astype(str))}", type="warning", icon="⚠️")
+            petronas_alert(f"Filter Skipped: Could not find 'Assignee Group'. Columns: {', '.join(df_inc.columns.astype(str))}", type="warning", icon="icon")
 
         inc_ageing_col = find_col(df_inc, "Incident Ageing Days")
         inc_status_col = find_col(df_inc, "Status")
@@ -845,7 +786,7 @@ if final_sr_wo_file and final_inc_file:
                     save_history(history)
                     st.rerun()
             with c2:
-                petronas_alert(f"✓ {short_date} is already in History. The table below includes it dynamically.", type="info", icon="✅")
+                petronas_alert(f"{short_date} is already in History. The table below includes it dynamically.", type="info", icon="icon")
         else:
             c1, c2 = st.columns([1, 4])
             with c1:
@@ -856,7 +797,7 @@ if final_sr_wo_file and final_inc_file:
                     save_history(history)
                     st.rerun()
             with c2:
-                petronas_alert(f"Not yet saved. Click Save to log {short_date} into history.", type="warning", icon="⚠️")
+                petronas_alert(f"Not yet saved. Click Save to log {short_date} into history.", type="warning", icon="icon")
 
         st.markdown("")
 
@@ -985,7 +926,7 @@ function copyRichText(){{
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
                         if push_to_outlook(html_output, email_subject):
-                            petronas_alert("Draft created in Outlook.", type="success", icon="✅")
+                            petronas_alert("Draft created in Outlook.", type="success", icon="icon")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 
@@ -993,7 +934,7 @@ function copyRichText(){{
             st.markdown("### Saved Historical Records")
             saved_data = load_history()
             if not saved_data:
-                petronas_alert("No records yet. Process and save a snapshot to see it here.", type="info", icon="ℹ️")
+                petronas_alert("No records yet. Process and save a snapshot to see it here.", type="info", icon="icon")
             else:
                 for idx, h in enumerate(saved_data):
                     st.markdown("<div style='padding:10px;border:1px solid #E2E8F0;border-radius:8px;margin-bottom:8px;'>", unsafe_allow_html=True)
@@ -1018,7 +959,7 @@ function copyRichText(){{
                     st.rerun()
 
     except Exception as e:
-        petronas_alert(f"Error processing the files: {e}", type="error", icon="🚨")
+        petronas_alert(f"Error processing the files: {e}", type="error", icon="icon")
         st.code(traceback.format_exc(), language="text")
 
 else:
