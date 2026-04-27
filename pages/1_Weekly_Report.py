@@ -536,23 +536,23 @@ def _update_cover_number(ws, title_text: str, count: int) -> None:
     for rng in list(ws.merged_cells.ranges):
         ws.unmerge_cells(str(rng))
 
-    # ── Title text: A2:J8 ─────────────────────────────────────────
-    ws.merge_cells("A2:J8")
+    # ── Title text: A2:J4 (3 rows, compact) ──────────────────────
+    ws.merge_cells("A2:J4")
     t = ws["A2"]
     t.value     = title_text
-    t.font      = Font(name="Calibri", bold=True, size=36, color="FFFFFF")
+    t.font      = Font(name="Calibri", bold=True, size=28, color="FFFFFF")
     t.fill      = PatternFill("solid", fgColor="00B1A9")
-    t.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
-    for r in range(2, 9):
-        ws.row_dimensions[r].height = 40
+    t.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    for r in range(2, 5):
+        ws.row_dimensions[r].height = 30
 
-    # ── Count number: E10:J10 (top-left aligned) ─────────────────
-    ws.merge_cells("E10:J10")
-    n = ws["E10"]
+    # ── Count number: A5:J5 (immediately below title) ────────────
+    ws.merge_cells("A5:J5")
+    n = ws["A5"]
     n.value     = count
     n.font      = Font(name="Calibri", bold=True, size=96, color="00B1A9")
     n.alignment = Alignment(horizontal="left", vertical="top")
-    ws.row_dimensions[10].height = 100
+    ws.row_dimensions[5].height = 100
 
 
 def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.date):
