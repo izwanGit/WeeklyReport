@@ -94,6 +94,51 @@ def save_cached_cookie(cookie_str):
         pass
 
 
+@st.experimental_dialog("Manual Data Sync")
+def show_cookie_modal():
+    st.markdown("""
+    <p style="color: #4A5568; font-size: 0.9rem; margin-bottom: 15px;">Follow these steps to securely pull live data without IT restrictions:</p>
+    <div style="background: #F7FAFC; padding: 15px; border-radius: 6px; border: 1px solid #E2E8F0; margin-bottom: 15px;">
+        <ol style="margin: 0; padding-left: 20px; color: #2D3748; font-size: 0.85rem; line-height: 1.6;">
+            <li>Open Edge and go to the <b>MyGenie Dashboard</b>.</li>
+            <li>Press <b>F12</b> to open Developer Tools.</li>
+            <li>Go to the <b>Network</b> tab and <b>Refresh</b> the page.</li>
+            <li>Click the very first request, scroll down to <b>Request Headers</b>.</li>
+            <li>Right-click the <b>Cookie</b> value and select <b>Copy value</b>.</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    raw_cookie = st.text_area("Paste 'Cookie' String Here:", height=100)
+    
+    col1, col2 = st.columns(2)
+    if col1.button("✅ Secure Sync Data", use_container_width=True, type="primary"):
+        if raw_cookie.strip():
+            with st.spinner("Fetching live counts..."):
+                parsed = parse_raw_cookie(raw_cookie)
+                wo_res = fetch_open_wo(parsed)
+                inc_res = fetch_open_inc(parsed)
+                
+                if wo_res is None and inc_res is None:
+                    st.session_state.sync_status = "Invalid cookie or session expired."
+                    st.session_state.sync_error = True
+                else:
+                    if wo_res is not None:
+                        st.session_state.auto_wo = wo_res
+                    if inc_res is not None:
+                        st.session_state.auto_inc = inc_res
+                    
+                    save_cached_cookie(raw_cookie.strip())
+                    st.session_state.sync_status = "Data Synced Successfully!"
+                    st.session_state.sync_error = False
+                    st.rerun()
+        else:
+            st.error("Please paste the cookie string first.")
+            
+    if col2.button("Cancel", use_container_width=True):
+        st.rerun()
+
+
 def _year_start_ms() -> int:
     """Unix-ms for Jan 1 of the current year."""
     year = datetime.date.today().year
@@ -455,7 +500,7 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("Sync Live SharePoint & MyGenie", use_container_width=True):
+    if st.button("Sync Live Data", use_container_width=True):
         cached_cookie = load_cached_cookie()
         if cached_cookie:
             with st.spinner("Trying cached session..."):
@@ -470,65 +515,12 @@ with st.sidebar:
                         st.session_state.auto_inc = inc_res
                     st.session_state.sync_status = "Data Synced Successfully (Using Cached Session)!"
                     st.session_state.sync_error = False
-                    st.session_state.show_cookie_modal = False
                 else:
                     st.session_state.sync_status = "Cached session expired. Please provide a new cookie."
                     st.session_state.sync_error = True
-                    st.session_state.show_cookie_modal = True
+                    show_cookie_modal()
         else:
-            st.session_state.show_cookie_modal = True
-
-    if st.session_state.get('show_cookie_modal', False):
-        with st.container():
-            st.markdown("""
-            <div style="background: #ffffff; padding: 20px; border-radius: 8px; border-left: 4px solid #00B1A9; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
-                <h3 style="color: #1A202C; margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B1A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                    Manual Data Sync
-                </h3>
-                <p style="color: #4A5568; font-size: 0.9rem; margin-bottom: 15px;">Follow these steps to securely pull live data without IT restrictions:</p>
-                <div style="background: #F7FAFC; padding: 15px; border-radius: 6px; border: 1px solid #E2E8F0; margin-bottom: 15px;">
-                    <ol style="margin: 0; padding-left: 20px; color: #2D3748; font-size: 0.85rem; line-height: 1.6;">
-                        <li>Open Edge and go to the <b>MyGenie Dashboard</b>.</li>
-                        <li>Press <b>F12</b> to open Developer Tools.</li>
-                        <li>Go to the <b>Network</b> tab and <b>Refresh</b> the page.</li>
-                        <li>Click the very first request, scroll down to <b>Request Headers</b>.</li>
-                        <li>Right-click the <b>Cookie</b> value and select <b>Copy value</b>.</li>
-                    </ol>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            raw_cookie = st.text_area("Paste 'Cookie' String Here:", height=100)
-            
-            col1, col2 = st.columns(2)
-            if col1.button("✅ Secure Sync Data", use_container_width=True, type="primary"):
-                if raw_cookie.strip():
-                    with st.spinner("Fetching live counts..."):
-                        parsed = parse_raw_cookie(raw_cookie)
-                        wo_res = fetch_open_wo(parsed)
-                        inc_res = fetch_open_inc(parsed)
-                        
-                        if wo_res is None and inc_res is None:
-                            st.session_state.sync_status = "Invalid cookie or session expired."
-                            st.session_state.sync_error = True
-                        else:
-                            if wo_res is not None:
-                                st.session_state.auto_wo = wo_res
-                            if inc_res is not None:
-                                st.session_state.auto_inc = inc_res
-                            
-                            save_cached_cookie(raw_cookie.strip())
-                            st.session_state.sync_status = "Data Synced Successfully!"
-                            st.session_state.sync_error = False
-                            st.session_state.show_cookie_modal = False
-                            st.rerun()
-                else:
-                    st.error("Please paste the cookie string first.")
-            
-            if col2.button("Cancel", use_container_width=True):
-                st.session_state.show_cookie_modal = False
-                st.rerun()
+            show_cookie_modal()
 
     if st.session_state.sync_status:
         if st.session_state.sync_error:
@@ -586,8 +578,8 @@ with st.sidebar:
     sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
-        st.success("Live SharePoint Sync Active")
-        st.caption("Auto-using synced data. Upload below to override.")
+        st.success("SharePoint Folder Linked")
+        st.caption("Auto-using local Excel data. Upload below to override.")
 
     st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
     uploaded_sr_wo = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo", label_visibility="collapsed")
