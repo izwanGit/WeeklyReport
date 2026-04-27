@@ -112,24 +112,6 @@ def main():
         browser_thread = Thread(target=open_browser, daemon=True)
         browser_thread.start()
 
-        # ── 2.5 Start Cookie Receiver ─────────────────────────
-        def start_cookie_receiver():
-            bridge_dir = os.path.join(BASE_DIR, "MyGenie_Cookie_Bridge", "cookie_bridge_server")
-            sys.path.insert(0, bridge_dir)
-            try:
-                import cookie_receiver
-                # Use EXE_DIR for the cache file so it persists when bundled as an .exe
-                cookie_receiver.CACHE_FILE = os.path.join(EXE_DIR, "cookie_cache.json")
-                log(f"Starting Cookie Receiver on port {cookie_receiver.PORT}")
-                # We overwrite sys.argv because cookie_receiver.py doesn't use it, 
-                # but it ensures the module doesn't crash if it tries to parse arguments
-                sys.argv = [sys.argv[0]]
-                cookie_receiver.main()
-            except Exception as e:
-                log(f"Failed to start Cookie Receiver: {e}")
-
-        Thread(target=start_cookie_receiver, daemon=True).start()
-
         # ── 3. Start Streamlit server ─────────────────────────
         # IMPORTANT: In a frozen .exe, sys.executable IS the .exe — we cannot
         # run it with "-m streamlit".  We must call stcli.main() directly.

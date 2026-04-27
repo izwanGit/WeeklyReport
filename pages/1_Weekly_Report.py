@@ -66,97 +66,18 @@ COOKIE_BRIDGE_URL = "http://localhost:17731"
 # ----------------------------------------------------
 # Auto Cookie Reader (Cookie Bridge & browser-cookie3)
 # ----------------------------------------------------
-def get_browser_cookies() -> dict:
-    """
-    Priority order:
-      1. Local Cookie Bridge receiver (extension → localhost server)
-      2. browser-cookie3 direct read (original method, fallback)
-    Returns a plain dict of cookies, or {} on failure.
-    """
-    diag_lines = []
-
-    # ----------------------------------------------------------------
-    # METHOD 1: Cookie Bridge (extension sends cookies to local server)
-    # ----------------------------------------------------------------
-    try:
-        resp = requests.get(
-            f"{COOKIE_BRIDGE_URL}/get",
-            timeout=2,
-        )
-        if resp.status_code == 200:
-            data       = resp.json()
-            cookies    = data.get("cookies", {})
-            saved_at   = data.get("saved_at", "unknown time")
-            age        = data.get("age_seconds", 0)
-
-            if cookies:
-                age_str = (
-                    f"{age // 3600}h {(age % 3600) // 60}m ago"
-                    if age > 3600
-                    else f"{age // 60}m ago"
-                    if age > 60
-                    else f"{age}s ago"
-                )
-                st.session_state['_cookie_source'] = f"extension ({age_str})"
-                st.session_state['_cookie_diag']   = (
-                    f"[Success] Cookie Bridge: {len(cookies)} cookie(s) received via extension\n"
-                    f"   Saved: {saved_at}"
-                )
-                return cookies
-            else:
-                diag_lines.append("[Warning] Cookie Bridge: server running but no cookies cached yet.")
-        elif resp.status_code == 404:
-            diag_lines.append(
-                "[Info] Cookie Bridge: server running but no cookies yet — "
-                "click the extension button in Edge toolbar."
-            )
-        else:
-            diag_lines.append(f"[Warning] Cookie Bridge: unexpected status {resp.status_code}")
-
-    except requests.exceptions.ConnectionError:
-        diag_lines.append(
-            "[Info] Cookie Bridge not running. "
-            "Start cookie_receiver.py for the best experience."
-        )
-    except Exception as e:
-        diag_lines.append(f"[Warning] Cookie Bridge error: {e}")
-
-    # ----------------------------------------------------------------
-    # METHOD 2: browser-cookie3 (original fallback)
-    # ----------------------------------------------------------------
-    try:
-        import browser_cookie3
-        diag_lines.append(f"[Status] Trying browser-cookie3 fallback…")
-
-        loaders = [
-            ("Edge",   browser_cookie3.edge),
-            ("Chrome", browser_cookie3.chrome),
-        ]
-        for name, loader in loaders:
-            try:
-                cj      = loader(domain_name=MYGENIE_DOMAIN)
-                cookies = {c.name: c.value for c in cj}
-                if cookies:
-                    diag_lines.append(f"[Success] {name}: got {len(cookies)} cookie(s) via browser-cookie3")
-                    st.session_state['_cookie_source'] = f"browser-cookie3 ({name})"
-                    st.session_state['_cookie_diag']   = "\n".join(diag_lines)
-                    return cookies
-                else:
-                    diag_lines.append(f"[Info] {name}: 0 cookies found for domain")
-            except PermissionError as e:
-                diag_lines.append(f"[Warning] {name} locked (browser running): {e}")
-            except Exception as e:
-                diag_lines.append(f"[Warning] {name}: {type(e).__name__}: {e}")
-
-    except ImportError:
-        diag_lines.append("[Warning] browser-cookie3 not installed (pip install browser-cookie3)")
-
-    # ----------------------------------------------------------------
-    # All methods failed
-    # ----------------------------------------------------------------
-    st.session_state['_cookie_source'] = None
-    st.session_state['_cookie_diag']   = "\n".join(diag_lines)
-    return {}
+def parse_raw_cookie(raw_string: str) -> dict:
+    """Parses a raw HTTP Cookie header string into a dictionary."""
+    cookies = {}
+    if not raw_string:
+        return cookies
+        
+    for item in raw_string.split(";"):
+        if "=" in item:
+            k, v = item.strip().split("=", 1)
+            cookies[k] = v
+            
+    return cookies
 
 
 def _year_start_ms() -> int:
@@ -520,43 +441,65 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
-    if st.button("Sync Live Data", use_container_width=True):
-        with st.spinner("Fetching live counts..."):
-            live_cookies = get_browser_cookies()
-            if live_cookies:
-                wo_res = fetch_open_wo(live_cookies)
-                inc_res = fetch_open_inc(live_cookies)
-                
-                if wo_res is None and inc_res is None:
-                    st.session_state.sync_status = "Session found, but API returned no data (Stale cookies or server error?)"
-                    st.session_state.sync_error = True
+    if st.button("Sync Live SharePoint & MyGenie", use_container_width=True):
+        st.session_state.show_cookie_modal = True
+
+    if st.session_state.get('show_cookie_modal', False):
+        with st.container():
+            st.markdown("""
+            <div style="background: #ffffff; padding: 20px; border-radius: 8px; border-left: 4px solid #00B1A9; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
+                <h3 style="color: #1A202C; margin-top: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B1A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                    Manual Data Sync
+                </h3>
+                <p style="color: #4A5568; font-size: 0.9rem; margin-bottom: 15px;">Follow these steps to securely pull live data without IT restrictions:</p>
+                <div style="background: #F7FAFC; padding: 15px; border-radius: 6px; border: 1px solid #E2E8F0; margin-bottom: 15px;">
+                    <ol style="margin: 0; padding-left: 20px; color: #2D3748; font-size: 0.85rem; line-height: 1.6;">
+                        <li>Open Edge and go to the <b>MyGenie Dashboard</b>.</li>
+                        <li>Press <b>F12</b> to open Developer Tools.</li>
+                        <li>Go to the <b>Network</b> tab and <b>Refresh</b> the page.</li>
+                        <li>Click the very first request, scroll down to <b>Request Headers</b>.</li>
+                        <li>Right-click the <b>Cookie</b> value and select <b>Copy value</b>.</li>
+                    </ol>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            raw_cookie = st.text_area("Paste 'Cookie' String Here:", height=100)
+            
+            col1, col2 = st.columns(2)
+            if col1.button("✅ Secure Sync Data", use_container_width=True, type="primary"):
+                if raw_cookie.strip():
+                    with st.spinner("Fetching live counts..."):
+                        parsed = parse_raw_cookie(raw_cookie)
+                        wo_res = fetch_open_wo(parsed)
+                        inc_res = fetch_open_inc(parsed)
+                        
+                        if wo_res is None and inc_res is None:
+                            st.session_state.sync_status = "Invalid cookie or session expired."
+                            st.session_state.sync_error = True
+                        else:
+                            if wo_res is not None:
+                                st.session_state.auto_wo = wo_res
+                            if inc_res is not None:
+                                st.session_state.auto_inc = inc_res
+                            
+                            st.session_state.sync_status = "Data Synced Successfully!"
+                            st.session_state.sync_error = False
+                            st.session_state.show_cookie_modal = False
+                            st.rerun()
                 else:
-                    if wo_res is not None:
-                        st.session_state.auto_wo = wo_res
-                    if inc_res is not None:
-                        st.session_state.auto_inc = inc_res
-                    
-                    src = st.session_state.get('_cookie_source', '')
-                    if "extension" in src:
-                        st.session_state.sync_status = "Connected via Extension"
-                    else:
-                        st.session_state.sync_status = "Connected via Local Browser"
-                    st.session_state.sync_error = False
-            else:
-                diag = st.session_state.get('_cookie_diag', '')
-                if 'Cookie Bridge not running' in diag:
-                    st.session_state.sync_status = "Background server not running"
-                else:
-                    st.session_state.sync_status = "Please click Extension button first"
-                st.session_state.sync_error = True
+                    st.error("Please paste the cookie string first.")
+            
+            if col2.button("Cancel", use_container_width=True):
+                st.session_state.show_cookie_modal = False
+                st.rerun()
 
     if st.session_state.sync_status:
         if st.session_state.sync_error:
             st.error(f"Sync Failed: {st.session_state.sync_status}")
-            with st.expander("Diagnostics", expanded=False):
-                st.code(st.session_state.get('_cookie_diag', ''), language="text")
         else:
-            st.success(st.session_state.sync_status)
+            st.success(f"{st.session_state.sync_status}")
 
     c1, c2 = st.columns(2)
     with c1:
