@@ -406,60 +406,98 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
 DEPT_FILTER = "MYCAREERSUPPORT"
 
 
-def _filter_by_exact_col(ws, col_name: str, dept: str = DEPT_FILTER) -> int:
+# ─────────────────────────────────────────────────────────────────────────────
+# FAST helpers — read-all-into-memory → filter → single-delete → write-back
+# This is 10-50x faster than deleting rows one-by-one (which shifts everything)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _fast_filter_by_col(ws, col_name: str, dept: str = DEPT_FILTER) -> list:
     """
-    Delete rows where the exact column `col_name` does NOT contain `dept`.
-    Returns count of remaining data rows.
+    Read every row into RAM, keep only matching rows, wipe the sheet data
+    with ONE delete call, then write the survivors back.
+    Returns the list of kept row tuples (values only).
     """
     headers = [cell.value for cell in ws[1]]
-    dept_col = None
-    for i, h in enumerate(headers, start=1):
+
+    dept_col_idx = None
+    for i, h in enumerate(headers):
         if h and str(h).strip() == col_name:
-            dept_col = i
+            dept_col_idx = i
             break
-    if dept_col is None:
-        return max(0, ws.max_row - 1)
 
-    to_delete = []
-    for row in ws.iter_rows(min_row=2):
-        val = str(row[dept_col - 1].value or "").strip().upper()
-        if dept.upper() not in val:
-            to_delete.append(row[0].row)
-    for row_num in reversed(to_delete):
-        ws.delete_rows(row_num)
-    return max(0, ws.max_row - 1)
+    # Read entire data range into memory (fast, no cell-by-cell overhead)
+    all_rows = list(ws.iter_rows(min_row=2, values_only=True))
+
+    if dept_col_idx is not None:
+        kept = [
+            r for r in all_rows
+            if dept.upper() in str(r[dept_col_idx] or "").strip().upper()
+        ]
+    else:
+        kept = all_rows  # can't filter, keep everything
+
+    # ONE delete call — eliminates O(n²) row-shift overhead
+    if ws.max_row > 1:
+        ws.delete_rows(2, ws.max_row)
+
+    # Write survivors back with ws.append (fast sequential write)
+    for row in kept:
+        ws.append(list(row))
+
+    return kept
 
 
-def _filter_by_wo_ids(ws, surviving_ids: set) -> None:
+def _fast_filter_by_wo_ids(ws, surviving_ids: set) -> None:
     """
-    For sheets without the assignee group column, keep only rows
-    whose Work Order ID/No. is in `surviving_ids`.
+    Same pattern as above but filtered by Work Order ID membership.
     """
     if not surviving_ids:
         return
+
     headers = [cell.value for cell in ws[1]]
-    wo_id_col = None
-    for i, h in enumerate(headers, start=1):
+    wo_id_idx = None
+    for i, h in enumerate(headers):
         if h and "work order" in str(h).lower() and (
             "id" in str(h).lower() or "no" in str(h).lower()
         ):
-            wo_id_col = i
+            wo_id_idx = i
             break
-    if wo_id_col is None:
+    if wo_id_idx is None:
         return
-    to_delete = []
-    for row in ws.iter_rows(min_row=2):
-        val = str(row[wo_id_col - 1].value or "").strip()
-        if val not in surviving_ids:
-            to_delete.append(row[0].row)
-    for row_num in reversed(to_delete):
-        ws.delete_rows(row_num)
+
+    all_rows = list(ws.iter_rows(min_row=2, values_only=True))
+    kept = [r for r in all_rows if str(r[wo_id_idx] or "").strip() in surviving_ids]
+
+    if ws.max_row > 1:
+        ws.delete_rows(2, ws.max_row)
+    for row in kept:
+        ws.append(list(row))
+
+
+def _count_ageing_gt_from_rows(rows: list, headers: list, threshold: int) -> int:
+    """
+    Count rows (already in memory) where the ageing-days column > threshold.
+    Avoids a second pass over the worksheet.
+    """
+    ageing_idx = None
+    for i, h in enumerate(headers):
+        if h and "ageing" in str(h).lower() and "day" in str(h).lower():
+            ageing_idx = i
+            break
+    if ageing_idx is None:
+        return 0
+    count = 0
+    for row in rows:
+        try:
+            if float(row[ageing_idx] or 0) > threshold:
+                count += 1
+        except (TypeError, ValueError):
+            pass
+    return count
 
 
 def _count_ageing_gt(ws, threshold: int) -> int:
-    """
-    Count data rows where the ageing-days column value > threshold.
-    """
+    """Fallback: count directly from worksheet (used when rows aren't cached)."""
     headers = [cell.value for cell in ws[1]]
     ageing_col = None
     for i, h in enumerate(headers, start=1):
@@ -471,8 +509,7 @@ def _count_ageing_gt(ws, threshold: int) -> int:
     count = 0
     for row in ws.iter_rows(min_row=2):
         try:
-            val = float(row[ageing_col - 1].value or 0)
-            if val > threshold:
+            if float(row[ageing_col - 1].value or 0) > threshold:
                 count += 1
         except (TypeError, ValueError):
             pass
@@ -487,20 +524,17 @@ def _update_cover_number(ws, count: int) -> None:
     from openpyxl.styles import Font, Alignment
     from openpyxl.drawing.spreadsheet_drawing import SpreadsheetDrawing
 
-    # ── Remove all drawings & images ─────────────────────────────
     ws._images = []
     try:
         ws._drawing = SpreadsheetDrawing()
     except Exception:
         pass
 
-    # ── Unmerge E20:J20 if already merged ────────────────────────
     for rng in list(ws.merged_cells.ranges):
         r = str(rng)
         if "E20" in r or "F20" in r:
             ws.unmerge_cells(r)
 
-    # ── Write count into E20:J20 ─────────────────────────────────
     ws.merge_cells("E20:J20")
     cell = ws["E20"]
     cell.value     = count
@@ -511,9 +545,8 @@ def _update_cover_number(ws, count: int) -> None:
 
 def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.date):
     """
-    Duplicate the WO Ageing sheet as 'Update Details', keep only
-    required columns, filter by MYCAREERSUPPORT via 'Work Order Assignee Group',
-    and insert 'Update as of DD Mmm' as the leftmost column.
+    Build 'Update Details' as a fresh sheet (no copy_worksheet, no delete_cols).
+    Reads source data once, filters and selects columns in memory, writes in one pass.
     """
     from openpyxl.styles import Font, PatternFill, Alignment
 
@@ -527,97 +560,102 @@ def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.da
         "Work Order Assignee",
     }
 
-    wo_ws = wb[wo_sheet_name]
-
-    # Determine which column indices (1-based) to keep
+    wo_ws   = wb[wo_sheet_name]
     headers = [cell.value for cell in wo_ws[1]]
-    keep_indices = set()
-    for i, h in enumerate(headers, start=1):
-        if h is None:
-            continue
-        h_str = str(h)
-        if h_str.lower().startswith("status as of") or h_str in KEEP_COLS:
-            keep_indices.add(i)
 
-    # Remove old copy if exists
+    # Build keep-index list (0-based for values_only rows)
+    keep_idx = [
+        i for i, h in enumerate(headers)
+        if h and (str(h).lower().startswith("status as of") or str(h) in KEEP_COLS)
+    ]
+    keep_headers = [headers[i] for i in keep_idx]
+
+    # Find filter column (0-based)
+    dept_col_idx = next(
+        (i for i, h in enumerate(headers) if h and str(h).strip() == "Work Order Assignee Group"),
+        None,
+    )
+
+    # Read & filter in memory — ONE pass
+    all_rows = list(wo_ws.iter_rows(min_row=2, values_only=True))
+    if dept_col_idx is not None:
+        kept = [
+            r for r in all_rows
+            if DEPT_FILTER.upper() in str(r[dept_col_idx] or "").strip().upper()
+        ]
+    else:
+        kept = all_rows
+
+    # Remove old sheet if exists
     if "Update Details" in wb.sheetnames:
         del wb["Update Details"]
 
-    # Copy sheet & strip unwanted columns
-    new_ws = wb.copy_worksheet(wo_ws)
-    new_ws.title = "Update Details"
-    max_col = new_ws.max_column
-    for col_idx in range(max_col, 0, -1):
-        if col_idx not in keep_indices:
-            new_ws.delete_cols(col_idx)
+    # Create fresh sheet and write in a single sequential pass
+    new_ws = wb.create_sheet("Update Details")
 
-    # Filter by MYCAREERSUPPORT using exact SR column name
-    _filter_by_exact_col(new_ws, "Work Order Assignee Group")
+    update_header = f"Update as of {report_date.strftime('%d %b')}"
+    header_row    = [update_header] + keep_headers
+    new_ws.append(header_row)
 
-    # Insert 'Update as of DD Mmm' as column A
-    new_ws.insert_cols(1)
-    col_header = f"Update as of {report_date.strftime('%d %b')}"
-    hdr_cell = new_ws.cell(row=1, column=1)
-    hdr_cell.value     = col_header
-    hdr_cell.font      = Font(name="Calibri", bold=True, color="FFFFFF")
-    hdr_cell.fill      = PatternFill("solid", fgColor="00B1A9")
-    hdr_cell.alignment = Alignment(horizontal="center", vertical="center")
+    for row in kept:
+        new_ws.append([None] + [row[i] for i in keep_idx])
+
+    # Style header row
+    for cell in new_ws[1]:
+        cell.font      = Font(name="Calibri", bold=True, color="FFFFFF")
+        cell.fill      = PatternFill("solid", fgColor="00B1A9")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
 def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
     """
-    Full processing of the SR & WO workbook:
-      - Filter raw data sheet by 'Work Order Assignee Group' = MYCAREERSUPPORT
-      - Filter sheet 3 (no group col) by surviving WO IDs
-      - Update cover sheets: delete images, place filtered count at E20:J20
-      - Add 'Update Details' sheet
+    Process SR & WO workbook: filter, count, update covers, build Update Details.
+    All filtering uses fast read-all/write-back pattern.
     """
     from openpyxl import load_workbook
 
-    wb = load_workbook(workbook_path)
+    wb          = load_workbook(workbook_path)
     sheet_names = wb.sheetnames
 
-    # Identify the primary WO raw data sheet
     wo_data_name = sheet_names[-1]
     for name in sheet_names:
         if "work order" in name.lower() and "ageing" in name.lower():
             wo_data_name = name
 
-    # ── Step 1: Filter raw data by exact group column ─────────────
-    _filter_by_exact_col(wb[wo_data_name], "Work Order Assignee Group")
+    # ── Step 1: Fast-filter raw data, get survivor rows in memory ──
+    wo_ws         = wb[wo_data_name]
+    wo_headers    = [cell.value for cell in wo_ws[1]]
+    kept_rows     = _fast_filter_by_col(wo_ws, "Work Order Assignee Group")
 
-    # ── Step 2: Collect surviving WO IDs ─────────────────────────
-    wo_ws = wb[wo_data_name]
-    wo_headers = [cell.value for cell in wo_ws[1]]
-    wo_id_col = None
-    for i, h in enumerate(wo_headers, start=1):
-        if h and "work order" in str(h).lower() and (
-            "id" in str(h).lower() or "no" in str(h).lower()
-        ):
-            wo_id_col = i
-            break
-    surviving_wo_ids = set()
-    if wo_id_col:
-        for row in wo_ws.iter_rows(min_row=2):
-            val = row[wo_id_col - 1].value
-            if val:
-                surviving_wo_ids.add(str(val).strip())
+    # ── Step 2: Collect surviving WO IDs from in-memory rows ──────
+    wo_id_idx = next(
+        (i for i, h in enumerate(wo_headers)
+         if h and "work order" in str(h).lower() and (
+             "id" in str(h).lower() or "no" in str(h).lower()
+         )),
+        None,
+    )
+    surviving_wo_ids = {
+        str(r[wo_id_idx]).strip()
+        for r in kept_rows
+        if wo_id_idx is not None and r[wo_id_idx]
+    }
 
-    # ── Step 3: Filter remaining data sheets by WO IDs ───────────
+    # ── Step 3: Fast-filter other data sheets by WO IDs ───────────
     for sname in [s for s in sheet_names[2:] if s != wo_data_name]:
-        _filter_by_wo_ids(wb[sname], surviving_wo_ids)
+        _fast_filter_by_wo_ids(wb[sname], surviving_wo_ids)
 
-    # ── Step 4: Get counts ────────────────────────────────────────
-    total_sr = max(0, wo_ws.max_row - 1)
-    sr_gt_30 = _count_ageing_gt(wo_ws, 30)
+    # ── Step 4: Count (reuse in-memory rows — no 2nd sheet scan) ──
+    total_sr = len(kept_rows)
+    sr_gt_30 = _count_ageing_gt_from_rows(kept_rows, wo_headers, 30)
 
-    # ── Step 5: Update cover sheet numbers (delete image → E20:J20)
+    # ── Step 5: Update cover numbers ─────────────────────────────
     if len(sheet_names) >= 1:
         _update_cover_number(wb[sheet_names[0]], total_sr)
     if len(sheet_names) >= 2:
         _update_cover_number(wb[sheet_names[1]], sr_gt_30)
 
-    # ── Step 6: Build Update Details sheet ───────────────────────
+    # ── Step 6: Build Update Details (fresh sheet, single pass) ──
     _build_update_details_sheet(wb, wo_data_name, report_date)
 
     wb.save(workbook_path)
@@ -625,32 +663,32 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
 
 def process_inc_workbook(workbook_path: str, report_date: datetime.date):
     """
-    Full processing of the INC workbook:
-      - Filter all data sheets by 'Assignee Group' = MYCAREERSUPPORT
-      - Update cover sheets: delete images, place filtered count at E20:J20
+    Process INC workbook: filter, count, update covers.
     """
     from openpyxl import load_workbook
 
-    wb = load_workbook(workbook_path)
+    wb          = load_workbook(workbook_path)
     sheet_names = wb.sheetnames
 
-    # Identify the primary INC data sheet
     inc_data_name = sheet_names[-1]
     for name in sheet_names:
         if "incident" in name.lower() and "raw" in name.lower():
             inc_data_name = name
             break
 
-    # ── Filter all data sheets by exact INC group column ─────────
-    for sname in sheet_names[2:]:
-        _filter_by_exact_col(wb[sname], "Assignee Group")
+    inc_ws      = wb[inc_data_name]
+    inc_headers = [cell.value for cell in inc_ws[1]]
 
-    # ── Get counts ────────────────────────────────────────────────
-    inc_ws    = wb[inc_data_name]
-    total_inc = max(0, inc_ws.max_row - 1)
-    inc_gt_30 = _count_ageing_gt(inc_ws, 30)
+    # ── Fast-filter all data sheets ───────────────────────────────
+    kept_inc = _fast_filter_by_col(inc_ws, "Assignee Group")
+    for sname in [s for s in sheet_names[2:] if s != inc_data_name]:
+        _fast_filter_by_col(wb[sname], "Assignee Group")
 
-    # ── Update cover sheet numbers (delete image → E20:J20) ──────
+    # ── Count from memory ─────────────────────────────────────────
+    total_inc = len(kept_inc)
+    inc_gt_30 = _count_ageing_gt_from_rows(kept_inc, inc_headers, 30)
+
+    # ── Update cover numbers ──────────────────────────────────────
     if len(sheet_names) >= 1:
         _update_cover_number(wb[sheet_names[0]], total_inc)
     if len(sheet_names) >= 2:
@@ -663,15 +701,15 @@ def save_excels_to_onedrive(
     report_date: datetime.date, final_sr_wo_file, final_inc_file
 ) -> tuple:
     """
-    Copy/rename the SR&WO and INC Excel files to OneDrive Weekly Report folder,
-    then process both workbooks (filter, cover pages, Update Details sheet).
-    Returns (sr_wo_dest_path, inc_dest_path).
+    Write both Excel files to OneDrive, then process them IN PARALLEL
+    using ThreadPoolExecutor for maximum speed.
     """
     import shutil
+    from concurrent.futures import ThreadPoolExecutor
 
     user_profile = os.environ.get("USERPROFILE", "")
-    date_folder  = report_date.strftime("%d %B")   # e.g. "27 April"
-    date_suffix  = report_date.strftime("%d%b")    # e.g. "27Apr"
+    date_folder  = report_date.strftime("%d %B")
+    date_suffix  = report_date.strftime("%d%b")
 
     target_dir = os.path.join(
         user_profile, "OneDrive - PETRONAS", "Weekly Report", date_folder
@@ -687,7 +725,7 @@ def save_excels_to_onedrive(
         f"Incident Ageing Raw Data Preview_{date_suffix}.xlsx",
     )
 
-    # ── Write SR & WO file ────────────────────────────────────────
+    # ── Write raw files to disk first ─────────────────────────────
     if isinstance(final_sr_wo_file, str):
         shutil.copy2(final_sr_wo_file, sr_wo_dest)
     else:
