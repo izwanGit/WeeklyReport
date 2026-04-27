@@ -10,7 +10,7 @@
 <p>Dear team,</p>
 
 <p>
-Append herewith the SRs and Incidents aging status for your attention.<div style="margin-bottom: 8px;"></div>
+Append herewith the SRs and Incidents aging status for your attention.<br><br>
 We appreciate your immediate action to follow-up and close the ticket immediately.
 Please be informed that for those who required <b>a ticket cancellation due to ageing</b>,
 please inform the user and <b>continue to create a new ticket on behalf</b>.
@@ -22,8 +22,9 @@ Please also take note on the SLA with warning status and ensure to close the tic
 
 <p><u>SR Ageing Percentage</u></p>
 
-<p><b>Open tickets as of {{ report_date }} : {{ sr_open_wo }} WO tickets.</b><div style="margin-bottom: 8px;"></div>
-<b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><div style="margin-bottom: 8px;"></div>
+<p>
+<b>Open tickets as of {{ report_date }} : {{ sr_open_wo }} WO tickets.</b><br><br>
+<b>Ageing Service Request more than 1 day is {{ sr_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b><br><br>
 <b>Ageing Service Request more than 30 days is {{ sr_ageing_more_than_30_days_pct }}% as of {{ report_date }}</b>
 </p>
 
@@ -55,7 +56,8 @@ Please also take note on the SLA with warning status and ensure to close the tic
 </tr>
 </table>
 
-<div style="margin-bottom: 20px;"></div>
+<!-- Outlook-safe spacer -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="20" style="font-size:1px; line-height:1px;">&nbsp;</td></tr></table>
 
 <!-- >30 DAYS DETAILS -->
 {% if sr_ageing_gt_30_tickets %}
@@ -85,7 +87,8 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </table>
 
-<div style="margin-bottom: 20px;"></div>
+<!-- Outlook-safe spacer -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="20" style="font-size:1px; line-height:1px;">&nbsp;</td></tr></table>
 {% endif %}
 
 <!-- 15–30 DAYS DETAILS -->
@@ -116,7 +119,8 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% endfor %}
 </table>
 
-<div style="margin-bottom: 20px;"></div>
+<!-- Outlook-safe spacer -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="20" style="font-size:1px; line-height:1px;">&nbsp;</td></tr></table>
 {% endif %}
 
 <p><b>Incident:</b></p>
@@ -124,7 +128,7 @@ Please also take note on the SLA with warning status and ensure to close the tic
 <p><u>Incident Ageing Percentage</u></p>
 
 <p>
-<b>Open INC as of {{ report_date }} : {{ inc_open_input }} INC tickets.</b><div style="margin-bottom: 8px;"></div>
+<b>Open INC as of {{ report_date }} : {{ inc_open_input }} INC tickets.</b><br><br>
 <b>Ageing Incident more than 1 day is {{ inc_ageing_more_than_1_day_pct }}% as of {{ report_date }}</b>
 </p>
 
@@ -174,7 +178,8 @@ Please also take note on the SLA with warning status and ensure to close the tic
 </tr>
 </table>
 
-<div style="margin-bottom: 12px;"></div>
+<!-- Outlook-safe spacer -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td height="12" style="font-size:1px; line-height:1px;">&nbsp;</td></tr></table>
 
 <p style="color:#222A35;">
 Do let your leads know if you have any challenges or concerns. Your cooperation is greatly appreciated.
