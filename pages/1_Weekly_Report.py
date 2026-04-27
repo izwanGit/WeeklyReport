@@ -1363,39 +1363,61 @@ function copyRichText(){{
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
-                        # 1. Save Excel files to OneDrive and get paths for attachment
-                        attachments = []
-                        try:
-                            sr_wo_path, inc_path = save_excels_to_onedrive(
-                                report_date, final_sr_wo_file, final_inc_file
-                            )
-                            attachments = [sr_wo_path, inc_path]
-                            petronas_alert(
-                                f"Excel files saved to OneDrive: <code>{os.path.dirname(sr_wo_path)}</code>",
-                                type="info", icon="folder"
-                            )
-                        except Exception as e:
-                            petronas_alert(f"Could not save Excel files to OneDrive: {e}", type="warning")
+                        with st.spinner("Preparing files and opening Outlook draft…"):
 
-                        # 2. Resolve To: recipients from assignees
-                        all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
-                        to_emails, missing = resolve_assignee_emails(all_tickets)
-                        st.session_state._missing_contacts = missing
+                            # ── Step 1: Save Excel files to OneDrive ──────────
+                            attachments = []
+                            try:
+                                sr_wo_path, inc_path = save_excels_to_onedrive(
+                                    report_date, final_sr_wo_file, final_inc_file
+                                )
+                                attachments = [sr_wo_path, inc_path]
+                                petronas_alert(
+                                    f"Excel files saved: <code>{os.path.dirname(sr_wo_path)}</code>",
+                                    type="info", icon="folder"
+                                )
+                            except Exception as e:
+                                petronas_alert(
+                                    f"<b>Could not save Excel files to OneDrive:</b><br><code>{e}</code>",
+                                    type="warning"
+                                )
 
-                        if missing:
-                            # BLOCK — do not open Outlook until all contacts are mapped
-                            petronas_alert(
-                                f"<b>Blocked: {len(missing)} assignee(s) have no email mapped.</b><br>"
-                                + ", ".join(f"<code>{n}</code>" for n in missing)
-                                + "<br>Add their emails in <b>Manage Contacts</b> below, then try again.",
-                                type="error"
-                            )
-                        else:
-                            # 3. All contacts resolved — push to Outlook
-                            if push_to_outlook(html_output, email_subject, to_emails=to_emails, attachments=attachments):
-                                petronas_alert("Draft created in Outlook with Excel attachments. Check To/CC fields before sending.", type="success", icon="mail")
+                            # ── Step 2: Resolve To: recipients ────────────────
+                            try:
+                                all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
+                                to_emails, missing = resolve_assignee_emails(all_tickets)
+                                st.session_state._missing_contacts = missing
+                            except Exception as e:
+                                petronas_alert(f"<b>Contact lookup failed:</b> <code>{e}</code>", type="error")
+                                to_emails, missing = [], []
+
+                            if missing:
+                                petronas_alert(
+                                    f"<b>Blocked — {len(missing)} assignee(s) have no email mapped:</b><br>"
+                                    + ", ".join(f"<code>{n}</code>" for n in missing)
+                                    + "<br>Add emails in <b>Manage Contacts</b> below, then try again.",
+                                    type="error"
+                                )
+                            else:
+                                # ── Step 3: Open Outlook draft ────────────────
+                                try:
+                                    if push_to_outlook(
+                                        html_output, email_subject,
+                                        to_emails=to_emails,
+                                        attachments=attachments
+                                    ):
+                                        petronas_alert(
+                                            "Outlook draft opened with Excel attachments. Review To/CC then send.",
+                                            type="success", icon="mail"
+                                        )
+                                except Exception as e:
+                                    petronas_alert(
+                                        f"<b>Failed to open Outlook:</b><br><code>{e}</code>",
+                                        type="error"
+                                    )
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
+
 
             # ── Contacts Manager ─────────────────────────────────
             st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
