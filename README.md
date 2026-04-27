@@ -16,7 +16,7 @@ The **PETRONAS Report Automation Hub** is a robust, end-to-end automation suite 
 
 <div align="center">
   <h3>🎬 Live System Demo</h3>
-  <img src="assets/petronas_app_demo.webp" alt="PETRONAS App Demo Video" width="800" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <img src="assets/petronas_app_demo_final.webp" alt="PETRONAS App Demo Video" width="800" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
 </div>
 
 <br />
