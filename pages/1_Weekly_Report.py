@@ -1,4 +1,19 @@
 import streamlit as st
+
+def petronas_alert(message: str, type: str = "info", icon: str = None):
+    # PETRONAS Brand Colors
+    colors = {
+        "success": ("rgb(191,215,48)", "rgba(191,215,48,0.15)"), # Lime Green
+        "info": ("rgb(0,177,169)", "rgba(0,177,169,0.15)"),       # Teal
+        "warning": ("rgb(253,185,36)", "rgba(253,185,36,0.15)"),  # Yellow
+        "error": ("rgb(118,63,152)", "rgba(118,63,152,0.15)"),    # Purple
+        "blue": ("rgb(32,65,154)", "rgba(32,65,154,0.15)")        # Blue
+    }
+    border_color, bg_color = colors.get(type, colors["info"])
+    icon_html = f"<span style='margin-right: 8px; font-size: 1.1em;'>{icon}</span>" if icon else ""
+    html = f'''<div style="background-color: {bg_color}; border-left: 4px solid {border_color}; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; font-family: sans-serif; color: #1E293B; display: flex; align-items: center;">{icon_html}<div>{message}</div></div>'''
+    st.markdown(html, unsafe_allow_html=True)
+
 import pandas as pd
 import json
 import os
@@ -134,7 +149,7 @@ def show_cookie_modal():
                     st.session_state.master_sync_clicked = True
                     st.rerun()
         else:
-            st.error("Please paste the cookie string first.")
+            petronas_alert("Please paste the cookie string first.", type="error", icon="🚨")
             
     if col2.button("Cancel", use_container_width=True):
         st.rerun()
@@ -306,7 +321,7 @@ def load_history():
             with open(HISTORY_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            st.error(f"Error reading history file: {e}")
+            petronas_alert(f"Error reading history file: {e}", type="error", icon="🚨")
             return []
     return []
 
@@ -317,13 +332,13 @@ def save_history(history):
             json.dump(history, f, indent=4)
         return True
     except Exception as e:
-        st.error(f"Error saving history file: {e}")
+        petronas_alert(f"Error saving history file: {e}", type="error", icon="🚨")
         return False
 
 
 def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
     if sys.platform != 'win32' or win32 is None:
-        st.error("Outlook integration is only supported on Windows machines with pywin32 installed.")
+        petronas_alert("Outlook integration is only supported on Windows machines with pywin32 installed.", type="error", icon="🚨")
         return False
     try:
         import pythoncom
@@ -335,7 +350,7 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
         mail.Display(True)
         return True
     except Exception as e:
-        st.error(f"Failed to open Outlook draft: {str(e)}")
+        petronas_alert(f"Failed to open Outlook draft: {str(e)}", type="error", icon="🚨")
         return False
     finally:
         try:
@@ -529,9 +544,9 @@ with st.sidebar:
 
     if st.session_state.sync_status:
         if st.session_state.sync_error:
-            st.error(f"Sync Failed: {st.session_state.sync_status}")
+            petronas_alert(f"Sync Failed: {st.session_state.sync_status}", type="error", icon="🚨")
         else:
-            st.success(f"{st.session_state.sync_status}")
+            petronas_alert(f"{st.session_state.sync_status}", type="success", icon="✅")
 
     c1, c2 = st.columns(2)
     with c1:
@@ -585,7 +600,7 @@ with st.sidebar:
         sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
-        st.info("Local Excel files detected in OneDrive folder.")
+        petronas_alert("Local Excel files detected in OneDrive folder.", type="info", icon="ℹ️")
         st.caption("These will be used automatically. Upload below to override.")
 
     st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
@@ -610,11 +625,11 @@ if final_sr_wo_file and final_inc_file:
                         file_bytes = f.read()
                     return pd.ExcelFile(io.BytesIO(file_bytes))
                 except PermissionError:
-                    st.error(
-                        f"**Permission Denied!** The {name_label} file is currently locked.\n\n"
-                        f"1. Close Microsoft Excel if you have this file open.\n"
-                        f"2. Ensure OneDrive sync is not paused.\n\n"
-                        f"**Locked File:** `{file_or_path}`"
+                    petronas_alert(
+                        f"**Permission Denied!** The {name_label} file is currently locked.<br><br>"
+                        f"1. Close Microsoft Excel if you have this file open.<br>"
+                        f"2. Ensure OneDrive sync is not paused.<br><br>"
+                        f"**Locked File:** <code>{file_or_path}</code>", type="error", icon="🚨"
                     )
                     st.stop()
             else:
@@ -646,16 +661,16 @@ if final_sr_wo_file and final_inc_file:
         status_msg  = "**Data Source:** "
         status_msg += "Live SharePoint Sync\n" if isinstance(final_sr_wo_file, str) else "Manual Upload\n"
         status_msg += f"Detected → SR: `{sr_sheet_name}`, WO: `{wo_sheet_name}`, INC: `{inc_sheet_name}`"
-        st.info(status_msg)
+        petronas_alert(status_msg, type="info", icon="ℹ️")
 
         if sr_sheet_name is None:
-            st.error("Could not locate a valid Service Request sheet.")
+            petronas_alert("Could not locate a valid Service Request sheet.", type="error", icon="🚨")
             st.stop()
         if wo_sheet_name is None:
-            st.warning("Work Order detail sheet not found — detail tables will be empty.")
+            petronas_alert("Work Order detail sheet not found — detail tables will be empty.", type="warning", icon="⚠️")
             df_wo_raw = pd.DataFrame()
         if inc_sheet_name is None:
-            st.error("Could not locate a valid Incident sheet.")
+            petronas_alert("Could not locate a valid Incident sheet.", type="error", icon="🚨")
             st.stop()
 
         # --- SR Metric Calculations ---
@@ -664,7 +679,7 @@ if final_sr_wo_file and final_inc_file:
         if sr_assign_grp_col:
             df_sr = df_sr[df_sr[sr_assign_grp_col].astype(str).str.strip().str.upper() == "MYCAREERX SUPPORT"]
         else:
-            st.warning(f"⚠️ Filter Skipped: Could not find 'Work Order Assignee Group'. Columns: {', '.join(df_sr.columns.astype(str))}")
+            petronas_alert(f"Filter Skipped: Could not find 'Work Order Assignee Group'. Columns: {', '.join(df_sr.columns.astype(str))}", type="warning", icon="⚠️")
 
         sr_ageing_col = find_col(df_sr, "Service Request Ageing Days")
         sr_status_col = find_col(df_sr, "Service Request Status")
@@ -732,7 +747,7 @@ if final_sr_wo_file and final_inc_file:
         if inc_assign_grp_col:
             df_inc = df_inc[df_inc[inc_assign_grp_col].astype(str).str.strip().str.upper() == "MYCAREERX SUPPORT"]
         else:
-            st.warning(f"⚠️ Filter Skipped: Could not find 'Assignee Group'. Columns: {', '.join(df_inc.columns.astype(str))}")
+            petronas_alert(f"Filter Skipped: Could not find 'Assignee Group'. Columns: {', '.join(df_inc.columns.astype(str))}", type="warning", icon="⚠️")
 
         inc_ageing_col = find_col(df_inc, "Incident Ageing Days")
         inc_status_col = find_col(df_inc, "Status")
@@ -830,7 +845,7 @@ if final_sr_wo_file and final_inc_file:
                     save_history(history)
                     st.rerun()
             with c2:
-                st.info(f"✓ {short_date} is already in History. The table below includes it dynamically.", icon="✅")
+                petronas_alert(f"✓ {short_date} is already in History. The table below includes it dynamically.", type="info", icon="✅")
         else:
             c1, c2 = st.columns([1, 4])
             with c1:
@@ -841,7 +856,7 @@ if final_sr_wo_file and final_inc_file:
                     save_history(history)
                     st.rerun()
             with c2:
-                st.warning(f"Not yet saved. Click Save to log {short_date} into history.", icon="⚠️")
+                petronas_alert(f"Not yet saved. Click Save to log {short_date} into history.", type="warning", icon="⚠️")
 
         st.markdown("")
 
@@ -970,7 +985,7 @@ function copyRichText(){{
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
                         if push_to_outlook(html_output, email_subject):
-                            st.success("Draft created in Outlook.")
+                            petronas_alert("Draft created in Outlook.", type="success", icon="✅")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 
@@ -978,7 +993,7 @@ function copyRichText(){{
             st.markdown("### Saved Historical Records")
             saved_data = load_history()
             if not saved_data:
-                st.info("No records yet. Process and save a snapshot to see it here.")
+                petronas_alert("No records yet. Process and save a snapshot to see it here.", type="info", icon="ℹ️")
             else:
                 for idx, h in enumerate(saved_data):
                     st.markdown("<div style='padding:10px;border:1px solid #E2E8F0;border-radius:8px;margin-bottom:8px;'>", unsafe_allow_html=True)
@@ -1003,7 +1018,7 @@ function copyRichText(){{
                     st.rerun()
 
     except Exception as e:
-        st.error(f"Error processing the files: {e}")
+        petronas_alert(f"Error processing the files: {e}", type="error", icon="🚨")
         st.code(traceback.format_exc(), language="text")
 
 else:
