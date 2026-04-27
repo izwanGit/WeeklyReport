@@ -578,8 +578,8 @@ with st.sidebar:
     sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
-        st.success("SharePoint Folder Linked")
-        st.caption("Auto-using local Excel data. Upload below to override.")
+        st.info("Local Excel files detected in OneDrive folder.")
+        st.caption("These will be used automatically. Upload below to override.")
 
     st.markdown("<a href='https://mygenieplus-ir1.onbmc.com/dashboards/d/ce3wv282zk1kwd/service-request-and-work-order-ageing-raw-data?orgId=204007533&var-Ownership=All&var-Assignee_Group=MYCAREERX%20SUPPORT&var-Assigned_Support_Org=All' target='_blank' class='genie-link'>SR & WO Excel ↗</a>", unsafe_allow_html=True)
     uploaded_sr_wo = st.file_uploader("SR & WO Excel", type=['xlsx', 'xls'], key="sr_wo", label_visibility="collapsed")
