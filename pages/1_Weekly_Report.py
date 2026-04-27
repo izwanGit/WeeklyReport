@@ -1056,17 +1056,79 @@ function copyRichText(){{
                     if st.button("Push to Outlook Draft", use_container_width=True):
                         all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
                         to_emails, missing = resolve_assignee_emails(all_tickets)
+                        st.session_state._missing_contacts = missing
                         if missing:
                             petronas_alert(
                                 f"<b>Missing contacts ({len(missing)}):</b> "
                                 + ", ".join(f"<code>{n}</code>" for n in missing)
-                                + "<br>Add them to <b>contacts.json</b> to include in future emails.",
+                                + "<br>Use the <b>Manage Contacts</b> section below to add their emails.",
                                 type="warning"
                             )
                         if push_to_outlook(html_output, email_subject, to_emails=to_emails):
                             petronas_alert("Draft created in Outlook. Check To/CC fields before sending.", type="success", icon="mail")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
+
+            # ── Contacts Manager ─────────────────────────────────
+            st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
+            with st.expander("Manage Contacts", expanded=bool(st.session_state.get('_missing_contacts'))):
+                contacts = load_contacts()
+                missing_now = st.session_state.get('_missing_contacts', [])
+
+                if missing_now:
+                    st.markdown(f"""
+                    <div style="border-left:3px solid {PETRONAS_YELLOW}; background:rgba(253,185,36,0.08);
+                                padding:8px 14px; border-radius:4px; margin-bottom:12px; font-size:0.82rem; color:#1E293B;">
+                        <b>Action needed:</b> {len(missing_now)} assignee(s) from the current report are missing emails.
+                        Paste their emails below and save.
+                    </div>""", unsafe_allow_html=True)
+
+                    updated = dict(contacts)
+                    any_filled = False
+                    for name in missing_now:
+                        c1, c2 = st.columns([2, 3])
+                        c1.markdown(
+                            f"<div style='padding:8px 0; font-size:0.83rem; color:#1E293B; font-weight:500;'>"
+                            f"{name}</div>", unsafe_allow_html=True
+                        )
+                        email_val = c2.text_input(
+                            label=name, label_visibility="collapsed",
+                            placeholder="Paste email address here…",
+                            key=f"contact_input_{name}"
+                        )
+                        if email_val.strip():
+                            updated[name] = email_val.strip()
+                            any_filled = True
+
+                    if any_filled:
+                        if st.button("Save to Contacts", type="primary", use_container_width=False):
+                            try:
+                                with open(CONTACTS_FILE, "w", encoding="utf-8") as f:
+                                    json.dump(updated, f, indent=2, ensure_ascii=False)
+                                st.session_state._missing_contacts = []
+                                petronas_alert("Contacts saved successfully.", type="success", icon="check")
+                                st.rerun()
+                            except Exception as e:
+                                petronas_alert(f"Could not save contacts: {e}", type="error")
+
+                if contacts:
+                    st.markdown(f"""
+                    <div style="border-top:1px solid #E2E8F0; margin:12px 0 8px 0;"></div>
+                    <p style="font-size:0.78rem; color:#718096; margin-bottom:6px;">
+                        <b>Known contacts ({len(contacts)})</b>
+                    </p>""", unsafe_allow_html=True)
+                    for name, email in contacts.items():
+                        ca, cb = st.columns([2, 3])
+                        ca.markdown(
+                            f"<div style='font-size:0.78rem; color:#1E293B; padding:3px 0;'>{name}</div>",
+                            unsafe_allow_html=True
+                        )
+                        cb.markdown(
+                            f"<div style='font-size:0.78rem; color:{PETRONAS_TEAL}; padding:3px 0;'>{email}</div>",
+                            unsafe_allow_html=True
+                        )
+                elif not missing_now:
+                    petronas_alert("No contacts saved yet. Push to Outlook Draft first to detect assignee names.", type="info")
 
         with tab_history:
             st.markdown("### Saved Historical Records")
