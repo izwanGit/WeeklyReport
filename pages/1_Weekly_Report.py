@@ -131,6 +131,7 @@ def show_cookie_modal():
                     save_cached_cookie(raw_cookie.strip())
                     st.session_state.sync_status = "Data Synced Successfully!"
                     st.session_state.sync_error = False
+                    st.session_state.master_sync_clicked = True
                     st.rerun()
         else:
             st.error("Please paste the cookie string first.")
@@ -500,7 +501,11 @@ with st.sidebar:
     if "sync_error" not in st.session_state:
         st.session_state.sync_error = False
 
+    if "master_sync_clicked" not in st.session_state:
+        st.session_state.master_sync_clicked = False
+
     if st.button("Sync Live Data", use_container_width=True):
+        st.session_state.master_sync_clicked = True
         cached_cookie = load_cached_cookie()
         if cached_cookie:
             with st.spinner("Trying cached session..."):
@@ -575,7 +580,9 @@ with st.sidebar:
         "Service Request Ageing Raw Data [Daily].xlsx",
     )
 
-    sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
+    sync_active = False
+    if st.session_state.master_sync_clicked:
+        sync_active = os.path.exists(default_inc_path) and os.path.exists(default_sr_path)
 
     if sync_active:
         st.info("Local Excel files detected in OneDrive folder.")
