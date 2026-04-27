@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Weekly SR & Incident Report</title>
+<title>Weekly SR &amp; Incident Report</title>
 </head>
 
 <body style="font-family:Calibri, Arial, sans-serif; font-size:14px; color:#242424;">
@@ -30,25 +30,25 @@ Please also take note on the SLA with warning status and ensure to close the tic
 <!-- SUMMARY TABLE -->
 <table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th>Date</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Date</th>
 {% for date in trend_dates %}
-<th>{{ date }}</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">{{ date }}</th>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 30 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 30 days</b></td>
 {% for count in sr_trend_gt_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
 {% for count in sr_trend_15_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 1 – 14 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 1 – 14 days</b></td>
 {% for count in sr_trend_1_14 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
@@ -61,26 +61,26 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% if sr_ageing_gt_30_tickets %}
 <table width="100%" cellpadding="3" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF; font-size: 13px;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th colspan="7">Ageing &gt; 30 days</th>
+<th colspan="7" bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Ageing &gt; 30 days</th>
 </tr>
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th>SR Ageing</th>
-<th>Work Order No.</th>
-<th>Summary</th>
-<th>User/TSG</th>
-<th>WO Status</th>
-<th>WO Status Reason</th>
-<th>Assignee</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">SR Ageing</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Work Order No.</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Summary</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">User/TSG</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">WO Status</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">WO Status Reason</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Assignee</th>
 </tr>
 {% for ticket in sr_ageing_gt_30_tickets %}
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#FFFFFF">{{ ticket['SR Ageing'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Work Order No.'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Summary'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['User/TSG'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['WO Status'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['WO Status Reason'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Assignee'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['SR Ageing'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Work Order No.'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Summary'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['User/TSG'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['WO Status'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['WO Status Reason'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Assignee'] }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -92,26 +92,26 @@ Please also take note on the SLA with warning status and ensure to close the tic
 {% if sr_ageing_15_30_tickets %}
 <table width="100%" cellpadding="3" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF; font-size: 13px;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th colspan="7">Ageing 15 – 30 Days</th>
+<th colspan="7" bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Ageing 15 – 30 Days</th>
 </tr>
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th>SR Ageing</th>
-<th>Work Order No.</th>
-<th>Summary</th>
-<th>User/TSG</th>
-<th>WO Status</th>
-<th>WO Status Reason</th>
-<th>Assignee</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">SR Ageing</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Work Order No.</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Summary</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">User/TSG</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">WO Status</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">WO Status Reason</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Assignee</th>
 </tr>
 {% for ticket in sr_ageing_15_30_tickets %}
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#FFFFFF">{{ ticket['SR Ageing'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Work Order No.'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Summary'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['User/TSG'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['WO Status'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['WO Status Reason'] }}</td>
-<td bgcolor="#FFFFFF">{{ ticket['Assignee'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['SR Ageing'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Work Order No.'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Summary'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['User/TSG'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['WO Status'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['WO Status Reason'] }}</td>
+<td bgcolor="#FFFFFF" style="color:#000000;">{{ ticket['Assignee'] }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -131,43 +131,43 @@ Please also take note on the SLA with warning status and ensure to close the tic
 <!-- INCIDENT TABLE -->
 <table width="100%" cellpadding="6" cellspacing="0" border="1" bgcolor="#00B1A9" style="border-collapse:collapse; background-color:#00B1A9; color:#FFFFFF;">
 <tr bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;">
-<th>Date</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">Date</th>
 {% for date in trend_dates %}
-<th>{{ date }}</th>
+<th bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;">{{ date }}</th>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 90 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing &gt; 90 days</b></td>
 {% for count in inc_trend_gt_90 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 61 – 90 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 61 – 90 days</b></td>
 {% for count in inc_trend_61_90 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 31 – 60 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 31 – 60 days</b></td>
 {% for count in inc_trend_31_60 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 15 – 30 days</b></td>
 {% for count in inc_trend_15_30 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 8 – 14 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 8 – 14 days</b></td>
 {% for count in inc_trend_8_14 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
 </tr>
 <tr bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">
-<td bgcolor="#00B1A9" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 3 – 7 days</b></td>
+<td bgcolor="#00B1A9" color="#FFFFFF" style="background-color:#00B1A9; color:#FFFFFF;"><b>Ageing 3 – 7 days</b></td>
 {% for count in inc_trend_3_7 %}
 <td bgcolor="#FFFFFF" style="background-color:#FFFFFF; color:#000000;">{{ count }}</td>
 {% endfor %}
