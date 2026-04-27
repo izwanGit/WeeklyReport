@@ -409,7 +409,7 @@ def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_
     """
     import shutil
     user_profile = os.environ.get('USERPROFILE', '')
-    date_folder  = report_date.strftime('%d %b')   # e.g. "27 Apr"
+    date_folder  = report_date.strftime('%d %B')   # e.g. "27 April"
     date_suffix  = report_date.strftime('%d%b')    # e.g. "27Apr"
 
     target_dir = os.path.join(
