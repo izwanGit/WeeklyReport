@@ -94,7 +94,7 @@ def save_cached_cookie(cookie_str):
         pass
 
 
-@st.experimental_dialog("Manual Data Sync")
+@st.dialog("Manual Data Sync")
 def show_cookie_modal():
     st.markdown("""
     <p style="color: #4A5568; font-size: 0.9rem; margin-bottom: 15px;">Follow these steps to securely pull live data without IT restrictions:</p>
