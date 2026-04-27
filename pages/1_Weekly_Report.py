@@ -598,15 +598,53 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
         if "work order" in name.lower() and "ageing" in name.lower():
             wo_data_name = name
 
-    # ── Filter all data sheets (skip first two cover sheets) ──────
-    data_sheets = sheet_names[2:]
+    # ── Step 1: Filter the raw WO data sheet first by dept ───────
+    _filter_sheet_by_dept(wb[wo_data_name])
+
+    # ── Step 2: Collect surviving WO IDs for cross-sheet filter ──
+    wo_ws = wb[wo_data_name]
+    wo_headers = [cell.value for cell in wo_ws[1]]
+    wo_id_col = None
+    for i, h in enumerate(wo_headers, start=1):
+        if h and "work order" in str(h).lower() and ("id" in str(h).lower() or "no" in str(h).lower()):
+            wo_id_col = i
+            break
+    surviving_wo_ids = set()
+    if wo_id_col:
+        for row in wo_ws.iter_rows(min_row=2):
+            val = row[wo_id_col - 1].value
+            if val:
+                surviving_wo_ids.add(str(val).strip())
+
+    # ── Step 3: Filter remaining data sheets ─────────────────────
+    # For sheets with dept column → filter by dept
+    # For sheets without dept column (e.g. sheet 3) → filter by WO IDs
+    data_sheets = [s for s in sheet_names[2:] if s != wo_data_name]
     for sname in data_sheets:
-        _filter_sheet_by_dept(wb[sname])
+        ws = wb[sname]
+        headers = [cell.value for cell in ws[1]]
+        dept_col = _find_dept_col(headers)
+        if dept_col is not None:
+            _filter_sheet_by_dept(ws)
+        elif surviving_wo_ids:
+            # Find WO ID column in this sheet
+            sid_col = None
+            for i, h in enumerate(headers, start=1):
+                if h and "work order" in str(h).lower() and ("id" in str(h).lower() or "no" in str(h).lower()):
+                    sid_col = i
+                    break
+            if sid_col:
+                to_delete = []
+                for row in ws.iter_rows(min_row=2):
+                    val = str(row[sid_col - 1].value or "").strip()
+                    if val not in surviving_wo_ids:
+                        to_delete.append(row[0].row)
+                for row_num in reversed(to_delete):
+                    ws.delete_rows(row_num)
 
     # ── Get counts from the primary WO data sheet ─────────────────
-    wo_ws      = wb[wo_data_name]
-    total_sr   = max(0, wo_ws.max_row - 1)
-    sr_gt_30   = _count_ageing_gt(wo_ws, 30)
+    total_sr  = max(0, wo_ws.max_row - 1)
+    sr_gt_30  = _count_ageing_gt(wo_ws, 30)
 
     # ── Rebuild cover sheets ──────────────────────────────────────
     if len(sheet_names) >= 1:
@@ -1340,7 +1378,7 @@ function copySubject(){{
 <html><head>
 <style>
 body{{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:sans-serif;}}
-button{{background:linear-gradient(135deg,#00B1A9 0%,#008C86 100%);color:white;border:none;border-radius:10px;font-weight:600;padding:0.6rem 1.4rem;font-size:0.9rem;cursor:pointer;width:100%;transition:all 0.3s ease;}}
+button{{background:linear-gradient(135deg,#00B1A9 0%,#008C86 100%);color:white;border:none;border-radius:8px;font-weight:600;padding:0.42rem 1rem;font-size:0.875rem;cursor:pointer;width:100%;height:40px;transition:all 0.3s ease;}}
 button:hover{{filter:brightness(1.1);transform:translateY(-1px);}}
 #msg{{color:#00B1A9;font-size:0.8rem;font-weight:600;margin-top:5px;display:none;}}
 </style></head>
@@ -1361,7 +1399,7 @@ function copyRichText(){{
 }}
 </script>
 </body></html>"""
-                st.components.v1.html(copy_btn_html, height=80)
+                st.components.v1.html(copy_btn_html, height=42)
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
@@ -1383,17 +1421,19 @@ function copyRichText(){{
                         all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
                         to_emails, missing = resolve_assignee_emails(all_tickets)
                         st.session_state._missing_contacts = missing
-                        if missing:
-                            petronas_alert(
-                                f"<b>Missing contacts ({len(missing)}):</b> "
-                                + ", ".join(f"<code>{n}</code>" for n in missing)
-                                + "<br>Use the <b>Manage Contacts</b> section below to add their emails.",
-                                type="warning"
-                            )
 
-                        # 3. Push to Outlook with attachments
-                        if push_to_outlook(html_output, email_subject, to_emails=to_emails, attachments=attachments):
-                            petronas_alert("Draft created in Outlook with Excel attachments. Check To/CC fields before sending.", type="success", icon="mail")
+                        if missing:
+                            # BLOCK — do not open Outlook until all contacts are mapped
+                            petronas_alert(
+                                f"<b>Blocked: {len(missing)} assignee(s) have no email mapped.</b><br>"
+                                + ", ".join(f"<code>{n}</code>" for n in missing)
+                                + "<br>Add their emails in <b>Manage Contacts</b> below, then try again.",
+                                type="error"
+                            )
+                        else:
+                            # 3. All contacts resolved — push to Outlook
+                            if push_to_outlook(html_output, email_subject, to_emails=to_emails, attachments=attachments):
+                                petronas_alert("Draft created in Outlook with Excel attachments. Check To/CC fields before sending.", type="success", icon="mail")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 
