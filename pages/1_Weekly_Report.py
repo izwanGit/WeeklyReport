@@ -403,7 +403,7 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
     return found, missing
 
 
-DEPT_FILTER = "MYCAREERSUPPORT"
+DEPT_FILTER = "MYCAREERX SUPPORT"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -438,7 +438,7 @@ def _fast_filter_by_col(ws, col_name: str, dept: str = DEPT_FILTER) -> list:
 
     # ONE delete call — eliminates O(n²) row-shift overhead
     if ws.max_row > 1:
-        ws.delete_rows(2, ws.max_row)
+        ws.delete_rows(2, ws.max_row - 1)
 
     # Write survivors back with ws.append (fast sequential write)
     for row in kept:
@@ -516,31 +516,43 @@ def _count_ageing_gt(ws, threshold: int) -> int:
     return count
 
 
-def _update_cover_number(ws, count: int) -> None:
+def _update_cover_number(ws, title_text: str, count: int) -> None:
     """
     1. Delete all images/drawings from the cover sheet.
-    2. Place the filtered count at E20:J20 with large PETRONAS teal font.
+    2. Write title text at A2:J8.
+    3. Place the filtered count at E10:J10, top-left aligned.
     """
-    from openpyxl.styles import Font, Alignment
+    from openpyxl.styles import Font, Alignment, PatternFill
     from openpyxl.drawing.spreadsheet_drawing import SpreadsheetDrawing
 
+    # ── Remove all images/drawings ────────────────────────────────
     ws._images = []
     try:
         ws._drawing = SpreadsheetDrawing()
     except Exception:
         pass
 
+    # ── Unmerge any existing merged ranges in our target area ─────
     for rng in list(ws.merged_cells.ranges):
-        r = str(rng)
-        if "E20" in r or "F20" in r:
-            ws.unmerge_cells(r)
+        ws.unmerge_cells(str(rng))
 
-    ws.merge_cells("E20:J20")
-    cell = ws["E20"]
-    cell.value     = count
-    cell.font      = Font(name="Calibri", bold=True, size=96, color="00B1A9")
-    cell.alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[20].height = 100
+    # ── Title text: A2:J8 ─────────────────────────────────────────
+    ws.merge_cells("A2:J8")
+    t = ws["A2"]
+    t.value     = title_text
+    t.font      = Font(name="Calibri", bold=True, size=36, color="FFFFFF")
+    t.fill      = PatternFill("solid", fgColor="00B1A9")
+    t.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    for r in range(2, 9):
+        ws.row_dimensions[r].height = 40
+
+    # ── Count number: E10:J10 (top-left aligned) ─────────────────
+    ws.merge_cells("E10:J10")
+    n = ws["E10"]
+    n.value     = count
+    n.font      = Font(name="Calibri", bold=True, size=96, color="00B1A9")
+    n.alignment = Alignment(horizontal="left", vertical="top")
+    ws.row_dimensions[10].height = 100
 
 
 def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.date):
@@ -651,9 +663,9 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
 
     # ── Step 5: Update cover numbers ─────────────────────────────
     if len(sheet_names) >= 1:
-        _update_cover_number(wb[sheet_names[0]], total_sr)
+        _update_cover_number(wb[sheet_names[0]], "Total Service Request", total_sr)
     if len(sheet_names) >= 2:
-        _update_cover_number(wb[sheet_names[1]], sr_gt_30)
+        _update_cover_number(wb[sheet_names[1]], "Service Request Ageing > 30 Days", sr_gt_30)
 
     # ── Step 6: Build Update Details (fresh sheet, single pass) ──
     _build_update_details_sheet(wb, wo_data_name, report_date)
@@ -690,9 +702,9 @@ def process_inc_workbook(workbook_path: str, report_date: datetime.date):
 
     # ── Update cover numbers ──────────────────────────────────────
     if len(sheet_names) >= 1:
-        _update_cover_number(wb[sheet_names[0]], total_inc)
+        _update_cover_number(wb[sheet_names[0]], "Total Ageing Incident", total_inc)
     if len(sheet_names) >= 2:
-        _update_cover_number(wb[sheet_names[1]], inc_gt_30)
+        _update_cover_number(wb[sheet_names[1]], "Total Ageing Incident > 30 Days", inc_gt_30)
 
     wb.save(workbook_path)
 
