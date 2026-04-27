@@ -361,7 +361,48 @@ def save_history(history):
         return False
 
 
-def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
+# Fixed CC list — never changes
+OUTLOOK_CC = (
+    "yusrinah.mohamed@petronas.com.my; "
+    "norhaiza.awang@petronas.com.my; "
+    "aisyoul.zainon@petronas.com.my; "
+    "prashant.k.singh@oracle.com; "
+    "manesh.kallil@oracle.com; "
+    "rozaire@petronas.com.my; "
+    "jayanthan.sankar@petronas.com.my"
+)
+
+CONTACTS_FILE = os.path.join(EXE_DIR, "contacts.json")
+
+def load_contacts() -> dict:
+    """Load name→email mapping from contacts.json."""
+    try:
+        with open(CONTACTS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {k: v for k, v in data.items() if not k.startswith("_")}
+    except Exception:
+        return {}
+
+def resolve_assignee_emails(ticket_lists: list) -> tuple:
+    """
+    Given a list of ticket dicts, extract unique assignee names,
+    look them up in contacts.json, and return (found_emails, missing_names).
+    """
+    contacts = load_contacts()
+    seen = set()
+    found, missing = [], []
+    for ticket in ticket_lists:
+        name = str(ticket.get("Assignee", "")).strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        if name in contacts:
+            found.append(contacts[name])
+        else:
+            missing.append(name)
+    return found, missing
+
+def push_to_outlook(html_body, subject="Weekly SR & Incident Update", to_emails=None, cc=OUTLOOK_CC):
     if sys.platform != 'win32' or win32 is None:
         petronas_alert("Outlook integration is only supported on Windows machines with pywin32 installed.", type="error")
         return False
@@ -372,6 +413,9 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update"):
         mail = outlook.CreateItem(0)
         mail.Subject = subject
         mail.HTMLBody = html_body
+        if to_emails:
+            mail.To = "; ".join(to_emails)
+        mail.CC = cc
         mail.Display(True)
         return True
     except Exception as e:
@@ -1010,8 +1054,17 @@ function copyRichText(){{
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
-                        if push_to_outlook(html_output, email_subject):
-                            petronas_alert("Draft created in Outlook.", type="success", icon="mail")
+                        all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
+                        to_emails, missing = resolve_assignee_emails(all_tickets)
+                        if missing:
+                            petronas_alert(
+                                f"<b>Missing contacts ({len(missing)}):</b> "
+                                + ", ".join(f"<code>{n}</code>" for n in missing)
+                                + "<br>Add them to <b>contacts.json</b> to include in future emails.",
+                                type="warning"
+                            )
+                        if push_to_outlook(html_output, email_subject, to_emails=to_emails):
+                            petronas_alert("Draft created in Outlook. Check To/CC fields before sending.", type="success", icon="mail")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 

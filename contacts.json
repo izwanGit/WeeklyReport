@@ -1,0 +1,8 @@
+{
+  "_comment": "Map each assignee's display name (as it appears in the Assignee column) to their email address. The key must match exactly what is in the Excel data.",
+  "Jayanthan Sankar (EXT/DIGITAL)": "jayanthan.sankar@petronas.com.my",
+  "Rozaire B A Razak (DE/DIGITAL)": "rozaire@petronas.com.my",
+  "Nor Yusrinah Bt Mohamed (DE/DIGITAL)": "yusrinah.mohamed@petronas.com.my",
+  "Norhaiza Bt Awang (DE/DIGITAL)": "norhaiza.awang@petronas.com.my",
+  "Aisyoul Khorni Zainon Hamzah (DE/DIGITAL)": "aisyoul.zainon@petronas.com.my"
+}
