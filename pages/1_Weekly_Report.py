@@ -639,23 +639,21 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
     wo_headers    = [cell.value for cell in wo_ws[1]]
     kept_rows     = _fast_filter_by_col(wo_ws, "Work Order Assignee Group")
 
-    # ── Step 2: Collect surviving WO IDs from in-memory rows ──────
-    wo_id_idx = next(
+    # ── Step 2: Collect surviving SR IDs from in-memory rows ──────
+    sr_id_idx = next(
         (i for i, h in enumerate(wo_headers)
-         if h and "work order" in str(h).lower() and (
-             "id" in str(h).lower() or "no" in str(h).lower()
-         )),
+         if h and str(h).strip().lower() == "service request id"),
         None,
     )
-    surviving_wo_ids = {
-        str(r[wo_id_idx]).strip()
+    surviving_sr_ids = {
+        str(r[sr_id_idx]).strip()
         for r in kept_rows
-        if wo_id_idx is not None and r[wo_id_idx]
+        if sr_id_idx is not None and r[sr_id_idx]
     }
 
-    # ── Step 3: Fast-filter other data sheets by WO IDs ───────────
+    # ── Step 3: Fast-filter other data sheets by SR IDs ───────────
     for sname in [s for s in sheet_names[2:] if s != wo_data_name]:
-        _fast_filter_by_wo_ids(wb[sname], surviving_wo_ids)
+        _fast_filter_by_sr_ids(wb[sname], surviving_sr_ids)
 
     # ── Step 4: Count (reuse in-memory rows — no 2nd sheet scan) ──
     total_sr = len(kept_rows)
