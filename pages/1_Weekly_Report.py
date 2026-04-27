@@ -79,6 +79,20 @@ def parse_raw_cookie(raw_string: str) -> dict:
             
     return cookies
 
+def load_cached_cookie():
+    try:
+        with open("cookie_cache.txt", "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception:
+        return ""
+
+def save_cached_cookie(cookie_str):
+    try:
+        with open("cookie_cache.txt", "w", encoding="utf-8") as f:
+            f.write(cookie_str)
+    except Exception:
+        pass
+
 
 def _year_start_ms() -> int:
     """Unix-ms for Jan 1 of the current year."""
@@ -442,7 +456,27 @@ with st.sidebar:
         st.session_state.sync_error = False
 
     if st.button("Sync Live SharePoint & MyGenie", use_container_width=True):
-        st.session_state.show_cookie_modal = True
+        cached_cookie = load_cached_cookie()
+        if cached_cookie:
+            with st.spinner("Trying cached session..."):
+                parsed = parse_raw_cookie(cached_cookie)
+                wo_res = fetch_open_wo(parsed)
+                inc_res = fetch_open_inc(parsed)
+                
+                if wo_res is not None or inc_res is not None:
+                    if wo_res is not None:
+                        st.session_state.auto_wo = wo_res
+                    if inc_res is not None:
+                        st.session_state.auto_inc = inc_res
+                    st.session_state.sync_status = "Data Synced Successfully (Using Cached Session)!"
+                    st.session_state.sync_error = False
+                    st.session_state.show_cookie_modal = False
+                else:
+                    st.session_state.sync_status = "Cached session expired. Please provide a new cookie."
+                    st.session_state.sync_error = True
+                    st.session_state.show_cookie_modal = True
+        else:
+            st.session_state.show_cookie_modal = True
 
     if st.session_state.get('show_cookie_modal', False):
         with st.container():
@@ -484,6 +518,7 @@ with st.sidebar:
                             if inc_res is not None:
                                 st.session_state.auto_inc = inc_res
                             
+                            save_cached_cookie(raw_cookie.strip())
                             st.session_state.sync_status = "Data Synced Successfully!"
                             st.session_state.sync_error = False
                             st.session_state.show_cookie_modal = False
