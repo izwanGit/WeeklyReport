@@ -402,7 +402,48 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
             missing.append(name)
     return found, missing
 
-def push_to_outlook(html_body, subject="Weekly SR & Incident Update", to_emails=None, cc=OUTLOOK_CC):
+def save_excels_to_onedrive(report_date: datetime.date, final_sr_wo_file, final_inc_file) -> tuple:
+    """
+    Copy/rename the SR&WO and INC Excel files to OneDrive Weekly Report folder.
+    Returns (sr_wo_dest_path, inc_dest_path).
+    """
+    import shutil
+    user_profile = os.environ.get('USERPROFILE', '')
+    date_folder  = report_date.strftime('%d %b')   # e.g. "27 Apr"
+    date_suffix  = report_date.strftime('%d%b')    # e.g. "27Apr"
+
+    target_dir = os.path.join(
+        user_profile, "OneDrive - PETRONAS", "Weekly Report", date_folder
+    )
+    os.makedirs(target_dir, exist_ok=True)
+
+    sr_wo_dest = os.path.join(
+        target_dir,
+        f"Service Request & Work Order Ageing Raw Data Preview_{date_suffix}.xlsx"
+    )
+    inc_dest = os.path.join(
+        target_dir,
+        f"Incident Ageing Raw Data Preview_{date_suffix}.xlsx"
+    )
+
+    # Save SR & WO file
+    if isinstance(final_sr_wo_file, str):
+        shutil.copy2(final_sr_wo_file, sr_wo_dest)
+    else:
+        with open(sr_wo_dest, 'wb') as f:
+            f.write(final_sr_wo_file.getvalue())
+
+    # Save INC file
+    if isinstance(final_inc_file, str):
+        shutil.copy2(final_inc_file, inc_dest)
+    else:
+        with open(inc_dest, 'wb') as f:
+            f.write(final_inc_file.getvalue())
+
+    return sr_wo_dest, inc_dest
+
+
+def push_to_outlook(html_body, subject="Weekly SR & Incident Update", to_emails=None, cc=OUTLOOK_CC, attachments=None):
     if sys.platform != 'win32' or win32 is None:
         petronas_alert("Outlook integration is only supported on Windows machines with pywin32 installed.", type="error")
         return False
@@ -416,6 +457,10 @@ def push_to_outlook(html_body, subject="Weekly SR & Incident Update", to_emails=
         if to_emails:
             mail.To = "; ".join(to_emails)
         mail.CC = cc
+        if attachments:
+            for att_path in attachments:
+                if os.path.exists(att_path):
+                    mail.Attachments.Add(att_path)
         mail.Display(True)
         return True
     except Exception as e:
@@ -1054,6 +1099,21 @@ function copyRichText(){{
             with exp3:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
+                        # 1. Save Excel files to OneDrive and get paths for attachment
+                        attachments = []
+                        try:
+                            sr_wo_path, inc_path = save_excels_to_onedrive(
+                                report_date, final_sr_wo_file, final_inc_file
+                            )
+                            attachments = [sr_wo_path, inc_path]
+                            petronas_alert(
+                                f"Excel files saved to OneDrive: <code>{os.path.dirname(sr_wo_path)}</code>",
+                                type="info", icon="folder"
+                            )
+                        except Exception as e:
+                            petronas_alert(f"Could not save Excel files to OneDrive: {e}", type="warning")
+
+                        # 2. Resolve To: recipients from assignees
                         all_tickets = list(sr_ageing_gt_30_tickets) + list(sr_ageing_15_30_tickets)
                         to_emails, missing = resolve_assignee_emails(all_tickets)
                         st.session_state._missing_contacts = missing
@@ -1064,8 +1124,10 @@ function copyRichText(){{
                                 + "<br>Use the <b>Manage Contacts</b> section below to add their emails.",
                                 type="warning"
                             )
-                        if push_to_outlook(html_output, email_subject, to_emails=to_emails):
-                            petronas_alert("Draft created in Outlook. Check To/CC fields before sending.", type="success", icon="mail")
+
+                        # 3. Push to Outlook with attachments
+                        if push_to_outlook(html_output, email_subject, to_emails=to_emails, attachments=attachments):
+                            petronas_alert("Draft created in Outlook with Excel attachments. Check To/CC fields before sending.", type="success", icon="mail")
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
 
