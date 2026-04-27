@@ -403,30 +403,20 @@ def resolve_assignee_emails(ticket_lists: list) -> tuple:
     return found, missing
 
 
-
-# ── Excel Department Filter & Cover Page Constants ───────────────────────────
-DEPT_FILTER   = "MYCAREERSUPPORT"
-DEPT_COL_KEYS = [
-    "assignment group", "assigned group", "support group",
-    "work group", "resolver group", "group name", "department", "team",
-]
+DEPT_FILTER = "MYCAREERSUPPORT"
 
 
-def _find_dept_col(headers: list):
-    """Return 1-based index of the dept/assignment-group column, or None."""
-    for i, h in enumerate(headers, start=1):
-        if h and any(k in str(h).lower() for k in DEPT_COL_KEYS):
-            return i
-    return None
-
-
-def _filter_sheet_by_dept(ws, dept: str = DEPT_FILTER) -> int:
+def _filter_by_exact_col(ws, col_name: str, dept: str = DEPT_FILTER) -> int:
     """
-    Delete every data row whose dept column does NOT contain `dept`.
-    Returns the count of remaining data rows (header excluded).
+    Delete rows where the exact column `col_name` does NOT contain `dept`.
+    Returns count of remaining data rows.
     """
     headers = [cell.value for cell in ws[1]]
-    dept_col = _find_dept_col(headers)
+    dept_col = None
+    for i, h in enumerate(headers, start=1):
+        if h and str(h).strip() == col_name:
+            dept_col = i
+            break
     if dept_col is None:
         return max(0, ws.max_row - 1)
 
@@ -435,17 +425,40 @@ def _filter_sheet_by_dept(ws, dept: str = DEPT_FILTER) -> int:
         val = str(row[dept_col - 1].value or "").strip().upper()
         if dept.upper() not in val:
             to_delete.append(row[0].row)
-
     for row_num in reversed(to_delete):
         ws.delete_rows(row_num)
-
     return max(0, ws.max_row - 1)
+
+
+def _filter_by_wo_ids(ws, surviving_ids: set) -> None:
+    """
+    For sheets without the assignee group column, keep only rows
+    whose Work Order ID/No. is in `surviving_ids`.
+    """
+    if not surviving_ids:
+        return
+    headers = [cell.value for cell in ws[1]]
+    wo_id_col = None
+    for i, h in enumerate(headers, start=1):
+        if h and "work order" in str(h).lower() and (
+            "id" in str(h).lower() or "no" in str(h).lower()
+        ):
+            wo_id_col = i
+            break
+    if wo_id_col is None:
+        return
+    to_delete = []
+    for row in ws.iter_rows(min_row=2):
+        val = str(row[wo_id_col - 1].value or "").strip()
+        if val not in surviving_ids:
+            to_delete.append(row[0].row)
+    for row_num in reversed(to_delete):
+        ws.delete_rows(row_num)
 
 
 def _count_ageing_gt(ws, threshold: int) -> int:
     """
     Count data rows where the ageing-days column value > threshold.
-    Searches header for a column containing 'ageing' and 'day'.
     """
     headers = [cell.value for cell in ws[1]]
     ageing_col = None
@@ -455,7 +468,6 @@ def _count_ageing_gt(ws, threshold: int) -> int:
             break
     if ageing_col is None:
         return 0
-
     count = 0
     for row in ws.iter_rows(min_row=2):
         try:
@@ -467,64 +479,41 @@ def _count_ageing_gt(ws, threshold: int) -> int:
     return count
 
 
-def _make_cover_sheet(ws, title_text: str, count: int):
+def _update_cover_number(ws, count: int) -> None:
     """
-    Wipe the sheet and rebuild it as a full-page PETRONAS cover with:
-      - Gigantic teal title block
-      - Enormous number below it
+    1. Delete all images/drawings from the cover sheet.
+    2. Place the filtered count at E20:J20 with large PETRONAS teal font.
     """
-    from openpyxl.styles import Font, Alignment, PatternFill
-    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, Alignment
+    from openpyxl.drawing.spreadsheet_drawing import SpreadsheetDrawing
 
-    # ── 1. Wipe merged cells ──────────────────────────────────────
+    # ── Remove all drawings & images ─────────────────────────────
+    ws._images = []
+    try:
+        ws._drawing = SpreadsheetDrawing()
+    except Exception:
+        pass
+
+    # ── Unmerge E20:J20 if already merged ────────────────────────
     for rng in list(ws.merged_cells.ranges):
-        ws.unmerge_cells(str(rng))
+        r = str(rng)
+        if "E20" in r or "F20" in r:
+            ws.unmerge_cells(r)
 
-    # ── 2. Delete all rows ────────────────────────────────────────
-    if ws.max_row:
-        ws.delete_rows(1, ws.max_row)
-
-    COLS = 14  # A to N — wide canvas
-
-    # ── 3. Column widths ──────────────────────────────────────────
-    for c in range(1, COLS + 1):
-        ws.column_dimensions[get_column_letter(c)].width = 16
-
-    # ── 4. Title block: rows 1–8 ──────────────────────────────────
-    TITLE_END = 8
-    for r in range(1, TITLE_END + 1):
-        ws.row_dimensions[r].height = 65
-
-    ws.merge_cells(
-        start_row=1, start_column=1, end_row=TITLE_END, end_column=COLS
-    )
-    t = ws.cell(row=1, column=1)
-    t.value = title_text
-    t.font      = Font(name="Calibri", bold=True, size=72, color="FFFFFF")
-    t.fill      = PatternFill("solid", fgColor="00B1A9")
-    t.alignment = Alignment(
-        horizontal="center", vertical="center", wrap_text=True
-    )
-
-    # ── 5. Number block: rows 9–26 ────────────────────────────────
-    NUM_START, NUM_END = TITLE_END + 1, 26
-    for r in range(NUM_START, NUM_END + 1):
-        ws.row_dimensions[r].height = 110
-
-    ws.merge_cells(
-        start_row=NUM_START, start_column=1, end_row=NUM_END, end_column=COLS
-    )
-    n = ws.cell(row=NUM_START, column=1)
-    n.value     = count
-    n.font      = Font(name="Calibri", bold=True, size=320, color="00B1A9")
-    n.alignment = Alignment(horizontal="center", vertical="center")
+    # ── Write count into E20:J20 ─────────────────────────────────
+    ws.merge_cells("E20:J20")
+    cell = ws["E20"]
+    cell.value     = count
+    cell.font      = Font(name="Calibri", bold=True, size=96, color="00B1A9")
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[20].height = 100
 
 
 def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.date):
     """
     Duplicate the WO Ageing sheet as 'Update Details', keep only
-    required columns, filter by MYCAREERSUPPORT, and insert
-    'Update as of DD Mmm' as the leftmost column.
+    required columns, filter by MYCAREERSUPPORT via 'Work Order Assignee Group',
+    and insert 'Update as of DD Mmm' as the leftmost column.
     """
     from openpyxl.styles import Font, PatternFill, Alignment
 
@@ -554,59 +543,57 @@ def _build_update_details_sheet(wb, wo_sheet_name: str, report_date: datetime.da
     if "Update Details" in wb.sheetnames:
         del wb["Update Details"]
 
-    # Copy sheet
+    # Copy sheet & strip unwanted columns
     new_ws = wb.copy_worksheet(wo_ws)
     new_ws.title = "Update Details"
-
-    # Delete unwanted columns (right to left)
     max_col = new_ws.max_column
     for col_idx in range(max_col, 0, -1):
         if col_idx not in keep_indices:
             new_ws.delete_cols(col_idx)
 
-    # Filter by MYCAREERSUPPORT
-    _filter_sheet_by_dept(new_ws)
+    # Filter by MYCAREERSUPPORT using exact SR column name
+    _filter_by_exact_col(new_ws, "Work Order Assignee Group")
 
     # Insert 'Update as of DD Mmm' as column A
     new_ws.insert_cols(1)
     col_header = f"Update as of {report_date.strftime('%d %b')}"
     hdr_cell = new_ws.cell(row=1, column=1)
-    hdr_cell.value = col_header
-    hdr_cell.font  = Font(name="Calibri", bold=True, color="FFFFFF")
-    hdr_cell.fill  = PatternFill("solid", fgColor="00B1A9")
+    hdr_cell.value     = col_header
+    hdr_cell.font      = Font(name="Calibri", bold=True, color="FFFFFF")
+    hdr_cell.fill      = PatternFill("solid", fgColor="00B1A9")
     hdr_cell.alignment = Alignment(horizontal="center", vertical="center")
-
-    # Leave data cells blank (for manual fill)
 
 
 def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
     """
     Full processing of the SR & WO workbook:
-      - Filter all data sheets by MYCAREERSUPPORT
-      - Rebuild sheet 1 cover: Total Service Request
-      - Rebuild sheet 2 cover: Service Request Ageing > 30 Days
-      - Add filtered 'Update Details' sheet with Update as of column
+      - Filter raw data sheet by 'Work Order Assignee Group' = MYCAREERSUPPORT
+      - Filter sheet 3 (no group col) by surviving WO IDs
+      - Update cover sheets: delete images, place filtered count at E20:J20
+      - Add 'Update Details' sheet
     """
     from openpyxl import load_workbook
 
     wb = load_workbook(workbook_path)
     sheet_names = wb.sheetnames
 
-    # Identify the primary WO data sheet (last sheet or named 'work order ageing')
+    # Identify the primary WO raw data sheet
     wo_data_name = sheet_names[-1]
     for name in sheet_names:
         if "work order" in name.lower() and "ageing" in name.lower():
             wo_data_name = name
 
-    # ── Step 1: Filter the raw WO data sheet first by dept ───────
-    _filter_sheet_by_dept(wb[wo_data_name])
+    # ── Step 1: Filter raw data by exact group column ─────────────
+    _filter_by_exact_col(wb[wo_data_name], "Work Order Assignee Group")
 
-    # ── Step 2: Collect surviving WO IDs for cross-sheet filter ──
+    # ── Step 2: Collect surviving WO IDs ─────────────────────────
     wo_ws = wb[wo_data_name]
     wo_headers = [cell.value for cell in wo_ws[1]]
     wo_id_col = None
     for i, h in enumerate(wo_headers, start=1):
-        if h and "work order" in str(h).lower() and ("id" in str(h).lower() or "no" in str(h).lower()):
+        if h and "work order" in str(h).lower() and (
+            "id" in str(h).lower() or "no" in str(h).lower()
+        ):
             wo_id_col = i
             break
     surviving_wo_ids = set()
@@ -616,45 +603,21 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
             if val:
                 surviving_wo_ids.add(str(val).strip())
 
-    # ── Step 3: Filter remaining data sheets ─────────────────────
-    # For sheets with dept column → filter by dept
-    # For sheets without dept column (e.g. sheet 3) → filter by WO IDs
-    data_sheets = [s for s in sheet_names[2:] if s != wo_data_name]
-    for sname in data_sheets:
-        ws = wb[sname]
-        headers = [cell.value for cell in ws[1]]
-        dept_col = _find_dept_col(headers)
-        if dept_col is not None:
-            _filter_sheet_by_dept(ws)
-        elif surviving_wo_ids:
-            # Find WO ID column in this sheet
-            sid_col = None
-            for i, h in enumerate(headers, start=1):
-                if h and "work order" in str(h).lower() and ("id" in str(h).lower() or "no" in str(h).lower()):
-                    sid_col = i
-                    break
-            if sid_col:
-                to_delete = []
-                for row in ws.iter_rows(min_row=2):
-                    val = str(row[sid_col - 1].value or "").strip()
-                    if val not in surviving_wo_ids:
-                        to_delete.append(row[0].row)
-                for row_num in reversed(to_delete):
-                    ws.delete_rows(row_num)
+    # ── Step 3: Filter remaining data sheets by WO IDs ───────────
+    for sname in [s for s in sheet_names[2:] if s != wo_data_name]:
+        _filter_by_wo_ids(wb[sname], surviving_wo_ids)
 
-    # ── Get counts from the primary WO data sheet ─────────────────
-    total_sr  = max(0, wo_ws.max_row - 1)
-    sr_gt_30  = _count_ageing_gt(wo_ws, 30)
+    # ── Step 4: Get counts ────────────────────────────────────────
+    total_sr = max(0, wo_ws.max_row - 1)
+    sr_gt_30 = _count_ageing_gt(wo_ws, 30)
 
-    # ── Rebuild cover sheets ──────────────────────────────────────
+    # ── Step 5: Update cover sheet numbers (delete image → E20:J20)
     if len(sheet_names) >= 1:
-        _make_cover_sheet(wb[sheet_names[0]], "Total Service Request", total_sr)
+        _update_cover_number(wb[sheet_names[0]], total_sr)
     if len(sheet_names) >= 2:
-        _make_cover_sheet(
-            wb[sheet_names[1]], "Service Request Ageing > 30 Days", sr_gt_30
-        )
+        _update_cover_number(wb[sheet_names[1]], sr_gt_30)
 
-    # ── Build Update Details sheet ────────────────────────────────
+    # ── Step 6: Build Update Details sheet ───────────────────────
     _build_update_details_sheet(wb, wo_data_name, report_date)
 
     wb.save(workbook_path)
@@ -663,38 +626,35 @@ def process_sr_wo_workbook(workbook_path: str, report_date: datetime.date):
 def process_inc_workbook(workbook_path: str, report_date: datetime.date):
     """
     Full processing of the INC workbook:
-      - Filter all data sheets by MYCAREERSUPPORT
-      - Rebuild sheet 1 cover: Total Ageing Incident
-      - Rebuild sheet 2 cover: Total Ageing Incident > 30 Days
+      - Filter all data sheets by 'Assignee Group' = MYCAREERSUPPORT
+      - Update cover sheets: delete images, place filtered count at E20:J20
     """
     from openpyxl import load_workbook
 
     wb = load_workbook(workbook_path)
     sheet_names = wb.sheetnames
 
-    # ── Filter all data sheets (skip first two cover sheets) ──────
-    data_sheets = sheet_names[2:]
-    for sname in data_sheets:
-        _filter_sheet_by_dept(wb[sname])
-
-    # ── Get counts from the primary INC data sheet ────────────────
+    # Identify the primary INC data sheet
     inc_data_name = sheet_names[-1]
     for name in sheet_names:
         if "incident" in name.lower() and "raw" in name.lower():
             inc_data_name = name
             break
 
-    inc_ws      = wb[inc_data_name]
-    total_inc   = max(0, inc_ws.max_row - 1)
-    inc_gt_30   = _count_ageing_gt(inc_ws, 30)
+    # ── Filter all data sheets by exact INC group column ─────────
+    for sname in sheet_names[2:]:
+        _filter_by_exact_col(wb[sname], "Assignee Group")
 
-    # ── Rebuild cover sheets ──────────────────────────────────────
+    # ── Get counts ────────────────────────────────────────────────
+    inc_ws    = wb[inc_data_name]
+    total_inc = max(0, inc_ws.max_row - 1)
+    inc_gt_30 = _count_ageing_gt(inc_ws, 30)
+
+    # ── Update cover sheet numbers (delete image → E20:J20) ──────
     if len(sheet_names) >= 1:
-        _make_cover_sheet(wb[sheet_names[0]], "Total Ageing Incident", total_inc)
+        _update_cover_number(wb[sheet_names[0]], total_inc)
     if len(sheet_names) >= 2:
-        _make_cover_sheet(
-            wb[sheet_names[1]], "Total Ageing Incident > 30 Days", inc_gt_30
-        )
+        _update_cover_number(wb[sheet_names[1]], inc_gt_30)
 
     wb.save(workbook_path)
 
