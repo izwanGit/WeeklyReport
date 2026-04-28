@@ -8,25 +8,44 @@ import base64
 import datetime
 import re
 
-try:
-    import fitz  # PyMuPDF
-    from pptx import Presentation
-    from pptx.enum.shapes import MSO_SHAPE_TYPE
-    PPTX_AVAILABLE = True
-except ImportError:
-    PPTX_AVAILABLE = False
+# ── PETRONAS Brand Colors ─────────────────────────────────────────────────────
+PETRONAS_TEAL       = "#00B1A9"
+PETRONAS_PURPLE     = "#763F98"
+PETRONAS_BLUE       = "#20419A"
+PETRONAS_YELLOW     = "#FDB924"
+PETRONAS_LIME_GREEN = "#BFD730"
 
-if getattr(sys, 'frozen', False):
-    BASE_DIR = sys._MEIPASS
-else:
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SVG_ICONS = {
+    "check":   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    "alert":   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    "info":    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
+    "x-circle":'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+}
 
-# -- Page Config --
-st.set_page_config(
-    page_title="Monthly Report | PETRONAS",
-    page_icon=os.path.join(BASE_DIR, "PETRONAS_LOGO_SQUARE.png"),
-    layout="wide",
-)
+def _get_svg_icon(name: str, color: str = PETRONAS_TEAL) -> str:
+    svg = _SVG_ICONS.get(name, "")
+    return svg.format(color=color) if svg else ""
+
+def petronas_alert(message: str, type: str = "info", icon: str = "info"):
+    colors = {
+        "success": (PETRONAS_LIME_GREEN, "rgba(191,215,48,0.15)"),
+        "info":    (PETRONAS_TEAL,       "rgba(0,177,169,0.15)"),
+        "warning": (PETRONAS_YELLOW,     "rgba(253,185,36,0.15)"),
+        "error":   (PETRONAS_PURPLE,     "rgba(118,63,152,0.15)"),
+    }
+    default_icons = {"success": "check", "info": "info", "warning": "alert", "error": "x-circle"}
+    icon_name = icon if icon in _SVG_ICONS else default_icons.get(type, "info")
+    border_color, bg_color = colors.get(type, colors["info"])
+    icon_svg  = _get_svg_icon(icon_name, border_color)
+    icon_html = f"<span style='margin-right:10px;flex-shrink:0;display:flex;align-items:center;'>{icon_svg}</span>" if icon_svg else ""
+    html = (
+        f'<div style="background-color:{bg_color};border-left:3px solid {border_color};'
+        f'padding:8px 12px;border-radius:4px;margin-bottom:8px;font-family:sans-serif;'
+        f'font-size:0.82rem;color:#1E293B;display:flex;align-items:center;line-height:1.4;">'
+        f'{icon_html}<div>{message}</div></div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
 
 # -- Branding Helpers --
 def _image_to_data_uri(path, mime_type):
@@ -188,10 +207,10 @@ with st.sidebar:
     pptx_available_locally = os.path.exists(TEMPLATE_PATH)
     uploaded_template = None
     if not pptx_available_locally:
-        st.warning("template.pptx not found in app folder.")
+        petronas_alert("template.pptx not found in app folder.", type="warning")
         uploaded_template = st.file_uploader("Upload PPTX Template", type=['pptx'])
     else:
-        st.success("template.pptx detected.")
+        petronas_alert("template.pptx detected.", type="success", icon="check")
 
 st.markdown("""
 <a href="/" target="_self" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #64748B; margin-bottom: 16px; transition: color 0.2s ease;">
@@ -217,7 +236,7 @@ st.markdown(f"""
 
 # -- Dependency Check --
 if not PPTX_AVAILABLE:
-    st.error("Required libraries (python-pptx, PyMuPDF) are not installed. Please run: pip install -r requirements.txt")
+    petronas_alert("Required libraries (python-pptx, PyMuPDF) are not installed. Please run: pip install -r requirements.txt", type="error")
     st.stop()
 
 
@@ -1707,17 +1726,18 @@ if pdf_file and resolved_pptx:
 | **13** | INC Category % | **10** | BBOX match | Left picture |
 | **14** | INC Module List | **10** | BBOX match | Right picture (auto-cropped) |
         """)
-        st.info(
-            "**Automated features:**\n"
-            "- Module lists (pages 7 and 14) are auto-cropped to remove whitespace\n"
-            "- Root Cause tables (pages 5 and 12) are mapped natively into PowerPoint tables\n"
-            "- Dates are updated across all slides\n"
-            "- Summary bullets on Slides 4 and 8 are auto-computed from extracted chart data\n"
-            "- Corporate logo is protected and title text is never modified"
+        petronas_alert(
+            "<b>Automated features:</b><br>"
+            "- Module lists (pages 7 and 14) are auto-cropped to remove whitespace<br>"
+            "- Root Cause tables (pages 5 and 12) are mapped natively into PowerPoint tables<br>"
+            "- Dates are updated across all slides<br>"
+            "- Summary bullets on Slides 4 and 8 are auto-computed from extracted chart data<br>"
+            "- Corporate logo is protected and title text is never modified",
+            type="info"
         )
 
     if pdf_page_count != "?" and pdf_page_count < 14:
-        st.warning(f"Expected 14 pages but found {pdf_page_count}. Some images may be missing.")
+        petronas_alert(f"Expected 14 pages but found {pdf_page_count}. Some images may be missing.", type="warning")
 
     st.markdown("")
 
@@ -1735,20 +1755,20 @@ if pdf_file and resolved_pptx:
                 )
 
                 if img_count == 11:
-                    st.success(f"Complete - all {img_count}/11 images replaced and text updated.")
+                    petronas_alert(f"Complete — all {img_count}/11 images replaced and text updated.", type="success", icon="check")
                 elif img_count > 0:
-                    st.warning(f"Partial - {img_count}/11 images replaced. Review the build log.")
+                    petronas_alert(f"Partial — {img_count}/11 images replaced. Review the build log.", type="warning")
                 else:
-                    st.error("No images were replaced. Please check your input files.")
+                    petronas_alert("No images were replaced. Please check your input files.", type="error")
 
                 with st.expander("Build Log", expanded=(img_count < 11)):
                     for msg in build_logs:
                         if "WARN" in msg:
-                            st.warning(msg)
+                            petronas_alert(msg, type="warning")
                         elif msg.startswith("  OK") or msg.startswith("  DATE") or msg.startswith("  SUMM") or msg.startswith("  TABLE"):
                             st.text(msg)
                         else:
-                            st.info(msg)
+                            petronas_alert(msg, type="info")
 
                 # -- Preview --
                 if img_count > 0 and pdf_imgs:
@@ -1779,14 +1799,15 @@ if pdf_file and resolved_pptx:
                 if img_count > 0:
                     st.markdown("")
                     st.markdown('<p class="section-label">Step 3 - Download</p>', unsafe_allow_html=True)
-                    st.info(
-                        "**What was automatically updated:**\n"
-                        "- All 11 dashboard images replaced\n"
-                        "- Charts on Slides 4 and 8 replaced with PDF images\n"
-                        "- Tables on Slides 5 and 9 populated natively with PDF data\n"
-                        "- Dates updated across all slides\n"
-                        "- Summary bullets on Slides 4 and 8 computed from chart data (if extractable)\n\n"
-                        "Review summary text on Slides 4 and 8 if the build log shows warnings."
+                    petronas_alert(
+                        "<b>What was automatically updated:</b><br>"
+                        "- All 11 dashboard images replaced<br>"
+                        "- Charts on Slides 4 and 8 replaced with PDF images<br>"
+                        "- Tables on Slides 5 and 9 populated natively with PDF data<br>"
+                        "- Dates updated across all slides<br>"
+                        "- Summary bullets on Slides 4 and 8 computed from chart data (if extractable)<br><br>"
+                        "Review summary text on Slides 4 and 8 if the build log shows warnings.",
+                        type="info"
                     )
                     st.download_button(
                         label="Download Final Report (.pptx)",
@@ -1797,11 +1818,11 @@ if pdf_file and resolved_pptx:
                     )
 
             except Exception as e:
-                st.error(f"An error occurred: {e}")
+                petronas_alert(f"An error occurred: {e}", type="error")
                 st.code(traceback.format_exc(), language="text")
 
 elif not resolved_pptx and pdf_file:
-    st.warning("No PPTX template found. Please upload one in the sidebar.")
+    petronas_alert("No PPTX template found. Please upload one in the sidebar.", type="warning")
 
 else:
     st.markdown("""
