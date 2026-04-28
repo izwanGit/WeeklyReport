@@ -469,7 +469,32 @@ def _fast_filter_by_wo_ids(ws, surviving_ids: set) -> None:
     kept = [r for r in all_rows if str(r[wo_id_idx] or "").strip() in surviving_ids]
 
     if ws.max_row > 1:
-        ws.delete_rows(2, ws.max_row)
+        ws.delete_rows(2, ws.max_row - 1)
+    for row in kept:
+        ws.append(list(row))
+
+
+def _fast_filter_by_sr_ids(ws, surviving_ids: set) -> None:
+    """
+    Same fast pattern but filters Sheet 3 of SR by 'Service Request ID'.
+    """
+    if not surviving_ids:
+        return
+
+    headers = [cell.value for cell in ws[1]]
+    sr_id_idx = None
+    for i, h in enumerate(headers):
+        if h and str(h).strip().lower() == "service request id":
+            sr_id_idx = i
+            break
+    if sr_id_idx is None:
+        return
+
+    all_rows = list(ws.iter_rows(min_row=2, values_only=True))
+    kept = [r for r in all_rows if str(r[sr_id_idx] or "").strip() in surviving_ids]
+
+    if ws.max_row > 1:
+        ws.delete_rows(2, ws.max_row - 1)
     for row in kept:
         ws.append(list(row))
 
