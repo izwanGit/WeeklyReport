@@ -47,6 +47,26 @@ def petronas_alert(message: str, type: str = "info", icon: str = "info"):
     st.markdown(html, unsafe_allow_html=True)
 
 
+try:
+    import fitz  # PyMuPDF
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    PPTX_AVAILABLE = True
+except ImportError:
+    PPTX_AVAILABLE = False
+
+if getattr(sys, 'frozen', False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# -- Page Config --
+st.set_page_config(
+    page_title="Monthly Report | PETRONAS",
+    page_icon=os.path.join(BASE_DIR, "PETRONAS_LOGO_SQUARE.png"),
+    layout="wide",
+)
+
 # -- Branding Helpers --
 def _image_to_data_uri(path, mime_type):
     try:
