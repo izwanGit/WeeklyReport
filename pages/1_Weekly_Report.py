@@ -1504,9 +1504,9 @@ function copyRichText(){{
 <html><head>
 <style>
 body{{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:sans-serif;}}
-button{{background:linear-gradient(135deg,#763F98 0%,#5A2D7A 100%);color:white;border:none;border-radius:8px;font-weight:600;padding:0.42rem 1rem;font-size:0.875rem;cursor:pointer;width:100%;height:40px;transition:all 0.3s ease;}}
-button:hover{{filter:brightness(1.15);transform:translateY(-1px);}}
-#tmsg{{color:#763F98;font-size:0.8rem;font-weight:600;margin-top:5px;display:none;}}
+button{{background:linear-gradient(135deg,#00B1A9 0%,#008C86 100%);color:white;border:none;border-radius:8px;font-weight:600;padding:0.42rem 1rem;font-size:0.875rem;cursor:pointer;width:100%;height:40px;transition:all 0.3s ease;}}
+button:hover{{filter:brightness(1.1);transform:translateY(-1px);}}
+#tmsg{{color:#00B1A9;font-size:0.8rem;font-weight:600;margin-top:5px;display:none;}}
 </style></head>
 <body>
 <button onclick="copyTeams()">Copy for Teams</button>
