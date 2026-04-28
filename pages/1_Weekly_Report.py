@@ -1398,15 +1398,9 @@ function copySubject(){{
             st.markdown("<br>", unsafe_allow_html=True)
 
             exp1, exp2, exp3 = st.columns(3)
+
+            # ── Col 1: Copy Formatted ─────────────────────────────
             with exp1:
-                st.download_button(
-                    label="Download .html",
-                    data=html_output,
-                    file_name=f"Weekly_Report_{report_date.strftime('%Y%m%d')}.html",
-                    mime="text/html",
-                    use_container_width=True,
-                )
-            with exp2:
                 copy_btn_html = f"""
 <html><head>
 <style>
@@ -1423,7 +1417,7 @@ button:hover{{filter:brightness(1.1);transform:translateY(-1px);}}
 function copyRichText(){{
     try{{
         const html=decodeURIComponent(escape(window.atob(document.getElementById("source").innerText)));
-        navigator.clipboard.write([new ClipboardItem({{"text/html":new Blob([html],{{type:"text/html"}})}})]).then(()=>{{
+        navigator.clipboard.write([new ClipboardItem({{"text/html":new Blob([html],{{type:"text/html"}})}})]). then(()=>{{
             const m=document.getElementById("msg");
             m.style.display="block";
             setTimeout(()=>m.style.display="none",3000);
@@ -1433,7 +1427,9 @@ function copyRichText(){{
 </script>
 </body></html>"""
                 st.components.v1.html(copy_btn_html, height=42)
-            with exp3:
+
+            # ── Col 2: Push to Outlook Draft ─────────────────────
+            with exp2:
                 if sys.platform == 'win32':
                     if st.button("Push to Outlook Draft", use_container_width=True):
                         with st.spinner("Preparing files and opening Outlook draft…"):
@@ -1472,7 +1468,6 @@ function copyRichText(){{
                                     type="error"
                                 )
                             else:
-                                # ── Step 3: Open Outlook draft ────────────────
                                 try:
                                     if push_to_outlook(
                                         html_output, email_subject,
@@ -1490,6 +1485,47 @@ function copyRichText(){{
                                     )
                 else:
                     st.button("Outlook (Windows Only)", use_container_width=True, disabled=True)
+
+            # ── Col 3: Send to Teams (Copy message) ───────────────
+            with exp3:
+                # Build unique assignee list from SR >30 days tickets only
+                _teams_names = list(dict.fromkeys(
+                    t["Assignee"] for t in sr_ageing_gt_30_tickets
+                    if t.get("Assignee")
+                ))
+                _teams_names_str = "  ".join(_teams_names)
+                _teams_msg = (
+                    "Hi team, good morning. please kindly update the statuses of your ageing tickets "
+                    "in this file as there are tickets ageing >30 Days. thank you!\n\n"
+                    + _teams_names_str
+                )
+                _teams_msg_b64 = base64.b64encode(_teams_msg.encode("utf-8")).decode("utf-8")
+                teams_btn_html = f"""
+<html><head>
+<style>
+body{{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:sans-serif;}}
+button{{background:linear-gradient(135deg,#763F98 0%,#5A2D7A 100%);color:white;border:none;border-radius:8px;font-weight:600;padding:0.42rem 1rem;font-size:0.875rem;cursor:pointer;width:100%;height:40px;transition:all 0.3s ease;}}
+button:hover{{filter:brightness(1.15);transform:translateY(-1px);}}
+#tmsg{{color:#763F98;font-size:0.8rem;font-weight:600;margin-top:5px;display:none;}}
+</style></head>
+<body>
+<button onclick="copyTeams()">Copy for Teams</button>
+<div id="tmsg">Copied! Paste in Teams chat.</div>
+<div id="tsrc" style="display:none;">{_teams_msg_b64}</div>
+<script>
+function copyTeams(){{
+    try{{
+        const txt=decodeURIComponent(escape(window.atob(document.getElementById("tsrc").innerText)));
+        navigator.clipboard.writeText(txt).then(()=>{{
+            const m=document.getElementById("tmsg");
+            m.style.display="block";
+            setTimeout(()=>m.style.display="none",3000);
+        }}).catch(e=>console.error(e));
+    }}catch(e){{console.error(e);}}
+}}
+</script>
+</body></html>"""
+                st.components.v1.html(teams_btn_html, height=42)
 
 
             # ── Contacts Manager ─────────────────────────────────
